@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Thông báo chính thức</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Thông báo chính thức</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<div sec:authorize="hasAnyRole('ADMIN','TRUONGKHOA')">
+<form method="post" th:action="@{/announcements}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<div class="space-bottom">
+<label class="field-label" for="title">Tiêu đề</label>
+<input type="text" class="field" id="title" th:field="*{title}" required maxlength="300">
+<div class="error-text caption" th:errors="*{title}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="content">Nội dung</label>
+<textarea class="field" id="content" th:field="*{content}" required maxlength="20000" rows="4">
+</textarea>
+<div class="error-text caption" th:errors="*{content}">
+</div>
+</div>
+<label class="field-label" for="scope">Phạm vi</label>
+<select id="scope" class="select-field space-bottom" th:field="*{scope}">
+<option value="Khoa">Khoa</option>
+<option value="NhaTruong" sec:authorize="hasRole('ADMIN')">Nhà trường</option>
+</select>
+<button class="button button-primary self-start" type="submit">Lưu</button>
+</form>
+</div>
+<p class="muted" th:if="${#lists.isEmpty(notices)}">Chưa có thông báo.</p>
+<article class="panel panel-body space-bottom" th:each="n : ${notices}">
+<h2 class="item-title" th:text="${n.title}">
+</h2>
+<p class="muted" th:text="${n.scope + ' · ' + #temporals.format(n.posted,'dd/MM/yyyy HH:mm')}">
+</p>
+<p class="pre-wrap" th:text="${n.content}">
+</p>
+</article>
+</main>
+</body>
+</html>

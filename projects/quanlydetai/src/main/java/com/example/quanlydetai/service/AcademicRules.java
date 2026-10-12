@@ -1,0 +1,57 @@
+package com.example.quanlydetai.service;
+
+import com.example.quanlydetai.entity.DotDangKy;
+import com.example.quanlydetai.exception.BusinessException;
+
+import jakarta.persistence.*;
+
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.*;
+
+/** Shared registration windows, Vietnam clock and invariant checks. */
+@Component
+public class AcademicRules {
+    public static final int MIN_GROUP_MEMBERS = 3;
+    public static final int MAX_GROUP_MEMBERS = 5;
+
+    public void registrationGroupSize(int size) {
+        check(
+                size >= MIN_GROUP_MEMBERS && size <= MAX_GROUP_MEMBERS,
+                "Nhóm phải có từ 3 đến 5 thành viên đã xác nhận để đăng ký đề tài.");
+    }
+
+    public void groupHasSpace(int size) {
+        check(size < MAX_GROUP_MEMBERS, "Nhóm đã đủ 5 thành viên.");
+    }
+
+    public String id(String prefix) {
+        return prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+    }
+
+    public void check(boolean condition, String message) {
+        if (!condition) throw new BusinessException(message);
+    }
+
+    public void studentWindow(DotDangKy d) {
+        window(d.getBeginSV(), d.getEndSV(), "Đã ngoài thời gian sinh viên đăng ký.");
+    }
+
+    public void teacherWindow(DotDangKy d) {
+        window(d.getBeginGV(), d.getEndGV(), "Đã ngoài thời gian giảng viên đăng ký.");
+    }
+
+    public LocalDateTime now() {
+        return LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+    }
+
+    public boolean inWindow(LocalDateTime begin, LocalDateTime end) {
+        var now = now();
+        return !now.isBefore(begin) && !now.isAfter(end);
+    }
+
+    private void window(LocalDateTime begin, LocalDateTime end, String message) {
+        check(inWindow(begin, end), message);
+    }
+}

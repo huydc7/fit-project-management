@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head><title>Email công bố kết quả</title></head>
+<body><main>
+<h1 class="page-title space-bottom">Email công bố kết quả</h1>
+<p><a th:href="@{/dean/approvals}">Quay lại công bố kết quả</a></p>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+<p th:unless="${deliveryEnabled}" class="notice notice-warning">Gửi email đang tắt. Các thư vẫn được lưu trong hàng đợi. Liên hệ quản trị viên để bật dịch vụ gửi.</p>
+<p class="muted">100 thông báo gần nhất. “Dịch vụ đã nhận” nghĩa là máy chủ gửi đã tiếp nhận thư; hãy kiểm tra hộp thư hoặc lịch sử gửi của dịch vụ để xác nhận phát thành công.</p>
+<p th:if="${#lists.isEmpty(emails)}">Chưa có thông báo kết quả.</p>
+<div class="table-scroll" th:unless="${#lists.isEmpty(emails)}">
+<table class="data-table table-alternate">
+<thead><tr><th>Đề tài</th><th>Sinh viên</th><th>Địa chỉ nhận</th><th>Trạng thái</th><th>Lần thử</th><th>Thao tác</th></tr></thead>
+<tbody><tr th:each="e : ${emails}">
+<td th:text="${e.topic}"></td><td th:text="${e.student}"></td><td th:text="${e.recipient}"></td>
+<td th:switch="${e.state}">
+<span th:case="'PENDING'">Đang chờ</span><span th:case="'PROCESSING'">Đang gửi</span>
+<span th:case="'ACCEPTED'">Dịch vụ đã nhận</span><span th:case="'FAILED'">Thất bại</span>
+</td><td th:text="${e.attempts}"></td>
+<td><form th:if="${e.state == 'FAILED'}" method="post" th:action="@{/dean/result-emails/{id}/retry(id=${e.id})}"><button class="button button-outline">Thử gửi lại</button></form></td>
+</tr></tbody></table></div>
+</main></body></html>

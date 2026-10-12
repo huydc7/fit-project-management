@@ -5,6 +5,7 @@
 -- Đồng bộ với ERD hiện tại (19 bảng)
 -- ============================================================
 
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS quanlydetai
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_0900_ai_ci;
@@ -58,6 +59,8 @@ CREATE TABLE IF NOT EXISTS SV (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS TRUONG_KHOA (
     Ma_GV          VARCHAR(20) NOT NULL,
+
+    Dang_Giu_Chuc BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT PK_TRUONG_KHOA PRIMARY KEY (Ma_GV),
     CONSTRAINT FK_TRUONG_KHOA_GV
@@ -327,6 +330,7 @@ CREATE TABLE IF NOT EXISTS DIEM_THANH_PHAN (
     Nhan_Xet         TEXT          NULL,
 
     CONSTRAINT PK_DIEM_THANH_PHAN PRIMARY KEY (Ma_Diem),
+    CONSTRAINT CK_DIEM_RANGE CHECK (Diem >= 0 AND Diem <= 10),
 
     CONSTRAINT UQ_DIEM_GV_DETAI_LOAI
         UNIQUE (Ma_GV, Ma_De_Tai, Ma_Loai_Diem),

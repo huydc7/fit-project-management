@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Duyệt, phân công và công bố</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Duyệt, phân công và công bố</h1>
+<p><a class="button button-outline" th:href="@{/dean/result-emails}">Theo dõi email kết quả</a></p>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<h2 class="section-title">Đề tài</h2>
+<p class="muted" th:if="${#lists.isEmpty(topics)}">Chưa có đề tài.</p>
+<article class="panel panel-body space-bottom" th:each="t : ${topics}">
+<h3 class="item-title" th:text="${t.title}">
+</h3>
+<p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state}">
+</p>
+<p class="pre-wrap" th:text="${t.content}">
+</p>
+<p>GVHD: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
+</span>
+</p>
+<form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/dean/topics/{id}/review(id=${t.id})}">
+<button class="button button-success space-right-sm" name="accept" value="true">Duyệt và công bố đề tài</button>
+<button class="button button-danger" name="accept" value="false">Từ chối</button>
+</form>
+<div th:if="${t.state == 'DangThucHien'}">
+<p>GVPB hiện tại: <strong th:text="${t.reviewer ?: 'Chưa phân công'}">
+</strong>
+</p>
+<form method="post" th:action="@{/dean/topics/{id}/reviewer(id=${t.id})}" class="inline-fields gap-sm space-bottom">
+<select name="teacher" class="select-field" required aria-label="GVPB">
+<option value="">Chọn GVPB…</option>
+<option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}">
+</option>
+</select>
+<button class="button button-outline no-wrap">Phân công GVPB</button>
+</form>
+<p>Hội đồng hiện tại: <strong th:text="${t.council ?: 'Chưa phân công'}">
+</strong>
+</p>
+<form method="post" th:action="@{/dean/topics/{id}/councils(id=${t.id})}" class="inline-fields gap-sm">
+<select name="council" class="select-field" required aria-label="Hội đồng">
+<option value="">Chọn hội đồng đã chốt…</option>
+<option th:each="h : ${councils}" th:if="${h.state == 'DaChot'}" th:value="${h.id}" th:text="${h.id + ' — ' + h.period}">
+</option>
+</select>
+<button class="button button-outline no-wrap">Gán hội đồng</button>
+</form>
+</div>
+</article>
+<h2 class="section-title space-top-lg">Đăng ký nhóm chờ duyệt</h2>
+<p class="muted" th:if="${#lists.isEmpty(registrations)}">Không có đăng ký chờ duyệt.</p>
+<article class="panel panel-body space-bottom" th:each="r : ${registrations}">
+<h3 class="item-title" th:text="${r.groupName + ' → ' + r.topicTitle}">
+</h3>
+<p th:text="${#temporals.format(r.submitted,'dd/MM/yyyy HH:mm')}">
+</p>
+<form method="post" th:action="@{/dean/registrations/{id}/review(id=${r.id})}">
+<label class="field-label" th:for="${'reason-' + r.id}">Lý do / ghi chú (bắt buộc khi từ chối)</label>
+<input class="field space-bottom" name="reason" maxlength="1000" th:id="${'reason-' + r.id}">
+<button class="button button-success space-right-sm" name="accept" value="true">Chấp thuận nhóm</button>
+<button class="button button-danger" name="accept" value="false">Từ chối, mở lại đề tài</button>
+</form>
+</article>
+<h2 class="section-title space-top-lg">Kết quả đã tổng hợp</h2>
+<p class="muted" th:if="${#lists.isEmpty(results)}">Chưa có kết quả tổng hợp.</p>
+<article class="panel panel-body space-bottom" th:each="r : ${results}">
+<h3 class="item-title" th:text="${r.title}">
+</h3>
+<p>
+<strong th:text="${r.score}">
+</strong> / 10 · <span th:text="${r.group + ' · ' + r.state}">
+</span>
+</p>
+<p class="pre-wrap" th:text="${r.comment}">
+</p>
+<form th:if="${r.state == 'ChuaCongBo'}" method="post" th:action="@{/dean/topics/{id}/publish(id=${r.topic})}">
+<button class="button button-primary">Công bố kết quả cho sinh viên</button>
+</form>
+</article>
+</main>
+</body>
+</html>

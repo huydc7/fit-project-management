@@ -1,0 +1,441 @@
+{
+  "description": "Bộ dữ liệu giả lập cho đồ án quản lý đề tài khoa CNTT, theo bốn hướng chuyên môn nhóm HCMUTE lựa chọn. Tên người, mã sinh viên, email và lịch là giả lập; không phải dữ liệu nhân sự hay lịch chính thức của trường.",
+  "departments": [
+    {
+      "id": "CNPM",
+      "name": "Công nghệ phần mềm"
+    },
+    {
+      "id": "HTTT",
+      "name": "Hệ thống thông tin"
+    },
+    {
+      "id": "MANG_ANM",
+      "name": "Mạng và An ninh mạng"
+    },
+    {
+      "id": "TTNT",
+      "name": "Trí tuệ nhân tạo"
+    }
+  ],
+  "teachers": [
+    {
+      "id": "GV_CNTT001",
+      "legacyId": "DEMO_DEAN",
+      "username": "truongkhoa",
+      "name": "Nguyễn Minh Quân",
+      "email": "truongkhoa@fit.example.test",
+      "department": "CNPM",
+      "dean": true
+    },
+    {
+      "id": "GV_CNTT002",
+      "legacyId": "DEMO_GV1",
+      "username": "gv.hoangnam",
+      "name": "Trần Hoàng Nam",
+      "email": "gv.hoangnam@fit.example.test",
+      "department": "CNPM",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT003",
+      "legacyId": "DEMO_GV2",
+      "username": "gv.minhanh",
+      "name": "Lê Minh Anh",
+      "email": "gv.minhanh@fit.example.test",
+      "department": "HTTT",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT004",
+      "legacyId": "DEMO_GV3",
+      "username": "gv.thanhbinh",
+      "name": "Phạm Thanh Bình",
+      "email": "gv.thanhbinh@fit.example.test",
+      "department": "MANG_ANM",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT005",
+      "legacyId": "DEMO_GV4",
+      "username": "gv.thuha",
+      "name": "Võ Thu Hà",
+      "email": "gv.thuha@fit.example.test",
+      "department": "TTNT",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT006",
+      "legacyId": "DEMO_GV5",
+      "username": "gv.quochuy",
+      "name": "Đặng Quốc Huy",
+      "email": "gv.quochuy@fit.example.test",
+      "department": "CNPM",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT007",
+      "legacyId": null,
+      "username": "gv.khanhlinh",
+      "name": "Bùi Khánh Linh",
+      "email": "gv.khanhlinh@fit.example.test",
+      "department": "HTTT",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT008",
+      "legacyId": null,
+      "username": "gv.ducduy",
+      "name": "Ngô Đức Duy",
+      "email": "gv.ducduy@fit.example.test",
+      "department": "MANG_ANM",
+      "dean": false
+    },
+    {
+      "id": "GV_CNTT009",
+      "legacyId": null,
+      "username": "gv.minhchau",
+      "name": "Trịnh Minh Châu",
+      "email": "gv.minhchau@fit.example.test",
+      "department": "TTNT",
+      "dean": false
+    }
+  ],
+  "students": [
+    {
+      "id": "22110001",
+      "legacyId": "DEMO_SV1",
+      "username": "sv.22110001",
+      "name": "Nguyễn Gia Huy",
+      "email": "22110001@student.example.test"
+    },
+    {
+      "id": "22110002",
+      "legacyId": "DEMO_SV2",
+      "username": "sv.22110002",
+      "name": "Trần Minh Khang",
+      "email": "22110002@student.example.test"
+    },
+    {
+      "id": "22110003",
+      "legacyId": "DEMO_SV3",
+      "username": "sv.22110003",
+      "name": "Lê Ngọc Anh",
+      "email": "22110003@student.example.test"
+    },
+    {
+      "id": "22110004",
+      "legacyId": "DEMO_SV4",
+      "username": "sv.22110004",
+      "name": "Phạm Hoài Nam",
+      "email": "22110004@student.example.test"
+    },
+    {
+      "id": "22110005",
+      "legacyId": "DEMO_SV5",
+      "username": "sv.22110005",
+      "name": "Võ Thảo Vy",
+      "email": "22110005@student.example.test"
+    },
+    {
+      "id": "22110006",
+      "legacyId": "DEMO_SV6",
+      "username": "sv.22110006",
+      "name": "Đặng Quốc Bảo",
+      "email": "22110006@student.example.test"
+    },
+    {
+      "id": "22110007",
+      "legacyId": "DEMO_SV7",
+      "username": "sv.22110007",
+      "name": "Bùi Khánh Ngân",
+      "email": "22110007@student.example.test"
+    },
+    {
+      "id": "22110008",
+      "legacyId": "DEMO_SV8",
+      "username": "sv.22110008",
+      "name": "Ngô Đức Minh",
+      "email": "22110008@student.example.test"
+    },
+    {
+      "id": "22110009",
+      "legacyId": "DEMO_SV9",
+      "username": "sv.22110009",
+      "name": "Trịnh Thanh Trúc",
+      "email": "22110009@student.example.test"
+    },
+    {
+      "id": "22110010",
+      "legacyId": null,
+      "username": "sv.22110010",
+      "name": "Huỳnh Tuấn Kiệt",
+      "email": "22110010@student.example.test"
+    },
+    {
+      "id": "22110011",
+      "legacyId": null,
+      "username": "sv.22110011",
+      "name": "Đỗ Nhật Linh",
+      "email": "22110011@student.example.test"
+    },
+    {
+      "id": "22110012",
+      "legacyId": null,
+      "username": "sv.22110012",
+      "name": "Mai Phương Thảo",
+      "email": "22110012@student.example.test"
+    },
+    {
+      "id": "22110013",
+      "legacyId": null,
+      "username": "sv.22110013",
+      "name": "Lý Hoàng Phúc",
+      "email": "22110013@student.example.test"
+    },
+    {
+      "id": "22110014",
+      "legacyId": null,
+      "username": "sv.22110014",
+      "name": "Vũ Quỳnh Như",
+      "email": "22110014@student.example.test"
+    },
+    {
+      "id": "22110015",
+      "legacyId": null,
+      "username": "sv.22110015",
+      "name": "Cao Tiến Đạt",
+      "email": "22110015@student.example.test"
+    },
+    {
+      "id": "22110016",
+      "legacyId": null,
+      "username": "sv.22110016",
+      "name": "Phan Hải Yến",
+      "email": "22110016@student.example.test"
+    },
+    {
+      "id": "22110017",
+      "legacyId": null,
+      "username": "sv.22110017",
+      "name": "Hồ Anh Tú",
+      "email": "22110017@student.example.test"
+    },
+    {
+      "id": "22110018",
+      "legacyId": null,
+      "username": "sv.22110018",
+      "name": "Dương Bảo Châu",
+      "email": "22110018@student.example.test"
+    }
+  ],
+  "administrator": {
+    "id": "TK_CNTT_ADMIN",
+    "legacyId": "DEMO_demo.admin",
+    "username": "admin"
+  },
+  "periods": [
+    {
+      "id": "MH_2627_HK1",
+      "legacyId": "DEMO_SV",
+      "name": "Đồ án môn học — Học kỳ I, năm học 2026–2027",
+      "type": "MonHoc",
+      "teacherStartDays": -15,
+      "teacherEndDays": -8,
+      "studentStartDays": -7,
+      "studentEndDays": 30
+    },
+    {
+      "id": "DEX_2627_HK1",
+      "legacyId": "DEMO_GV",
+      "name": "Đề xuất đề tài học kỳ I — Đợt bổ sung 2026–2027",
+      "type": "MonHoc",
+      "teacherStartDays": -3,
+      "teacherEndDays": 7,
+      "studentStartDays": 8,
+      "studentEndDays": 30
+    },
+    {
+      "id": "TLCN_2627_HK1",
+      "name": "Tiểu luận chuyên ngành — Học kỳ I, năm học 2026–2027",
+      "type": "TLCN",
+      "teacherStartDays": -20,
+      "teacherEndDays": -10,
+      "studentStartDays": -9,
+      "studentEndDays": 30,
+      "reviewDeadlineDays": 50
+    },
+    {
+      "id": "KLTN_2627_HK1",
+      "name": "Khóa luận tốt nghiệp — Học kỳ I, năm học 2026–2027",
+      "type": "KLTN",
+      "teacherStartDays": -25,
+      "teacherEndDays": -12,
+      "studentStartDays": -11,
+      "studentEndDays": 30,
+      "reviewDeadlineDays": 60,
+      "councilDays": 65
+    },
+    {
+      "id": "NCKH_2627",
+      "name": "Nghiên cứu khoa học sinh viên — Năm học 2026–2027",
+      "type": "NCKH",
+      "teacherStartDays": -5,
+      "teacherEndDays": 10,
+      "studentStartDays": 11,
+      "studentEndDays": 35
+    }
+  ],
+  "topics": [
+    {
+      "id": "CNPM_001",
+      "legacyId": "DEMO_DT1",
+      "title": "Cổng đăng ký và quản lý đề tài sinh viên",
+      "content": "Mục tiêu: xây dựng cổng quản lý đề tài cho khoa CNTT, theo dõi từ đăng ký đến công bố kết quả.\nPhạm vi: đợt đăng ký, đề xuất và duyệt đề tài, nhóm tối đa ba SV, nộp phiên bản báo cáo, phân công phản biện, hội đồng và chấm điểm.\nYêu cầu: Spring Boot, MySQL, xác thực theo vai trò; kiểm tra quyền đối với từng nhóm/báo cáo; ghi nhận lỗi nghiệp vụ và kiểm thử luồng xuyên suốt.\nSản phẩm bàn giao: source, sơ đồ dữ liệu, tài liệu API, website triển khai và kịch bản kiểm thử. Không yêu cầu chat, SSO hoặc AI trong bản đầu.",
+      "department": "CNPM",
+      "period": "MH_2627_HK1",
+      "supervisors": [
+        "GV_CNTT002"
+      ],
+      "published": true
+    },
+    {
+      "id": "CNPM_002",
+      "legacyId": "DEMO_DT2",
+      "title": "Hệ thống đặt lịch sử dụng phòng thực hành CNTT",
+      "content": "Mục tiêu: hỗ trợ đăng ký phòng máy, hạn chế trùng lịch và theo dõi tình trạng sử dụng.\nChức năng: danh mục phòng/cấu hình máy, lịch theo tuần, yêu cầu đặt phòng, duyệt hoặc từ chối, báo hỏng thiết bị và thống kê giờ sử dụng.\nYêu cầu: xử lý hai yêu cầu đồng thời cho cùng khung giờ bằng giao dịch; phân quyền cán bộ, giảng viên và người đăng ký; lưu lịch sử thay đổi.\nĐánh giá: chứng minh không phát sinh đặt lịch trùng qua kiểm thử, biểu mẫu hoạt động trên điện thoại. Bàn giao source, database, tài liệu và hướng dẫn vận hành.",
+      "department": "CNPM",
+      "period": "MH_2627_HK1",
+      "supervisors": [
+        "GV_CNTT002"
+      ],
+      "published": true
+    },
+    {
+      "id": "CNPM_003",
+      "legacyId": "DEMO_DT3",
+      "title": "Nền tảng quản lý bài tập lập trình và phản hồi mã nguồn",
+      "content": "Mục tiêu: quản lý giao bài, hạn nộp và nhận xét mã nguồn trong học phần lập trình.\nPhạm vi: lớp học, bài tập, nhóm, phiên bản bài nộp, rubric chấm thủ công và phản hồi theo tiêu chí.\nYêu cầu: kiểm tra định dạng/dung lượng tệp, quyền đọc bài nộp, hạn nộp, khóa điểm khi đã công bố. Không thực thi mã nguồn không tin cậy trên server của ứng dụng.\nSản phẩm: website, database, tài liệu thiết kế, bộ ca kiểm thử phân quyền và báo cáo đánh giá khả năng sử dụng.",
+      "department": "CNPM",
+      "period": "MH_2627_HK1",
+      "supervisors": [
+        "GV_CNTT006"
+      ],
+      "published": false
+    },
+    {
+      "id": "HTTT_001",
+      "legacyId": null,
+      "title": "Kho dữ liệu và dashboard theo dõi tiến độ đồ án",
+      "content": "Mục tiêu: thiết kế kho dữ liệu tổng hợp tiến độ đăng ký, nộp báo cáo và hoàn thành đồ án.\nPhạm vi: mô hình sao gồm sự kiện đăng ký/kết quả và chiều học kỳ, bộ môn, loại đồ án; ETL từ dữ liệu giả lập; dashboard chỉ số theo kỳ.\nYêu cầu: kiểm tra trùng bản ghi, dữ liệu thiếu, tổng số nguồn/đích; kiểm soát quyền đọc và ẩn danh mã sinh viên trong bộ dữ liệu phân tích.\nĐánh giá: đối chiếu số liệu dashboard với truy vấn nguồn, đo thời gian truy vấn trên bộ dữ liệu được công bố trong báo cáo. Bàn giao mô hình, pipeline, dashboard và tài liệu.",
+      "department": "HTTT",
+      "period": "TLCN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT003"
+      ],
+      "published": true
+    },
+    {
+      "id": "HTTT_002",
+      "legacyId": null,
+      "title": "Hệ thống quản lý thiết bị và bảo trì phòng máy",
+      "content": "Mục tiêu: theo dõi vòng đời máy tính, thiết bị mạng và lịch bảo trì phòng thực hành.\nChức năng: nhập danh mục tài sản, vị trí, cấu hình, bàn giao, phiếu sự cố, phân công xử lý, lịch sử sửa chữa và báo cáo chi phí.\nYêu cầu: thiết kế ERD chuẩn hóa, ràng buộc mã tài sản duy nhất, nhật ký thay đổi trạng thái và phân quyền cán bộ phụ trách.\nSản phẩm: ứng dụng web, database MySQL, dữ liệu kiểm thử và báo cáo phân tích quy trình tiếp nhận–xử lý sự cố.",
+      "department": "HTTT",
+      "period": "MH_2627_HK1",
+      "supervisors": [
+        "GV_CNTT007"
+      ],
+      "published": true
+    },
+    {
+      "id": "HTTT_003",
+      "legacyId": null,
+      "title": "Phân tích nhu cầu đăng ký học phần tự chọn bằng dữ liệu lịch sử",
+      "content": "Mục tiêu: xây dựng quy trình phân tích nhu cầu để hỗ trợ lập kế hoạch lớp học phần.\nPhạm vi: dữ liệu giả lập đã ẩn danh, xử lý dữ liệu thiếu, phân tích xu hướng theo học kỳ, so sánh mô hình thống kê và dashboard hỗ trợ cán bộ.\nYêu cầu: tách tập đánh giá theo thời gian, tránh rò rỉ dữ liệu, công bố sai số và giới hạn dự báo; kết quả chỉ hỗ trợ tham khảo, không quyết định quyền đăng ký của sinh viên.\nBàn giao: pipeline dữ liệu, mã phân tích, từ điển dữ liệu và báo cáo kiểm chứng.",
+      "department": "HTTT",
+      "period": "KLTN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT003"
+      ],
+      "published": true
+    },
+    {
+      "id": "MANG_001",
+      "legacyId": null,
+      "title": "Mô hình giám sát và phát hiện xâm nhập mạng phòng thực hành",
+      "content": "Mục tiêu: giám sát lưu lượng trong mạng lab cô lập và phát hiện các hành vi bất thường.\nPhạm vi: dựng topology máy ảo, thu thập log, cấu hình Suricata, dashboard cảnh báo và quy trình xử lý sự cố mô phỏng.\nYêu cầu: chỉ sử dụng lab do nhóm kiểm soát; lưu cấu hình tái lập, bộ lưu lượng kiểm thử và quy tắc phân loại cảnh báo.\nĐánh giá: tỷ lệ phát hiện, cảnh báo sai và thời gian phản hồi trên các tình huống mô phỏng. Bàn giao sơ đồ mạng, cấu hình, dữ liệu đo và báo cáo.",
+      "department": "MANG_ANM",
+      "period": "TLCN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT004"
+      ],
+      "published": true
+    },
+    {
+      "id": "MANG_002",
+      "legacyId": null,
+      "title": "Thiết kế phân đoạn mạng và kiểm soát truy cập cho phòng máy",
+      "content": "Mục tiêu: tách vùng mạng sinh viên, giảng viên và quản trị, giảm truy cập ngoài phạm vi trong môi trường lab.\nPhạm vi: VLAN, định tuyến, DHCP/DNS, ACL và quản lý địa chỉ; bảng luồng truy cập được phép; giám sát kết nối.\nYêu cầu: mô phỏng trên máy ảo hoặc công cụ mạng, lập checklist kiểm tra từng luồng và phương án khôi phục cấu hình.\nĐánh giá: chứng minh luồng hợp lệ hoạt động và luồng bị cấm bị chặn. Bàn giao sơ đồ topology, cấu hình và kết quả kiểm thử.",
+      "department": "MANG_ANM",
+      "period": "MH_2627_HK1",
+      "supervisors": [
+        "GV_CNTT008"
+      ],
+      "published": true
+    },
+    {
+      "id": "MANG_003",
+      "legacyId": null,
+      "title": "Hệ thống quản lý lỗ hổng và theo dõi khắc phục trong lab",
+      "content": "Mục tiêu: tổ chức kết quả kiểm tra bảo mật và theo dõi việc khắc phục đối với các máy/dịch vụ lab.\nPhạm vi: tài sản, báo cáo kiểm tra, mức độ ưu tiên, người xử lý, hạn khắc phục và tái kiểm tra.\nYêu cầu: chỉ dùng dữ liệu từ môi trường có quyền kiểm thử; không xây dựng chức năng tự động khai thác; bảo vệ báo cáo, ghi lịch sử chỉnh sửa và phân quyền đọc.\nSản phẩm: website, mô hình dữ liệu, bộ dữ liệu lab và đánh giá quy trình xử lý.",
+      "department": "MANG_ANM",
+      "period": "KLTN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT004"
+      ],
+      "published": true
+    },
+    {
+      "id": "TTNT_001",
+      "legacyId": null,
+      "title": "Nhận dạng và trích xuất thông tin biểu mẫu bằng OCR",
+      "content": "Mục tiêu: nhận dạng nội dung các biểu mẫu học vụ giả lập và trích xuất trường thông tin có cấu trúc.\nPhạm vi: thu thập dữ liệu tổng hợp, tiền xử lý ảnh, OCR, trích xuất trường và giao diện kiểm tra/sửa kết quả.\nYêu cầu: không sử dụng hồ sơ cá nhân thật; chia tập huấn luyện/kiểm thử độc lập; công bố độ chính xác từng trường và thời gian xử lý.\nSản phẩm: pipeline, mô hình hoặc cấu hình OCR, bộ dữ liệu mẫu, ứng dụng minh họa và báo cáo đánh giá.",
+      "department": "TTNT",
+      "period": "TLCN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT005"
+      ],
+      "published": true
+    },
+    {
+      "id": "TTNT_002",
+      "legacyId": null,
+      "title": "Phân loại phản hồi học phần bằng xử lý ngôn ngữ tự nhiên",
+      "content": "Mục tiêu: phân nhóm chủ đề trong phản hồi học phần tiếng Việt để hỗ trợ đọc và tổng hợp.\nPhạm vi: phản hồi giả lập/được phép sử dụng, hướng dẫn gán nhãn, mô hình baseline và một mô hình nâng cao, dashboard chủ đề.\nYêu cầu: loại thông tin nhận diện, xử lý lớp mất cân bằng, đo precision/recall/F1 theo lớp và phân tích lỗi. Không suy luận hoặc xếp hạng cá nhân giảng viên từ phản hồi.\nBàn giao: dữ liệu có nguồn gốc rõ ràng, notebook/mã huấn luyện, mô hình và báo cáo so sánh.",
+      "department": "TTNT",
+      "period": "KLTN_2627_HK1",
+      "supervisors": [
+        "GV_CNTT009"
+      ],
+      "published": true
+    },
+    {
+      "id": "TTNT_003",
+      "legacyId": null,
+      "title": "So sánh mô hình dự báo nhu cầu sử dụng phòng máy",
+      "content": "Mục tiêu: nghiên cứu dự báo nhu cầu phòng thực hành theo khung giờ bằng dữ liệu lịch và thống kê sử dụng giả lập.\nPhạm vi: baseline theo mùa, mô hình học máy, kiểm thử theo thời gian và phân tích sai số.\nYêu cầu: tái lập thí nghiệm, cố định hạt giống ngẫu nhiên, tránh rò rỉ dữ liệu tương lai và công bố giới hạn áp dụng.\nKết quả: báo cáo nghiên cứu, pipeline dữ liệu, mã thí nghiệm và bảng so sánh sai số; chưa yêu cầu tích hợp dự báo vào hệ thống đặt phòng.",
+      "department": "TTNT",
+      "period": "NCKH_2627",
+      "supervisors": [
+        "GV_CNTT005"
+      ],
+      "published": false
+    }
+  ],
+  "notice": {
+    "id": "TB_DANGKY_2627",
+    "legacyId": "DEMO_TB",
+    "title": "Đăng ký đề tài học kỳ I, năm học 2026–2027",
+    "content": "Sinh viên chọn đợt phù hợp với đồ án môn học, tiểu luận chuyên ngành hoặc khóa luận tốt nghiệp; lập nhóm tối đa ba thành viên và xác nhận lời mời trước khi đăng ký. Nhóm trưởng theo dõi quyết định duyệt và nộp báo cáo theo hướng dẫn. Bộ môn đã có danh mục đề tài thuộc Công nghệ phần mềm, Hệ thống thông tin, Mạng và An ninh mạng, Trí tuệ nhân tạo. Đây là môi trường thực hành đồ án với dữ liệu giả lập, không phải thông báo chính thức của HCMUTE."
+  }
+}

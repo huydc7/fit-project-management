@@ -1,0 +1,29 @@
+name: fit-rubric-test
+services:
+  mailpit-test:
+    profiles: ["email"]
+    image: axllent/mailpit:v1.27.4
+    ports:
+      - "127.0.0.1:11025:1025"
+      - "127.0.0.1:18025:8025"
+  mysql-test:
+    image: mysql:8.0.46
+    environment:
+      MYSQL_ROOT_PASSWORD: isolated-test-only
+      MYSQL_DATABASE: quanlydetai
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci", "--log-bin-trust-function-creators=1"]
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - ./projects/Database/01_schema_mysql.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./projects/Database/02_logic_mysql.sql:/docker-entrypoint-initdb.d/02_logic.sql:ro
+      - ./projects/Database/03_views_seed_mysql.sql:/docker-entrypoint-initdb.d/03_views.sql:ro
+      - ./projects/Database/04_workflow_mysql.sql:/docker-entrypoint-initdb.d/04_workflow.sql:ro
+      - ./projects/Database/05_department_catalog_mysql.sql:/docker-entrypoint-initdb.d/05_departments.sql:ro
+      - ./projects/Database/06_rubric_email_groups.sql:/docker-entrypoint-initdb.d/06_rubric.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql -h127.0.0.1 -uroot quanlydetai -e 'SELECT 1 FROM EMAIL_KET_QUA LIMIT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s

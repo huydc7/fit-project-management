@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Chấm điểm và tổng hợp</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Chấm điểm và tổng hợp</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<div class="notice notice-info">Điểm 0–10, tối đa hai số thập phân. Điểm cuối = trung bình cộng mọi phiếu GVPB và hội đồng, làm tròn 2 chữ số. Mỗi người chấm có trọng số như nhau; GVPB độc lập với hội đồng. Chủ tịch tổng hợp khi đủ phiếu; sau đó điểm bị khóa.</div>
+<p class="muted" th:if="${#lists.isEmpty(tasks)}">Bạn chưa được phân công đề tài nào.</p>
+<article class="panel panel-body space-bottom-lg" th:each="t : ${tasks}">
+<h2 class="item-title" th:text="${t.title}">
+</h2>
+<p th:text="${t.type + ' · Đã nộp ' + t.submitted + '/' + t.required + ' phiếu'}">
+</p>
+<p class="muted" th:if="${t.locked}">Điểm đã khóa, đề tài đã tổng hợp hoặc đã quá hạn nộp phản biện.</p>
+<p th:if="${#lists.isEmpty(t.reports)}" class="warning-text">Nhóm chưa có báo cáo để chấm.</p>
+<div th:each="r, stat : ${t.reports}" class="space-bottom-sm">
+<a th:href="@{/reports/{id}/download(id=${r.id})}" th:text="${'Báo cáo v' + r.version + (stat.first ? ' (bản dùng để chấm khi đã khóa)' : '')}">
+</a>
+</div>
+<form th:unless="${t.locked or #lists.isEmpty(t.reports)}" method="post" th:action="@{/lecturer/grading}">
+<input type="hidden" name="topic" th:value="${t.topic}">
+<input type="hidden" name="type" th:value="${t.type}">
+<label class="field-label" th:for="${'score-' + t.topic}">Điểm</label>
+<input th:id="${'score-' + t.topic}" name="value" type="number" min="0" max="10" step="0.01" required class="field space-bottom" th:value="${scoreForm != null and scoreForm.topic == t.topic ? scoreForm.value : t.score}">
+<label class="field-label" th:for="${'comment-' + t.topic}">Nhận xét</label>
+<textarea th:id="${'comment-' + t.topic}" name="comment" required maxlength="5000" rows="3" class="field space-bottom" th:text="${scoreForm != null and scoreForm.topic == t.topic ? scoreForm.comment : t.comment}">
+</textarea>
+<button class="button button-primary">Lưu / sửa điểm trước tổng hợp</button>
+</form>
+<p th:if="${t.locked and t.score != null}">Điểm đã nộp: <strong th:text="${t.score}">
+</strong>
+</p>
+<form th:if="${t.chair and !t.locked}" method="post" th:action="@{/lecturer/topics/{id}/aggregate(id=${t.topic})}" class="divider-top space-top pad-top">
+<label class="field-label" th:for="${'summary-' + t.topic}">Nhận xét tổng hợp</label>
+<textarea th:id="${'summary-' + t.topic}" name="comment" required rows="3" maxlength="5000" class="field space-bottom">
+</textarea>
+<button class="button button-success" th:disabled="${t.required == 0 or t.submitted != t.required}">Tổng hợp và khóa điểm</button>
+</form>
+</article>
+</main>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.git
+**/target
+**/.m2
+.env
+.env.*
+secrets
+**/*.log
+docs
+tools
+backups

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Nhóm của tôi</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Nhóm của tôi</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<form method="post" th:action="@{/student/groups}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title">Tạo nhóm</h2>
+<p class="muted">Người tạo là nhóm trưởng. Nhóm cần 3–5 thành viên đã xác nhận để đăng ký đề tài. Nhóm đang lập có thể chưa đủ 3 người. Mỗi sinh viên chỉ thuộc một nhóm trong mỗi đợt.</p>
+<div class="space-bottom">
+<label class="field-label" for="period">Đợt</label>
+<select class="select-field" id="period" th:field="*{period}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{period}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="name">Tên nhóm</label>
+<input type="text" class="field" id="name" th:field="*{name}" required maxlength="150">
+<div class="error-text caption" th:errors="*{name}">
+</div>
+</div>
+<button class="button button-primary self-start" type="submit">Lưu</button>
+</form>
+<p class="muted" th:if="${#lists.isEmpty(groups)}">Bạn chưa tham gia nhóm nào.</p>
+<article class="panel panel-body space-bottom-lg" th:each="g : ${groups}">
+<h2 class="item-title" th:text="${g.name}">
+</h2>
+<p class="muted" th:text="${g.id + ' · ' + g.period}">
+</p>
+<p>Đề tài: <strong th:text="${g.topicTitle ?: 'Chưa được duyệt'}">
+</strong>
+</p>
+<ul class="record-list space-bottom">
+<li class="record-item" th:each="m : ${g.members}">
+<span th:text="${m.name + ' (' + m.id + ') — ' + m.role}">
+</span>
+<form th:if="${g.editable and m.role != 'Truong_Nhom' and (g.leader or m.id == #authentication.principal.maSV)}" th:action="@{/student/groups/{id}/members/remove(id=${g.id})}" method="post" class="inline space-left">
+<input type="hidden" name="student" th:value="${m.id}">
+<button class="button button-small button-danger">Rời / xóa khỏi nhóm</button>
+</form>
+</li>
+</ul>
+<form th:if="${g.editable and g.leader}" th:action="@{/student/groups/{id}/invitations(id=${g.id})}" method="post" class="inline-fields gap-sm">
+<input class="field" aria-label="Mã sinh viên mời" name="student" placeholder="Mã SV muốn mời" required maxlength="20">
+<button class="button button-outline no-wrap">Gửi lời mời</button>
+</form>
+<a th:if="${g.editable and g.leader}" class="button button-primary self-start space-top" th:href="@{/student/topics}">Chọn đề tài</a>
+<a th:if="${g.topic}" class="button button-outline self-start" th:href="@{/student/reports}">Nộp / xem báo cáo</a>
+<div th:each="r : ${g.registrations}" class="divider-top space-top pad-top">
+<p>
+<span th:text="${r.topicTitle}">
+</span> · <strong th:text="${r.status}">
+</strong>
+</p>
+<p th:if="${r.reason}" th:text="${r.reason}">
+</p>
+<form th:if="${g.leader and r.status == 'ChoDuyet'}" th:action="@{/student/registrations/{id}/withdraw(id=${r.id})}" method="post">
+<button class="button button-small button-danger">Rút đăng ký trong thời gian mở đợt</button>
+</form>
+</div>
+</article>
+<h2 class="section-title space-top-lg">Lời mời tham gia</h2>
+<p class="muted" th:if="${#lists.isEmpty(invitations)}">Chưa có lời mời.</p>
+<div class="panel panel-body space-bottom-sm" th:each="i : ${invitations}">
+<p th:text="${i.groupName + ' → ' + i.studentName + ' (' + i.student + ') · ' + i.status}">
+</p>
+<form th:if="${i.status == 'Cho' and i.student == #authentication.principal.maSV}" th:action="@{/student/invitations/{id}(id=${i.id})}" method="post">
+<button name="accept" value="true" class="button button-success space-right-sm">Tham gia</button>
+<button name="accept" value="false" class="button button-danger">Từ chối</button>
+</form>
+</div>
+</main>
+</body>
+</html>

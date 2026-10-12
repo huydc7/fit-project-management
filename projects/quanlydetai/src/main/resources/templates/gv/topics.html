@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Đề tài của tôi</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Đề tài của tôi</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<form method="post" th:action="@{/lecturer/topics}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title">Đề xuất đề tài mới</h2>
+<div class="space-bottom">
+<label class="field-label" for="period">Đợt đăng ký</label>
+<select class="select-field" id="period" th:field="*{period}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{period}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="title">Tên đề tài</label>
+<input type="text" class="field" id="title" th:field="*{title}" required maxlength="300">
+<div class="error-text caption" th:errors="*{title}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="content">Nội dung / yêu cầu</label>
+<textarea class="field" id="content" th:field="*{content}" required maxlength="20000" rows="4">
+</textarea>
+<div class="error-text caption" th:errors="*{content}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="department">Bộ môn</label>
+<select class="select-field" id="department" th:field="*{department}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{department}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="supervisors">Chọn 1–2 giảng viên hướng dẫn (giữ Ctrl để chọn nhiều)</label>
+<select class="select-field" id="supervisors" th:field="*{supervisors}" required multiple size="5">
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{supervisors}">
+</div>
+</div>
+<button class="button button-primary self-start" type="submit">Lưu</button>
+</form>
+<p class="muted" th:if="${#lists.isEmpty(topics)}">Bạn chưa có đề tài.</p>
+<article th:each="t : ${topics}" class="panel panel-body space-bottom">
+<div class="inline-fields spread">
+<h2 class="item-title" th:text="${t.title}">
+</h2>
+<span class="tag tag-neutral self-start" th:text="${t.state}">
+</span>
+</div>
+<p class="muted" th:text="${t.period + ' · ' + t.department}">
+</p>
+<p class="pre-wrap" th:text="${t.content}">
+</p>
+<p>GVHD: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
+</span>
+</p>
+<p th:if="${t.reviewer}">GVPB: <span th:text="${t.reviewer}">
+</span>
+</p>
+<p th:if="${t.group}">Nhóm: <span th:text="${t.group}">
+</span> · <a th:href="@{/lecturer/reports}">Xem báo cáo được phân công</a>
+</p>
+</article>
+</main>
+</body>
+</html>

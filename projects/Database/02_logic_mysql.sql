@@ -4,6 +4,7 @@
 -- MySQL 8.0.16+
 -- ============================================================
 
+SET NAMES utf8mb4;
 USE quanlydetai;
 
 DELIMITER $$
@@ -768,7 +769,8 @@ CREATE TRIGGER trg_DIEM_THANH_PHAN_bu
 BEFORE UPDATE ON DIEM_THANH_PHAN
 FOR EACH ROW
 BEGIN
-    IF NEW.Ma_Diem <> OLD.Ma_Diem THEN
+    IF NEW.Ma_Diem <> OLD.Ma_Diem OR NEW.Ma_GV <> OLD.Ma_GV
+       OR NEW.Ma_De_Tai <> OLD.Ma_De_Tai OR NEW.Ma_Loai_Diem <> OLD.Ma_Loai_Diem THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Không được đổi Ma_Diem.';
     END IF;
@@ -800,7 +802,7 @@ END$$
 -- KET_QUA_DE_TAI:
 -- - phải đủ GVPB + đủ điểm HD của tất cả thành viên
 -- - Ma_GV_Tong_Hop = Chủ tịch đúng hội đồng
--- - tự tính Diem_Cuoi = AVG(AVG GVPB, AVG HD)
+-- - tự tính Diem_Cuoi = AVG từng phiếu GVPB và HD (AVG_REVIEWERS_V1)
 -- - INSERT kết quả là thời điểm khóa điểm.
 -- ============================================================
 DROP TRIGGER IF EXISTS trg_KET_QUA_DE_TAI_bi$$
@@ -907,7 +909,7 @@ BEGIN
             SET MESSAGE_TEXT = 'Thiếu loại điểm bắt buộc GVPB hoặc HD.';
     END IF;
 
-    SET NEW.Diem_Cuoi = ROUND((v_AvgGVPB + v_AvgHD) / 2, 2);
+    SET NEW.Diem_Cuoi = (SELECT ROUND(AVG(Diem), 2) FROM DIEM_THANH_PHAN WHERE Ma_De_Tai = NEW.Ma_De_Tai);
     SET NEW.Trang_Thai_Cong_Bo = 'ChuaCongBo';
     SET NEW.Ngay_Tong_Hop = CURRENT_TIMESTAMP;
     SET NEW.Ngay_Cong_Bo = NULL;
@@ -1073,7 +1075,7 @@ BEGIN
        AND NOT (
             v_VaiTro = 'GV'
             AND EXISTS (
-                SELECT 1 FROM TRUONG_KHOA WHERE Ma_GV = v_MaGV
+                SELECT 1 FROM TRUONG_KHOA WHERE Ma_GV = v_MaGV AND Dang_Giu_Chuc = TRUE
             )
        ) THEN
         SIGNAL SQLSTATE '45000'
@@ -1112,7 +1114,7 @@ BEGIN
        AND NOT (
             v_VaiTro = 'GV'
             AND EXISTS (
-                SELECT 1 FROM TRUONG_KHOA WHERE Ma_GV = v_MaGV
+                SELECT 1 FROM TRUONG_KHOA WHERE Ma_GV = v_MaGV AND Dang_Giu_Chuc = TRUE
             )
        ) THEN
         SIGNAL SQLSTATE '45000'

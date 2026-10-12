@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Báo cáo được phân công</title>
+</head>
+<body>
+<main>
+<h1 class="page-title">Báo cáo được phân công</h1>
+<p th:if="${#lists.isEmpty(reports)}">Chưa có báo cáo.</p>
+<article class="panel panel-body space-bottom" th:each="r : ${reports}">
+<h2 class="item-title" th:text="${r.topicTitle}">
+</h2>
+<p th:text="${r.groupName + ' · Phiên bản ' + r.version}">
+</p>
+<a th:href="@{/reports/{id}/download(id=${r.id})}" th:text="${'Tải ' + r.extension}">
+</a>
+</article>
+</main>
+</body>
+</html>

@@ -6,69 +6,77 @@
 </head>
 <body>
   <main>
-    <h1 class="h3 text-primary mb-4">Quản lý đợt đăng ký</h1>
+    <h1 class="page-title brand-text space-bottom-lg">Quản lý đợt đăng ký</h1>
 
-    <div th:if="${thanhCong}" class="alert alert-success" th:text="${thanhCong}"></div>
-    <div th:if="${loi}" class="alert alert-danger">
-      <ul class="mb-0">
-        <li th:each="l : ${loi}" th:text="${l}"></li>
+    <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}">
+</div>
+    <div th:if="${loi}" class="notice notice-error">
+      <ul class="space-bottom-none">
+        <li th:each="l : ${loi}" th:text="${l}">
+</li>
       </ul>
     </div>
 
-    <div class="card mb-4">
-      <div class="card-header fw-bold">Danh sách đợt</div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0 bg-white align-middle">
+    <div class="panel space-bottom-lg">
+      <div class="panel-heading strong">Danh sách đợt</div>
+      <div class="table-scroll">
+        <table class="data-table table-interactive space-bottom-none surface vertical-center">
           <thead>
             <tr>
-              <th>Mã đợt</th><th>Tên đợt</th><th>Loại</th>
-              <th>GV đăng ký</th><th>SV đăng ký</th>
+              <th>Mã đợt</th>
+<th>Tên đợt</th>
+<th>Loại</th>
+              <th>GV đăng ký</th>
+<th>SV đăng ký</th>
             </tr>
           </thead>
           <tbody>
             <tr th:each="d : ${dsDot}">
-              <td th:text="${d.maDot}"></td>
-              <td th:text="${d.tenDotDangKy}"></td>
-              <td><span class="badge bg-secondary" th:text="${d.loai}"></span></td>
+              <td th:text="${d.maDot}">
+</td>
+              <td th:text="${d.tenDotDangKy}">
+</td>
               <td>
-                <span th:text="${#temporals.format(d.beginGV,'dd/MM HH:mm')}"></span> -
-                <span th:text="${#temporals.format(d.endGV,'dd/MM HH:mm')}"></span>
+<span class="tag tag-neutral" th:text="${d.loai}">
+</span>
+</td>
+              <td>
+                <span th:text="${#temporals.format(d.beginGV,'dd/MM HH:mm')}">
+</span> -
+                <span th:text="${#temporals.format(d.endGV,'dd/MM HH:mm')}">
+</span>
               </td>
               <td>
-                <span th:text="${#temporals.format(d.beginSV,'dd/MM HH:mm')}"></span> -
-                <span th:text="${#temporals.format(d.endSV,'dd/MM HH:mm')}"></span>
+                <span th:text="${#temporals.format(d.beginSV,'dd/MM HH:mm')}">
+</span> -
+                <span th:text="${#temporals.format(d.endSV,'dd/MM HH:mm')}">
+</span>
               </td>
             </tr>
-            <tr th:if="${#lists.isEmpty(dsDot)}"><td colspan="5" class="text-muted">Chưa có đợt nào.</td></tr>
+            <tr th:if="${#lists.isEmpty(dsDot)}">
+<td colspan="5" class="muted">Chưa có đợt nào.</td>
+</tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header fw-bold">Tạo đợt mới</div>
-      <div class="card-body">
-        <form th:action="@{/truong-khoa/dot}" th:object="${form}" method="post" class="row g-3" id="formDot">
+    <div class="panel">
+      <div class="panel-heading strong">Tạo đợt mới</div>
+      <div class="panel-body">
+        <form th:action="@{/dean/periods}" th:object="${form}" method="post" class="form-grid grid-gap" id="formDot">
 
-          <div class="col-md-3">
-            <label class="form-label">Mã đợt</label>
-            <input type="text" class="form-control" th:field="*{maDot}" placeholder="DOT01" required>
+          <div class="span-3">
+            <label class="field-label" for="maDot">Mã đợt</label>
+<input type="text" class="field" th:field="*{maDot}" placeholder="DOT01" required>
           </div>
-          <div class="col-md-5">
-            <label class="form-label">Tên đợt</label>
-            <input type="text" class="form-control" th:field="*{tenDotDangKy}" required>
+          <div class="span-5">
+            <label class="field-label" for="tenDotDangKy">Tên đợt</label>
+<input type="text" class="field" th:field="*{tenDotDangKy}" required>
           </div>
-          <div class="col-md-4">
-            <label class="form-label">Trưởng khoa tạo đợt</label>
-            <select class="form-select" th:field="*{maTruongKhoa}" required>
-              <option value="">-- Chọn --</option>
-              <option th:each="tk : ${dsTruongKhoa}" th:value="${tk.maGV}" th:text="${tk.hoTen} + ' (' + ${tk.maGV} + ')'"></option>
-            </select>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label">Loại đợt</label>
-            <select class="form-select" th:field="*{loai}" id="loai" required>
+          <div class="span-4">
+            <label class="field-label" for="loai">Loại đợt</label>
+<select class="select-field" th:field="*{loai}" id="loai" required>
               <option value="">-- Chọn --</option>
               <option value="MonHoc">Môn học</option>
               <option value="NCKH">NCKH</option>
@@ -77,41 +85,39 @@
             </select>
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label">GV đăng ký: từ</label>
-            <input type="datetime-local" class="form-control" th:field="*{beginGV}" required>
+          <div class="span-4">
+            <label class="field-label" for="beginGV">GV đăng ký: từ</label>
+<input type="datetime-local" class="field" th:field="*{beginGV}" required>
           </div>
-          <div class="col-md-4">
-            <label class="form-label">đến</label>
-            <input type="datetime-local" class="form-control" th:field="*{endGV}" required>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label">SV đăng ký: từ</label>
-            <input type="datetime-local" class="form-control" th:field="*{beginSV}" required>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">đến</label>
-            <input type="datetime-local" class="form-control" th:field="*{endSV}" required>
+          <div class="span-4">
+            <label class="field-label" for="endGV">đến</label>
+<input type="datetime-local" class="field" th:field="*{endGV}" required>
           </div>
 
-          <div class="col-md-4 truong-tlcn-kltn" style="display:none;">
-            <label class="form-label">Hạn chót GVPB nộp điểm</label>
-            <input type="datetime-local" class="form-control" th:field="*{deadlineGvpbNopDiem}">
+          <div class="span-4">
+            <label class="field-label" for="beginSV">SV đăng ký: từ</label>
+<input type="datetime-local" class="field" th:field="*{beginSV}" required>
           </div>
-          <div class="col-md-4 truong-kltn" style="display:none;">
-            <label class="form-label">Ngày báo cáo hội đồng</label>
-            <input type="datetime-local" class="form-control" th:field="*{timeBcHd}">
+          <div class="span-4">
+            <label class="field-label" for="endSV">đến</label>
+<input type="datetime-local" class="field" th:field="*{endSV}" required>
           </div>
 
-          <div class="col-12">
-            <button type="submit" class="btn btn-primary">Tạo đợt</button>
+          <div class="span-4 truong-tlcn-kltn" style="display:none;">
+            <label class="field-label" for="deadlineGvpbNopDiem">Hạn chót GVPB nộp điểm</label>
+<input type="datetime-local" class="field" th:field="*{deadlineGvpbNopDiem}">
+          </div>
+          <div class="span-4 truong-kltn" style="display:none;">
+            <label class="field-label" for="timeBcHd">Ngày báo cáo hội đồng</label>
+<input type="datetime-local" class="field" th:field="*{timeBcHd}">
+          </div>
+
+          <div class="span-full">
+            <button type="submit" class="button button-primary">Tạo đợt</button>
           </div>
         </form>
       </div>
     </div>
-  </main>
-
   <script th:inline="javascript">
     const select = document.getElementById('loai');
     function capNhatHienThi() {
@@ -122,5 +128,6 @@
     select.addEventListener('change', capNhatHienThi);
     capNhatHienThi();
   </script>
+  </main>
 </body>
 </html>

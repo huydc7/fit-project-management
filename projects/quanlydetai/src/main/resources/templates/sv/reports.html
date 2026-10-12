@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Báo cáo đề tài</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Báo cáo đề tài</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<div class="notice notice-info">Nhóm trưởng nộp PDF, DOCX hoặc ZIP nhỏ hơn 20 MiB. Mỗi lần nộp tạo một phiên bản; nộp lại cùng yêu cầu không tạo bản trùng. Khi có điểm đầu tiên, báo cáo dùng để chấm được khóa.</div>
+<form th:action="@{/student/reports}" method="post" enctype="multipart/form-data" class="panel panel-body space-bottom-lg">
+<input type="hidden" name="token" th:value="${token}">
+<label class="field-label" for="reportGroup">Nhóm đã được duyệt</label>
+<select id="reportGroup" class="select-field space-bottom" name="group" required>
+<option value="">Chọn nhóm…</option>
+<option th:each="g : ${groups}" th:if="${g.leader and g.topic != null}" th:value="${g.id}" th:text="${g.name + ' — ' + g.topicTitle}">
+</option>
+</select>
+<label class="field-label" for="reportFile">File báo cáo</label>
+<input id="reportFile" type="file" name="file" accept=".pdf,.docx,.zip" required class="field space-bottom">
+<button class="button button-primary self-start">Nộp báo cáo</button>
+</form>
+<p class="muted" th:if="${#lists.isEmpty(reports)}">Chưa có báo cáo.</p>
+<div class="table-scroll">
+<table class="data-table table-alternate">
+<thead>
+<tr>
+<th>Nhóm / đề tài</th>
+<th>Phiên bản</th>
+<th>Ngày nộp</th>
+<th>File</th>
+</tr>
+</thead>
+<tbody>
+<tr th:each="r : ${reports}">
+<td>
+<span th:text="${r.groupName}">
+</span>
+<br>
+<small th:text="${r.topicTitle}">
+</small>
+</td>
+<td th:text="${r.version}">
+</td>
+<td th:text="${#temporals.format(r.submitted,'dd/MM/yyyy HH:mm')}">
+</td>
+<td>
+<a class="button button-small button-outline" th:href="@{/reports/{id}/download(id=${r.id})}" th:text="${'Tải ' + r.extension}">
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

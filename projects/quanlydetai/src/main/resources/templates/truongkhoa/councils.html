@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Hội đồng phản biện</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Hội đồng phản biện</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<form method="post" th:action="@{/dean/councils}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title">Lập hội đồng 3–5 giảng viên</h2>
+<div class="space-bottom">
+<label class="field-label" for="period">Đợt</label>
+<select class="select-field" id="period" th:field="*{period}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{period}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="chair">Chủ tịch</label>
+<select class="select-field" id="chair" th:field="*{chair}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{chair}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="secretary">Thư ký</label>
+<select class="select-field" id="secretary" th:field="*{secretary}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{secretary}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="members">Thêm 1–3 thành viên khác (giữ Ctrl để chọn nhiều)</label>
+<select class="select-field" id="members" th:field="*{members}" required multiple size="5">
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{members}">
+</div>
+</div>
+<button class="button button-primary self-start" type="submit">Lưu</button>
+</form>
+<p class="muted" th:if="${#lists.isEmpty(councils)}">Chưa có hội đồng.</p>
+<article th:each="h : ${councils}" class="panel panel-body space-bottom">
+<h2 class="item-title" th:text="${h.id + ' — ' + h.period}">
+</h2>
+<p th:text="${h.state}">
+</p>
+<ul>
+<li th:each="m : ${h.members}" th:text="${m.name + ' — ' + m.role}">
+</li>
+</ul>
+<form th:if="${h.state == 'DangLap'}" method="post" th:action="@{/dean/councils/{id}/finalize(id=${h.id})}">
+<button class="button button-primary">Chốt và khóa thành viên</button>
+</form>
+<ul class="space-top-sm">
+<li th:each="t : ${h.topics}" th:text="${t}">
+</li>
+</ul>
+</article>
+</main>
+</body>
+</html>

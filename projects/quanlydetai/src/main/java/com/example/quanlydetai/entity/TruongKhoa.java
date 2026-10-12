@@ -1,22 +1,47 @@
 package com.example.quanlydetai.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.Formula;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "TRUONG_KHOA")
-public class TruongKhoa {
+public class TruongKhoa extends AbstractEntity {
+    @Column(name = "Dang_Giu_Chuc", nullable = false)
+    private boolean dangGiuChuc = true;
+
+    public boolean isDangGiuChuc() {
+        return dangGiuChuc;
+    }
+
+    public void setDangGiuChuc(boolean value) {
+        dangGiuChuc = value;
+    }
 
     @Id
-    @jakarta.persistence.Column(name = "Ma_GV")
+    @Column(name = "Ma_GV", nullable = false, length = 20)
     private String maGV;
 
-    // Lấy Họ tên trực tiếp từ bảng GV để hiển thị, không cần quan hệ phức tạp.
-    @Formula("(SELECT g.Ho_Ten FROM GV g WHERE g.Ma_GV = {alias}.Ma_GV)")
-    private String hoTen;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "Ma_GV",
+            referencedColumnName = "Ma_GV",
+            insertable = false,
+            updatable = false)
+    private GiangVien giangVien;
 
-    public String getMaGV() { return maGV; }
-    public String getHoTen() { return hoTen; }
+    public GiangVien getGiangVien() {
+        return giangVien;
+    }
+
+    public String getMaGV() {
+        return maGV;
+    }
+
+    public void setMaGV(String maGV) {
+        this.maGV = maGV;
+    }
+
+    @Override
+    protected Object entityId() {
+        return maGV;
+    }
 }

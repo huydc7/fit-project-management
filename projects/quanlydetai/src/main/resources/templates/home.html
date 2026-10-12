@@ -1,13 +1,257 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
 <head>
-  <title th:text="${tieuDe}">Tổng quan</title>
+<title>Tổng quan | FIT HCMUTE</title>
 </head>
 <body>
-  <main>
-    <h1 class="h3 text-primary" th:text="${tieuDe}">Tiêu đề</h1>
-    <p class="lead">Layout dùng chung đã hoạt động.</p>
-  </main>
+<main>
+<div class="page-heading">
+<div>
+<p class="eyebrow">KHÔNG GIAN LÀM VIỆC</p>
+<h1>Tổng quan</h1>
+</div>
+<span class="workspace-badge">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 5v16M3 3h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>
+</svg>Khoa Công nghệ thông tin</span>
+</div>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<section class="welcome-banner">
+<div>
+<p class="eyebrow">HCMUTE · FACULTY OF INFORMATION TECHNOLOGY</p>
+<h2>Mỗi đề tài, một bước tiến.</h2>
+<p>Xin chào, <strong sec:authentication="name">bạn</strong>.<br>Cùng kết nối ý tưởng và hoàn thành những mục tiêu tiếp theo.</p>
+<a th:href="@{/announcements}" class="banner-link">Cập nhật từ khoa <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M4 12h16m-6-6 6 6-6 6"/>
+</svg>
+</a>
+</div>
+<div class="banner-art" aria-hidden="true">
+<span class="art-bracket">&#123;</span>
+<div>
+<span class="code-line">
+</span>
+<span class="code-line short">
+</span>
+<span class="code-line">
+</span>
+<small>LEARN. BUILD. SHARE.</small>
+</div>
+<span class="art-bracket">&#125;</span>
+</div>
+</section>
+<div class="section-heading">
+<h2>Bắt đầu công việc</h2>
+<span class="muted caption">Các chức năng dành cho bạn</span>
+</div>
+<div class="quick-actions" sec:authorize="hasRole('SV')">
+<a class="action-card" th:href="@{/student/groups}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="9" cy="8" r="3"/>
+<path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>
+</svg>
+</span>
+<h3>Nhóm của tôi</h3>
+<p>Tạo nhóm và quản lý thành viên.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/student/topics}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 5v16M3 3h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>
+</svg>
+</span>
+<h3>Khám phá đề tài</h3>
+<p>Tìm đề tài phù hợp và đăng ký.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/student/reports}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M14 3H5v18h14V8ZM14 3v5h5M8 12h8m-8 4h5"/>
+</svg>
+</span>
+<h3>Nộp báo cáo</h3>
+<p>Gửi bài và theo dõi các phiên bản.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+</div>
+<div class="quick-actions" sec:authorize="hasRole('GV') and !hasRole('TRUONGKHOA')">
+<a class="action-card" th:href="@{/lecturer/topics}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M12 5v16M3 3h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>
+</svg>
+</span>
+<h3>Đề tài hướng dẫn</h3>
+<p>Đề xuất và theo dõi đề tài của bạn.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/lecturer/reports}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M14 3H5v18h14V8ZM14 3v5h5M8 12h8m-8 4h5"/>
+</svg>
+</span>
+<h3>Báo cáo sinh viên</h3>
+<p>Xem bài nộp được phân công.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/lecturer/grading}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="m12 3 3 6 6 1-4.5 4.5 1 6.5-5.5-3-5.5 3 1-6.5L3 10l6-1Z"/>
+</svg>
+</span>
+<h3>Đánh giá đề tài</h3>
+<p>Chấm điểm và gửi nhận xét.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+</div>
+<div class="quick-actions" sec:authorize="hasRole('TRUONGKHOA')">
+<a class="action-card" th:href="@{/dean/periods}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="3" y="5" width="18" height="16" rx="2"/>
+<path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3"/>
+</svg>
+</span>
+<h3>Đợt đăng ký</h3>
+<p>Thiết lập các mốc thời gian.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/dean/approvals}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="4" y="3" width="16" height="18" rx="2"/>
+<path d="m8 12 3 3 5-6"/>
+</svg>
+</span>
+<h3>Duyệt &amp; công bố</h3>
+<p>Xử lý đăng ký, công bố kết quả.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/dean/councils}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="9" cy="8" r="3"/>
+<path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>
+</svg>
+</span>
+<h3>Hội đồng đánh giá</h3>
+<p>Tổ chức và phân công hội đồng.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+</div>
+<div class="quick-actions" sec:authorize="hasRole('ADMIN')">
+<a class="action-card" th:href="@{/admin/accounts}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="9" cy="8" r="3"/>
+<path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>
+</svg>
+</span>
+<h3>Quản lý tài khoản</h3>
+<p>Cấp tài khoản và quản lý hồ sơ.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/announcements}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M18 8a6 6 0 0 0-12 0c0 8-3 8-3 10h18c0-2-3-2-3-10M10 21h4"/>
+</svg>
+</span>
+<h3>Thông báo của khoa</h3>
+<p>Đăng tải thông tin tới người dùng.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+<a class="action-card" th:href="@{/accounts/password}">
+<span class="action-icon">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<rect x="5" y="10" width="14" height="11" rx="2"/>
+<path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>
+</svg>
+</span>
+<h3>Bảo mật tài khoản</h3>
+<p>Cập nhật mật khẩu của bạn.</p>
+<span class="action-arrow" aria-hidden="true">↗</span>
+</a>
+</div>
+<div class="overview-columns">
+<section class="panel overview-notices">
+<div class="section-heading">
+<h2>Thông báo mới nhất</h2>
+<a th:href="@{/announcements}">Xem tất cả <span aria-hidden="true">↗</span>
+</a>
+</div>
+<div class="empty-state" th:if="${#lists.isEmpty(recentNotices)}">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="M18 8a6 6 0 0 0-12 0c0 8-3 8-3 10h18c0-2-3-2-3-10M10 21h4"/>
+</svg>
+<h3>Chưa có thông báo mới</h3>
+<p>Thông tin từ khoa và nhà trường sẽ xuất hiện tại đây.</p>
+</div>
+<a class="notice-row" th:each="n : ${recentNotices}" th:href="@{/announcements}">
+<span class="notice-date">
+<strong th:text="${#temporals.format(n.posted,'dd')}">
+</strong>
+<small th:text="${'TH ' + #temporals.format(n.posted,'MM')}">
+</small>
+</span>
+<span class="notice-copy">
+<span class="tag" th:text="${n.scope == 'Khoa' ? 'Khoa CNTT' : 'Nhà trường'}">
+</span>
+<h3 th:text="${n.title}">
+</h3>
+<small class="muted" th:text="${#temporals.format(n.posted,'dd/MM/yyyy · HH:mm')}">
+</small>
+</span>
+<span aria-hidden="true">↗</span>
+</a>
+</section>
+<section class="panel process-panel">
+<p class="eyebrow">HƯỚNG DẪN NHANH</p>
+<h2>Hành trình đề tài</h2>
+<ol class="process-list">
+<li>
+<span>01</span>
+<div>
+<h3>Đề xuất &amp; đăng ký</h3>
+<p>Giảng viên đề xuất. Sinh viên tạo nhóm và chọn đề tài trong đợt.</p>
+</div>
+</li>
+<li>
+<span>02</span>
+<div>
+<h3>Duyệt &amp; thực hiện</h3>
+<p>Khoa duyệt đăng ký, phân công giảng viên và hội đồng.</p>
+</div>
+</li>
+<li>
+<span>03</span>
+<div>
+<h3>Báo cáo &amp; đánh giá</h3>
+<p>Nhóm trưởng nộp báo cáo. Giảng viên chấm và tổng hợp điểm.</p>
+</div>
+</li>
+<li>
+<span>04</span>
+<div>
+<h3>Công bố kết quả</h3>
+<p>Trưởng khoa công bố. Sinh viên xem kết quả của nhóm.</p>
+</div>
+</li>
+</ol>
+</section>
+</div>
+<div class="academic-strip">
+<span>04 ĐỊNH HƯỚNG CHUYÊN MÔN</span>
+<p>Công nghệ phần mềm <b>·</b> Hệ thống thông tin <b>·</b> Mạng &amp; An ninh mạng <b>·</b> Trí tuệ nhân tạo</p>
+</div>
+</main>
 </body>
 </html>

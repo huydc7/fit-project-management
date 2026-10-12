@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/hcmute-favicon.png(v=20261002c)}">
+<link rel="icon" type="image/x-icon" th:href="@{/favicon.ico(v=20261002c)}">
+<title>Không thể hoàn tất thao tác</title>
+<link rel="stylesheet" th:href="@{/css/custom.css(v=20261002d)}">
+</head>
+<body>
+<main class="error-page panel panel-body">
+<p class="eyebrow">HCMUTE · KHOA CÔNG NGHỆ THÔNG TIN</p>
+<h1>Không thể hoàn tất thao tác</h1>
+<p class="notice notice-error" role="alert" th:text="${errorMessage}">
+</p>
+<a class="button button-primary" th:href="@{/}">Về trang chủ</a>
+</main>
+</body>
+</html>

@@ -3,6 +3,7 @@
 -- Views + dữ liệu danh mục tối thiểu
 -- ============================================================
 
+SET NAMES utf8mb4;
 USE quanlydetai;
 
 -- Hai loại điểm bắt buộc theo thiết kế hiện tại.

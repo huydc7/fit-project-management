@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Quản lý tài khoản</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Quản lý tài khoản</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<form method="post" th:action="@{/admin/accounts}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title">Tạo tài khoản và hồ sơ</h2>
+<div class="space-bottom">
+<label class="field-label" for="username">Tên đăng nhập (chữ, số, dấu . _ -)</label>
+<input type="text" class="field" id="username" th:field="*{username}" required maxlength="100">
+<div class="error-text caption" th:errors="*{username}">
+</div>
+</div>
+<label class="field-label" for="password">Mật khẩu ban đầu (12–64 ký tự, tối đa 72 byte)</label>
+<input id="password" name="password" type="password" required minlength="12" maxlength="64" autocomplete="new-password" class="field space-bottom">
+<div class="error-text caption" th:errors="*{password}">
+</div>
+<label class="field-label" for="role">Vai trò</label>
+<select id="role" th:field="*{role}" class="select-field space-bottom">
+<option value="SV">Sinh viên</option>
+<option value="GV">Giảng viên</option>
+<option value="Admin">Quản trị viên</option>
+</select>
+<div class="space-bottom">
+<label class="field-label" for="profileId">Mã SV/GV (bỏ trống cho Admin)</label>
+<input type="text" class="field" id="profileId" th:field="*{profileId}" maxlength="20">
+<div class="error-text caption" th:errors="*{profileId}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="name">Họ tên (SV/GV)</label>
+<input type="text" class="field" id="name" th:field="*{name}" maxlength="150">
+<div class="error-text caption" th:errors="*{name}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="email">Email (SV/GV)</label>
+<input type="email" class="field" id="email" th:field="*{email}" maxlength="255">
+<div class="error-text caption" th:errors="*{email}">
+</div>
+</div>
+<label class="field-label" for="department">Bộ môn (bắt buộc với GV)</label>
+<select id="department" th:field="*{department}" class="select-field space-bottom">
+<option value="">Chọn…</option>
+<option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<button class="button button-primary self-start" type="submit">Lưu</button>
+</form>
+<details class="panel panel-body space-bottom-lg">
+<summary>Danh mục bộ môn và chức vụ Trưởng khoa</summary>
+<form method="post" th:action="@{/admin/departments}" class="space-top">
+<label class="field-label" for="departmentId">Mã bộ môn</label>
+<input id="departmentId" name="id" required maxlength="20" class="field space-bottom-sm">
+<label class="field-label" for="departmentName">Tên bộ môn</label>
+<input id="departmentName" name="name" required maxlength="150" class="field space-bottom-sm">
+<button class="button button-outline">Thêm bộ môn</button>
+</form>
+<form method="post" th:action="@{/admin/dean}" class="space-top">
+<label class="field-label" for="deanTeacher">Giảng viên</label>
+<select id="deanTeacher" name="teacher" required class="select-field space-bottom-sm">
+<option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}">
+</option>
+</select>
+<button name="appointed" value="true" class="button button-positive space-right-sm">Bổ nhiệm Trưởng khoa</button>
+<button name="appointed" value="false" class="button button-danger">Thu hồi chức vụ</button>
+</form>
+</details>
+<div class="table-scroll">
+<table class="data-table table-alternate">
+<thead>
+<tr>
+<th>Tài khoản</th>
+<th>Vai trò</th>
+<th>Mã hồ sơ</th>
+<th>Trạng thái</th>
+<th>Thao tác</th>
+</tr>
+</thead>
+<tbody>
+<tr th:each="a : ${accounts}">
+<td th:text="${a.username}">
+</td>
+<td th:text="${a.role}">
+</td>
+<td th:text="${a.profile}">
+</td>
+<td th:text="${a.state}">
+</td>
+<td>
+<form method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
+<input type="hidden" name="active" th:value="${a.state != 'HoatDong'}">
+<button class="button button-small button-neutral" th:text="${a.state == 'HoatDong' ? 'Khóa' : 'Mở khóa'}">
+</button>
+</form>
+<details class="space-top-sm">
+<summary>Đặt lại mật khẩu</summary>
+<form method="post" th:action="@{/admin/accounts/{id}/password(id=${a.id})}" class="space-top-sm">
+<input type="password" name="password" aria-label="Mật khẩu mới" required minlength="12" maxlength="64" autocomplete="new-password" class="field space-bottom-sm">
+<button class="button button-small button-danger">Đặt lại và hủy phiên cũ</button>
+</form>
+</details>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

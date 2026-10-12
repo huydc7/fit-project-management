@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Kết quả của nhóm tôi</title>
+</head>
+<body>
+<main>
+<h1 class="page-title space-bottom">Kết quả của nhóm tôi</h1>
+<form method="get" th:action="@{/student/results}" class="panel panel-body space-bottom">
+<label for="result-period" class="field-label">Đợt đăng ký</label>
+<div class="inline-fields gap-sm">
+<select id="result-period" name="period" class="select-field">
+<option value="">Tất cả đợt đã đăng ký</option>
+<option th:each="p : ${periods}" th:value="${p.id}" th:text="${p.name}" th:selected="${p.id == selectedPeriod}"></option>
+</select>
+<button class="button button-primary no-wrap">Tra cứu</button>
+</div>
+</form>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<p class="muted" th:if="${#lists.isEmpty(results)}">Chưa có kết quả được công bố cho nhóm của bạn.</p>
+<article class="panel panel-body space-bottom" th:each="r : ${results}">
+<h2 class="item-title" th:text="${r.title}">
+</h2>
+<p th:text="${r.group}">
+</p>
+<p class="muted" th:text="${r.periodName}"></p>
+<p class="result-score">
+<span th:text="${r.score}">
+</span>
+<small class="fs-5"> / 10</small>
+</p>
+<p class="pre-wrap" th:text="${r.comment}">
+</p>
+<p class="muted">Công bố: <span th:text="${#temporals.format(r.published,'dd/MM/yyyy HH:mm')}">
+</span>
+</p>
+</article>
+</main>
+</body>
+</html>

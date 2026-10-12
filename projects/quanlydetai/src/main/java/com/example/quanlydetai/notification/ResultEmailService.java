@@ -1,0 +1,162 @@
+package com.example.quanlydetai.notification;
+
+import com.example.quanlydetai.entity.*;
+import com.example.quanlydetai.repository.JpaEntityRepository;
+import com.example.quanlydetai.repository.ResultEmailRepository;
+import com.example.quanlydetai.service.AcademicRules;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class ResultEmailService {
+    private static final int MAX_ATTEMPTS = 5;
+    private final ResultEmailRepository emails;
+    private final JpaEntityRepository entities;
+    private final AcademicRules rules;
+    private final String siteUrl;
+
+    public ResultEmailService(
+            ResultEmailRepository emails,
+            JpaEntityRepository entities,
+            AcademicRules rules,
+            @Value("${app.public-url:http://localhost:8080}") String siteUrl) {
+        this.emails = emails;
+        this.entities = entities;
+        this.rules = rules;
+        this.siteUrl = siteUrl.replaceAll("/+$", "");
+    }
+
+    /** Same transaction as publication: rollback also removes every queued email. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void enqueue(DeTai topic, KetQuaDeTai result) {
+        var students =
+                entities.query(
+                        "select s from SinhVien s where s.maSV in (select m.maSV from ThanhVienNhom"
+                            + " m where m.maNhom in (select n.maNhom from Nhom n where"
+                            + " n.maDeTai=?1)) order by s.maSV",
+                        SinhVien.class,
+                        topic.getMaDeTai());
+        rules.check(!students.isEmpty(), "Đề tài chưa có thành viên nhận kết quả.");
+        var period = entities.require(DotDangKy.class, topic.getMaDot());
+        for (var student : students) {
+            var mail = new ResultEmail();
+            mail.setId(UUID.randomUUID().toString().replace("-", ""));
+            mail.setTopic(topic.getMaDeTai());
+            mail.setStudent(student.getMaSV());
+            mail.setRecipient(student.getEmail());
+            mail.setSubject("FIT - Kết quả đề tài đã được công bố");
+            mail.setBody(
+                    "Chào "
+                            + student.getHoTen()
+                            + ",\n\nKết quả đề tài của bạn đã được công bố.\n"
+                            + "Đề tài: "
+                            + topic.getTenDeTai()
+                            + "\nĐợt: "
+                            + period.getTenDotDangKy()
+                            + "\nĐiểm: "
+                            + result.getDiemCuoi().toPlainString()
+                            + "/10\n\n"
+                            + "Đăng nhập để xem chi tiết: "
+                            + siteUrl
+                            + "/student/results?period="
+                            + java.net.URLEncoder.encode(
+                                    topic.getMaDot(), java.nio.charset.StandardCharsets.UTF_8)
+                            + "\n\nKhoa Công nghệ thông tin - Hệ thống quản lý đề tài sinh viên");
+            mail.setState("PENDING");
+            mail.setCreatedAt(rules.now());
+            mail.setNextAttemptAt(rules.now());
+            emails.save(mail);
+        }
+        emails.flush();
+    }
+
+    public record Delivery(String id, String recipient, String subject, String body, int attempt) {}
+
+    public record Status(
+            String id,
+            String topic,
+            String student,
+            String recipient,
+            String state,
+            int attempts,
+            LocalDateTime created,
+            LocalDateTime accepted) {}
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Delivery claim() {
+        var row =
+                emails.findFirstByStateInAndNextAttemptAtLessThanEqualOrderByCreatedAtAsc(
+                                List.of("PENDING", "PROCESSING"), rules.now())
+                        .orElse(null);
+        if (row == null) return null;
+        if (row.getAttempts() >= MAX_ATTEMPTS) {
+            row.setState("FAILED");
+            return null;
+        }
+        row.setState("PROCESSING");
+        row.setAttempts(row.getAttempts() + 1);
+        // A crashed process can be retried after the lease. Never assume exactly-once SMTP.
+        row.setNextAttemptAt(rules.now().plusMinutes(2));
+        return new Delivery(
+                row.getId(),
+                row.getRecipient(),
+                row.getSubject(),
+                row.getBody(),
+                row.getAttempts());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void complete(String id, int attempt, String receipt) {
+        var row = emails.lockById(id).orElseThrow();
+        if (!"PROCESSING".equals(row.getState()) || row.getAttempts() != attempt) return;
+        if (receipt != null) {
+            row.setState("ACCEPTED");
+            row.setAcceptedAt(rules.now());
+            row.setReceipt(receipt.substring(0, Math.min(receipt.length(), 512)));
+        } else {
+            row.setState(row.getAttempts() >= MAX_ATTEMPTS ? "FAILED" : "PENDING");
+            row.setNextAttemptAt(rules.now().plusMinutes(1L << (row.getAttempts() - 1)));
+        }
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    @Transactional(readOnly = true)
+    public List<Status> statuses() {
+        return emails.findTop100ByOrderByCreatedAtDesc().stream()
+                .map(
+                        e ->
+                                new Status(
+                                        e.getId(),
+                                        e.getTopic(),
+                                        e.getStudent(),
+                                        e.getRecipient(),
+                                        e.getState(),
+                                        e.getAttempts(),
+                                        e.getCreatedAt(),
+                                        e.getAcceptedAt()))
+                .toList();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    @Transactional
+    public void retry(String id) {
+        var row =
+                emails.lockById(id)
+                        .orElseThrow(
+                                () ->
+                                        new com.example.quanlydetai.exception.BusinessException(
+                                                "Không tìm thấy email."));
+        rules.check("FAILED".equals(row.getState()), "Chỉ gửi lại email đã thất bại.");
+        row.setAttempts(0);
+        row.setState("PENDING");
+        row.setNextAttemptAt(rules.now());
+    }
+}

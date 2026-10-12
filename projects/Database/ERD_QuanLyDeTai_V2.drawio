@@ -1,0 +1,211 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram name="Schema_V2_22_bang" id="workflow-erd">
+    <mxGraphModel grid="1" page="1" pageWidth="2200" pageHeight="2400">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="BO_MON" value="&lt;b&gt;BO_MON&lt;/b&gt;&lt;hr&gt;PK Ma_Bo_Mon : VARCHAR(20)&lt;br&gt;Ten_Bo_Mon : VARCHAR(150)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="40" width="390" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="GV" value="&lt;b&gt;GV&lt;/b&gt;&lt;hr&gt;PK Ma_GV : VARCHAR(20)&lt;br&gt;Ho_Ten : VARCHAR(150)&lt;br&gt;Email : VARCHAR(255)&lt;br&gt;SDT : VARCHAR(20)&lt;br&gt;FK Ma_Bo_Mon : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="40" width="390" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="SV" value="&lt;b&gt;SV&lt;/b&gt;&lt;hr&gt;PK Ma_SV : VARCHAR(20)&lt;br&gt;Ho_Ten : VARCHAR(150)&lt;br&gt;Email : VARCHAR(255)&lt;br&gt;SDT : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1100" y="40" width="390" height="153" as="geometry" />
+        </mxCell>
+        <mxCell id="TRUONG_KHOA" value="&lt;b&gt;TRUONG_KHOA&lt;/b&gt;&lt;hr&gt;PK FK Ma_GV : VARCHAR(20)&lt;br&gt;Dang_Giu_Chuc : BOOLEAN" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1630" y="40" width="390" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="DOT_DANG_KY" value="&lt;b&gt;DOT_DANG_KY&lt;/b&gt;&lt;hr&gt;PK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_Truong_Khoa : VARCHAR(20)&lt;br&gt;Ten_Dot_Dang_Ky : VARCHAR(200)&lt;br&gt;Loai : VARCHAR(20)&lt;br&gt;Begin_GV : DATETIME&lt;br&gt;End_GV : DATETIME&lt;br&gt;Begin_SV : DATETIME&lt;br&gt;End_SV : DATETIME&lt;br&gt;Deadline_GVPB_Nop_Diem : DATETIME&lt;br&gt;Time_BC_HD : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="430" width="390" height="285" as="geometry" />
+        </mxCell>
+        <mxCell id="DE_TAI" value="&lt;b&gt;DE_TAI&lt;/b&gt;&lt;hr&gt;PK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Ten_De_Tai : VARCHAR(300)&lt;br&gt;FK Ma_Bo_Mon : VARCHAR(20)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Trang_Thai : VARCHAR(30)&lt;br&gt;FK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_GV_Dang_Ky : VARCHAR(20)&lt;br&gt;Ngay_Dang_Ky : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="430" width="390" height="241" as="geometry" />
+        </mxCell>
+        <mxCell id="GVHD_DETAI" value="&lt;b&gt;GVHD_DETAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_GV : VARCHAR(20)&lt;br&gt;PK FK Ma_De_Tai : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1100" y="430" width="390" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="GVPB_DETAI" value="&lt;b&gt;GVPB_DETAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_GV : VARCHAR(20)&lt;br&gt;PK FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Ngay_Phan_Cong : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1630" y="430" width="390" height="131" as="geometry" />
+        </mxCell>
+        <mxCell id="NHOM" value="&lt;b&gt;NHOM&lt;/b&gt;&lt;hr&gt;PK Ma_Nhom : VARCHAR(20)&lt;br&gt;Ten_Nhom : VARCHAR(150)&lt;br&gt;FK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Ngay_Chon_De_Tai : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="820" width="390" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="THANH_VIEN_NHOM" value="&lt;b&gt;THANH_VIEN_NHOM&lt;/b&gt;&lt;hr&gt;PK FK Ma_Nhom : VARCHAR(20)&lt;br&gt;PK FK Ma_SV : VARCHAR(20)&lt;br&gt;Vai_Tro : VARCHAR(30)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="820" width="390" height="131" as="geometry" />
+        </mxCell>
+        <mxCell id="HOI_DONG" value="&lt;b&gt;HOI_DONG&lt;/b&gt;&lt;hr&gt;PK Ma_HD : VARCHAR(20)&lt;br&gt;FK Ma_Dot : VARCHAR(20)&lt;br&gt;Trang_Thai : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1100" y="820" width="390" height="131" as="geometry" />
+        </mxCell>
+        <mxCell id="HOI_DONG_DE_TAI" value="&lt;b&gt;HOI_DONG_DE_TAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_HD : VARCHAR(20)&lt;br&gt;PK FK Ma_De_Tai : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1630" y="820" width="390" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="THANHVIEN_HOIDONG" value="&lt;b&gt;THANHVIEN_HOIDONG&lt;/b&gt;&lt;hr&gt;PK FK Ma_HD : VARCHAR(20)&lt;br&gt;PK FK Ma_GV : VARCHAR(20)&lt;br&gt;Vai_Tro : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="1210" width="390" height="131" as="geometry" />
+        </mxCell>
+        <mxCell id="LOAI_DIEM" value="&lt;b&gt;LOAI_DIEM&lt;/b&gt;&lt;hr&gt;PK Ma_Loai_Diem : VARCHAR(20)&lt;br&gt;Ten_Loai_Diem : VARCHAR(150)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="1210" width="390" height="109" as="geometry" />
+        </mxCell>
+        <mxCell id="DIEM_THANH_PHAN" value="&lt;b&gt;DIEM_THANH_PHAN&lt;/b&gt;&lt;hr&gt;PK Ma_Diem : VARCHAR(30)&lt;br&gt;FK Ma_GV : VARCHAR(20)&lt;br&gt;FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;FK Ma_Loai_Diem : VARCHAR(20)&lt;br&gt;Diem : DECIMAL(5,2)&lt;br&gt;Ngay_Cham : DATETIME&lt;br&gt;Ngay_Nop_Diem : DATETIME&lt;br&gt;Nhan_Xet : TEXT" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1100" y="1210" width="390" height="241" as="geometry" />
+        </mxCell>
+        <mxCell id="KET_QUA_DE_TAI" value="&lt;b&gt;KET_QUA_DE_TAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Diem_Cuoi : DECIMAL(5,2)&lt;br&gt;Nhan_Xet_Tong_Hop : TEXT&lt;br&gt;Ket_Qua : VARCHAR(100)&lt;br&gt;FK Ma_GV_Tong_Hop : VARCHAR(20)&lt;br&gt;Trang_Thai_Cong_Bo : VARCHAR(20)&lt;br&gt;Ngay_Tong_Hop : DATETIME&lt;br&gt;Ngay_Cong_Bo : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1630" y="1210" width="390" height="241" as="geometry" />
+        </mxCell>
+        <mxCell id="TAI_KHOAN" value="&lt;b&gt;TAI_KHOAN&lt;/b&gt;&lt;hr&gt;PK Ma_TK : VARCHAR(30)&lt;br&gt;FK Ma_SV : VARCHAR(20)&lt;br&gt;FK Ma_GV : VARCHAR(20)&lt;br&gt;Ten_Dang_Nhap : VARCHAR(100)&lt;br&gt;Mat_Khau_Hash : VARCHAR(255)&lt;br&gt;Vai_Tro : VARCHAR(20)&lt;br&gt;Trang_Thai : VARCHAR(20)&lt;br&gt;Ngay_Tao : DATETIME&lt;br&gt;Lan_Dang_Nhap_CuoiCung : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="1600" width="390" height="263" as="geometry" />
+        </mxCell>
+        <mxCell id="THONG_BAO" value="&lt;b&gt;THONG_BAO&lt;/b&gt;&lt;hr&gt;PK Ma_TB : VARCHAR(30)&lt;br&gt;Tieu_De : VARCHAR(300)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Ngay_Dang : DATETIME&lt;br&gt;Pham_Vi : VARCHAR(20)&lt;br&gt;FK Ma_TK : VARCHAR(30)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="1600" width="390" height="197" as="geometry" />
+        </mxCell>
+        <mxCell id="BAO_CAO" value="&lt;b&gt;BAO_CAO&lt;/b&gt;&lt;hr&gt;PK Ma_BC : VARCHAR(30)&lt;br&gt;FK Ma_Nhom : VARCHAR(20)&lt;br&gt;FK Ma_SV_Nguoi_Nop : VARCHAR(20)&lt;br&gt;Ngay_Nop : DATETIME&lt;br&gt;File_Dinh_Kem : VARCHAR(500)&lt;br&gt;Lan_Nop : INT" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1100" y="1600" width="390" height="197" as="geometry" />
+        </mxCell>
+        <mxCell id="DANG_KY_DE_TAI" value="&lt;b&gt;DANG_KY_DE_TAI&lt;/b&gt;&lt;hr&gt;PK Ma_DK : VARCHAR(30)&lt;br&gt;FK Ma_Nhom : VARCHAR(20)&lt;br&gt;FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Trang_Thai : VARCHAR(20)&lt;br&gt;Ngay_Dang_Ky : DATETIME&lt;br&gt;Ly_Do : VARCHAR(1000)&lt;br&gt;FK Ma_GV_Duyet : VARCHAR(20)&lt;br&gt;Ngay_Duyet : DATETIME&lt;br&gt;Active_Group : VARCHAR(20)&lt;br&gt;Active_Topic : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="1630" y="1600" width="390" height="285" as="geometry" />
+        </mxCell>
+        <mxCell id="LOI_MOI_NHOM" value="&lt;b&gt;LOI_MOI_NHOM&lt;/b&gt;&lt;hr&gt;PK Ma_Loi_Moi : VARCHAR(30)&lt;br&gt;FK Ma_Nhom : VARCHAR(20)&lt;br&gt;FK Ma_SV : VARCHAR(20)&lt;br&gt;Trang_Thai : VARCHAR(20)&lt;br&gt;Ngay_Moi : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="1990" width="390" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_GV_0" value="FK (Ma_Bo_Mon)" edge="1" parent="1" source="GV" target="BO_MON" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_TRUONG_KHOA_0" value="FK (Ma_GV)" edge="1" parent="1" source="TRUONG_KHOA" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DOT_DANG_KY_0" value="FK (Ma_Truong_Khoa)" edge="1" parent="1" source="DOT_DANG_KY" target="TRUONG_KHOA" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DE_TAI_0" value="FK (Ma_Bo_Mon)" edge="1" parent="1" source="DE_TAI" target="BO_MON" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DE_TAI_1" value="FK (Ma_Dot)" edge="1" parent="1" source="DE_TAI" target="DOT_DANG_KY" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DE_TAI_2" value="FK (Ma_GV_Dang_Ky)" edge="1" parent="1" source="DE_TAI" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_GVHD_DETAI_0" value="FK (Ma_GV)" edge="1" parent="1" source="GVHD_DETAI" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_GVHD_DETAI_1" value="FK (Ma_De_Tai)" edge="1" parent="1" source="GVHD_DETAI" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_GVPB_DETAI_0" value="FK (Ma_GV)" edge="1" parent="1" source="GVPB_DETAI" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_GVPB_DETAI_1" value="FK (Ma_De_Tai)" edge="1" parent="1" source="GVPB_DETAI" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_NHOM_0" value="FK (Ma_Dot)" edge="1" parent="1" source="NHOM" target="DOT_DANG_KY" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_NHOM_1" value="FK (Ma_De_Tai, Ma_Dot)" edge="1" parent="1" source="NHOM" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_THANH_VIEN_NHOM_0" value="FK (Ma_Nhom)" edge="1" parent="1" source="THANH_VIEN_NHOM" target="NHOM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_THANH_VIEN_NHOM_1" value="FK (Ma_SV)" edge="1" parent="1" source="THANH_VIEN_NHOM" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_HOI_DONG_0" value="FK (Ma_Dot)" edge="1" parent="1" source="HOI_DONG" target="DOT_DANG_KY" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_HOI_DONG_DE_TAI_0" value="FK (Ma_HD)" edge="1" parent="1" source="HOI_DONG_DE_TAI" target="HOI_DONG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_HOI_DONG_DE_TAI_1" value="FK (Ma_De_Tai)" edge="1" parent="1" source="HOI_DONG_DE_TAI" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_THANHVIEN_HOIDONG_0" value="FK (Ma_HD)" edge="1" parent="1" source="THANHVIEN_HOIDONG" target="HOI_DONG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_THANHVIEN_HOIDONG_1" value="FK (Ma_GV)" edge="1" parent="1" source="THANHVIEN_HOIDONG" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DIEM_THANH_PHAN_0" value="FK (Ma_GV)" edge="1" parent="1" source="DIEM_THANH_PHAN" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DIEM_THANH_PHAN_1" value="FK (Ma_De_Tai)" edge="1" parent="1" source="DIEM_THANH_PHAN" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DIEM_THANH_PHAN_2" value="FK (Ma_Loai_Diem)" edge="1" parent="1" source="DIEM_THANH_PHAN" target="LOAI_DIEM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_KET_QUA_DE_TAI_0" value="FK (Ma_De_Tai)" edge="1" parent="1" source="KET_QUA_DE_TAI" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_KET_QUA_DE_TAI_1" value="FK (Ma_GV_Tong_Hop)" edge="1" parent="1" source="KET_QUA_DE_TAI" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_TAI_KHOAN_0" value="FK (Ma_SV)" edge="1" parent="1" source="TAI_KHOAN" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_TAI_KHOAN_1" value="FK (Ma_GV)" edge="1" parent="1" source="TAI_KHOAN" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_THONG_BAO_0" value="FK (Ma_TK)" edge="1" parent="1" source="THONG_BAO" target="TAI_KHOAN" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_BAO_CAO_0" value="FK (Ma_Nhom)" edge="1" parent="1" source="BAO_CAO" target="NHOM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_BAO_CAO_1" value="FK (Ma_SV_Nguoi_Nop)" edge="1" parent="1" source="BAO_CAO" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DANG_KY_DE_TAI_0" value="FK (Ma_Nhom)" edge="1" parent="1" source="DANG_KY_DE_TAI" target="NHOM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DANG_KY_DE_TAI_1" value="FK (Ma_De_Tai)" edge="1" parent="1" source="DANG_KY_DE_TAI" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_DANG_KY_DE_TAI_2" value="FK (Ma_GV_Duyet)" edge="1" parent="1" source="DANG_KY_DE_TAI" target="GV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_LOI_MOI_NHOM_0" value="FK (Ma_Nhom)" edge="1" parent="1" source="LOI_MOI_NHOM" target="NHOM" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_LOI_MOI_NHOM_1" value="FK (Ma_SV)" edge="1" parent="1" source="LOI_MOI_NHOM" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="EMAIL_KET_QUA" value="&lt;b&gt;EMAIL_KET_QUA&lt;/b&gt;&lt;hr&gt;PK Ma_Email : VARCHAR(32)&lt;br&gt;FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;FK Ma_SV : VARCHAR(20)&lt;br&gt;Nguoi_Nhan : VARCHAR(255)&lt;br&gt;Tieu_De : VARCHAR(255)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Trang_Thai : VARCHAR(20)&lt;br&gt;So_Lan_Thu : INT&lt;br&gt;Ngay_Tao : DATETIME&lt;br&gt;Lan_Thu_Tiep : DATETIME&lt;br&gt;Ngay_Chap_Nhan : DATETIME NULL&lt;br&gt;Ma_Dich_Vu : VARCHAR(512) NULL&lt;br&gt;UNIQUE (Ma_De_Tai, Ma_SV)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;">
+          <mxGeometry x="570" y="1990" width="390" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_EMAIL_KET_QUA_0" value="FK (Ma_De_Tai)" edge="1" parent="1" source="EMAIL_KET_QUA" target="KET_QUA_DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="FK_EMAIL_KET_QUA_1" value="FK (Ma_SV)" edge="1" parent="1" source="EMAIL_KET_QUA" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Cong_bo_va_email" id="result-email-detail">
+    <mxGraphModel grid="1" page="1" pageWidth="1200" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="SV" value="&lt;b&gt;SV&lt;/b&gt;&lt;hr&gt;PK Ma_SV : VARCHAR(20)&lt;br&gt;Ho_Ten : VARCHAR(150)&lt;br&gt;Email : VARCHAR(255)&lt;br&gt;SDT : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="80" width="390" height="153" as="geometry" />
+        </mxCell>
+        <mxCell id="KET_QUA_DE_TAI" value="&lt;b&gt;KET_QUA_DE_TAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Diem_Cuoi : DECIMAL(5,2)&lt;br&gt;Nhan_Xet_Tong_Hop : TEXT&lt;br&gt;Ket_Qua : VARCHAR(100)&lt;br&gt;FK Ma_GV_Tong_Hop : VARCHAR(20)&lt;br&gt;Trang_Thai_Cong_Bo : VARCHAR(20)&lt;br&gt;Ngay_Tong_Hop : DATETIME&lt;br&gt;Ngay_Cong_Bo : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="360" width="390" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="EMAIL_KET_QUA" value="&lt;b&gt;EMAIL_KET_QUA&lt;/b&gt;&lt;hr&gt;PK Ma_Email : VARCHAR(32)&lt;br&gt;FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;FK Ma_SV : VARCHAR(20)&lt;br&gt;Nguoi_Nhan : VARCHAR(255)&lt;br&gt;Tieu_De : VARCHAR(255)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Trang_Thai : VARCHAR(20)&lt;br&gt;So_Lan_Thu : INT&lt;br&gt;Ngay_Tao : DATETIME&lt;br&gt;Lan_Thu_Tiep : DATETIME&lt;br&gt;Ngay_Chap_Nhan : DATETIME NULL&lt;br&gt;Ma_Dich_Vu : VARCHAR(512) NULL&lt;br&gt;UNIQUE (Ma_De_Tai, Ma_SV)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;">
+          <mxGeometry x="700" y="130" width="440" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="email-detail-fk-0" value="Ma_SV → SV (mỗi thư có 1 SV)" edge="1" parent="1" source="EMAIL_KET_QUA" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=11;exitX=0;exitY=0.25;entryX=1;entryY=0.5;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="email-detail-fk-1" value="Ma_De_Tai → kết quả (mỗi thư có 1 kết quả)" edge="1" parent="1" source="EMAIL_KET_QUA" target="KET_QUA_DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=11;exitX=0;exitY=0.75;entryX=1;entryY=0.5;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="email-note" value="&lt;b&gt;Quy tắc thông báo kết quả&lt;/b&gt;&lt;br&gt;UNIQUE (Ma_De_Tai, Ma_SV): mỗi cặp tối đa một bản ghi.&lt;br&gt;Mỗi SV có 0..n thư; mỗi kết quả có 0..n thư.&lt;br&gt;Trạng thái: PENDING → PROCESSING → ACCEPTED hoặc retry/FAILED.&lt;br&gt;ACCEPTED: dịch vụ đã nhận, chưa xác nhận tới Inbox.&lt;br&gt;Lưu cùng transaction công bố; gửi sau commit. Không tự gửi lại dữ liệu lịch sử." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;">
+          <mxGeometry x="40" y="680" width="1100" height="170" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

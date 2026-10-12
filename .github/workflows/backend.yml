@@ -1,0 +1,53 @@
+name: Backend verification
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Ho_Chi_Minh
+    services:
+      mysql:
+        image: mysql:8.0.46
+        env:
+          MYSQL_ROOT_PASSWORD: ci-only-password
+          MYSQL_DATABASE: quanlydetai
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-only-password"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: projects/quanlydetai/pom.xml
+      - name: Unit and HTTP integration tests (H2)
+        working-directory: projects/quanlydetai
+        run: bash mvnw -B -ntp verify
+      - name: Initialize isolated MySQL schema, triggers and views
+        env:
+          MYSQL_PWD: ci-only-password
+        run: |
+          mysql -h 127.0.0.1 -uroot -e 'SET GLOBAL log_bin_trust_function_creators=1;'
+          for script in projects/Database/0{1,2,3,4,5,6}_*.sql; do
+            mysql -h 127.0.0.1 -uroot --default-character-set=utf8mb4 < "$script"
+          done
+      - name: Verify mappings and HTTP flows on MySQL
+        working-directory: projects/quanlydetai
+        env:
+          TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/quanlydetai?serverTimezone=Asia/Ho_Chi_Minh
+          TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
+          TEST_DB_USERNAME: root
+          TEST_DB_PASSWORD: ci-only-password
+          TEST_DDL_MODE: validate
+          TEST_DB_INIT_SQL: "SET time_zone='+07:00'"
+        run: bash mvnw -B -ntp -Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,MySqlTriggerIntegrationTest test
+      - name: Verify Docker packaging
+        run: docker build -t quanlydetai:ci .

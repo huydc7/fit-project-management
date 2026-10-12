@@ -1,39 +1,39 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
 <head>
-  <title>Danh sách đề tài</title>
+<title>Đề tài đã công bố</title>
 </head>
 <body>
-  <main>
-    <h1 class="h3 text-primary mb-4">Danh sách đề tài đã công bố</h1>
-
-    <div th:if="${#lists.isEmpty(dsDeTai)}" class="alert alert-info">
-      Hiện chưa có đề tài nào đang mở để đăng ký.
-    </div>
-
-    <div class="table-responsive" th:unless="${#lists.isEmpty(dsDeTai)}">
-      <table class="table table-hover bg-white align-middle">
-        <thead>
-          <tr>
-            <th>Mã đề tài</th>
-            <th>Tên đề tài</th>
-            <th>Bộ môn</th>
-            <th>Ngày đăng ký</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="dt : ${dsDeTai}">
-            <td th:text="${dt.maDeTai}">DT01</td>
-            <td th:text="${dt.tenDeTai}">Tên đề tài</td>
-            <td th:text="${dt.boMon?.tenBoMon}">Bộ môn</td>
-            <td th:text="${#temporals.format(dt.ngayDangKy, 'dd/MM/yyyy')}">01/01/2026</td>
-            <td><a href="#" class="btn btn-sm btn-outline-primary">Xem chi tiết</a></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </main>
+<main>
+<h1 class="page-title space-bottom">Đề tài đã công bố</h1>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
+</div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<p class="muted">Chỉ nhóm trưởng được đăng ký. Đăng ký đang chờ duyệt sẽ giữ chỗ đề tài.</p>
+<p class="muted" th:if="${#lists.isEmpty(topics)}">Chưa có đề tài được công bố.</p>
+<article class="panel panel-body space-bottom" th:each="t : ${topics}">
+<h2 class="item-title" th:text="${t.title}">
+</h2>
+<p class="muted" th:text="${t.period + ' · ' + t.department}">
+</p>
+<p class="pre-wrap" th:text="${t.content}">
+</p>
+<p>GVHD: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
+</span>
+</p>
+<p class="warning-text" th:if="${t.held}">Đã có nhóm giữ chỗ / chờ duyệt.</p>
+<p class="muted" th:unless="${t.open}">Ngoài thời gian đăng ký sinh viên.</p>
+<form th:if="${t.open and !t.held}" th:action="@{/student/registrations}" method="post" class="inline-fields gap-sm">
+<input type="hidden" name="topic" th:value="${t.id}">
+<select name="group" required class="select-field" aria-label="Chọn nhóm">
+<option value="">Chọn nhóm của bạn…</option>
+<option th:each="g : ${groups}" th:if="${g.leader and g.editable}" th:value="${g.id}" th:text="${g.name + ' — ' + g.period}">
+</option>
+</select>
+<button class="button button-primary no-wrap">Đăng ký chờ duyệt</button>
+</form>
+</article>
+</main>
 </body>
 </html>
