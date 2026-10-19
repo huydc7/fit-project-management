@@ -8,14 +8,18 @@
 | Đăng nhập | `/login` |
 | Thông báo | `/announcements` |
 | Đổi mật khẩu | `/accounts/password` |
+| Thông tin cá nhân (SV/GV) | `/accounts/profile` |
 | Quản lý tài khoản | `/admin/accounts` |
 | Nhóm của sinh viên | `/student/groups` |
 | Đề tài đã công bố | `/student/topics` |
 | Nộp báo cáo | `/student/reports` |
 | Kết quả của sinh viên | `/student/results` |
 | Đề xuất đề tài của giảng viên | `/lecturer/topics` |
+| Duyệt đề tài của bộ môn | `/department/topics` |
 | Báo cáo được phân công | `/lecturer/reports` |
 | Chấm điểm | `/lecturer/grading` |
+| Theo dõi email kết quả | `/dean/result-emails` |
+| Sửa hội đồng đang lập | `/dean/councils/{id}/edit` |
 | Quản lý đợt đăng ký | `/dean/periods` |
 | Duyệt và công bố | `/dean/approvals` |
 | Hội đồng | `/dean/councils` |

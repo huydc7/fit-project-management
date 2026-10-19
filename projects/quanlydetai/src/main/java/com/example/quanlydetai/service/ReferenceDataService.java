@@ -39,6 +39,12 @@ public class ReferenceDataService {
                 .toList();
     }
 
+    public List<LuaChonResponse> searchDepartments(String q) {
+        return departments().stream()
+                .filter(d -> SearchText.matches(q, d.id(), d.label()))
+                .toList();
+    }
+
     public List<LuaChonResponse> teachers() {
         return entities
                 .query("select g from GiangVien g order by g.hoTen", GiangVien.class)

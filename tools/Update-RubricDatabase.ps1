@@ -22,7 +22,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not copy migration.' }
     & docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --default-character-set=utf8mb4 -uroot quanlydetai -e "source /tmp/rubric06.sql"'
     if ($LASTEXITCODE -ne 0) { throw 'Migration failed. Keep app stopped; inspect the error before retrying.' }
-    & docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot quanlydetai -e "SELECT COUNT(*) AS email_rows FROM EMAIL_KET_QUA; SELECT COUNT(*) AS triggers_count FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE();"'
+    & docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot quanlydetai -e "SELECT COUNT(*) AS triggers_count FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE();"'
     if ($LASTEXITCODE -ne 0) { throw 'Migration verification failed.' }
     Write-Host 'Migration 06 completed. Rebuild/restart the new application: .\tools\Start-Local.ps1 -Docker'
 } finally { Pop-Location }

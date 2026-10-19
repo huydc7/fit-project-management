@@ -64,7 +64,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Phiếu chấm của mình | GET `/grades/ballots` | GV được phân công |
 | Lưu điểm | PUT `/grades/ballots` | GV được phân công; DiemRequest |
 | Tổng hợp điểm | POST `/grades/topics/{id}/aggregate` | Chủ tịch hội đồng; `{comment}` |
-| Công bố kết quả | PATCH `/grades/topics/{id}/publish` | TKhoa; tạo email cá nhân trong cùng transaction, worker gửi sau commit |
+| Công bố kết quả | PATCH `/grades/topics/{id}/publish` | TKhoa; công bố điểm/thời điểm và tạo email riêng cho từng SV trong cùng transaction, worker gửi sau commit |
 | Kết quả nhóm mình | GET `/grades/results/mine?period={maDot}` | SV; period tùy chọn, chỉ kết quả đã công bố của nhóm mình; đợt chưa đăng ký trả 403 |
 | Quản lý kết quả | GET `/grades/results` | TKhoa |
 | Thông báo | GET, POST `/announcements` | GET: TK; POST: Admin/TKhoa, ThongBaoRequest |
@@ -74,8 +74,13 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Thêm bộ môn | POST `/admin/departments` | Admin; `{id, name}` |
 | Bổ nhiệm/thu hồi trưởng khoa | PUT `/admin/dean` | Admin; `{teacher, appointed}` |
 | Đổi mật khẩu mình | PUT `/session/password` | TK; `{currentPassword, newPassword, confirmation}` |
+| Thông tin cá nhân mình | GET `/session/profile` | SV/GV; chỉ hồ sơ của phiên đăng nhập, Admin trả 403; không nhận mã tài khoản cần xem |
 
 DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`, `supervisors` (1–2 Ma_GV). DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
+
+`GET /admin/accounts` trả thêm hai cờ `dean` và `departmentHead` cho chức vụ **đang giữ**. Cả hai có thể cùng `true` khi kiêm nhiệm; sau thu hồi/thay thế, lần tải danh sách tiếp theo phản ánh dữ liệu mới. `role` vẫn là `GV` cho giảng viên, bao gồm Trưởng khoa/Trưởng bộ môn; bộ lọc `role=GV` vẫn trả các tài khoản này. Giao diện quản trị hiển thị tên vai trò tiếng Việt và nhãn chức vụ riêng.
+
+`GET /session/profile` trả `username`, `code` (mã SV/GV), `fullName`, `email`, `role`, `departmentName`, `dean`, `departmentHead`. SV có `departmentName` rỗng và hai cờ chức vụ `false`; GV có tên bộ môn và chức vụ đương nhiệm. Trang `/accounts/profile` dùng cùng service, chỉ đọc thông tin; quản trị viên cập nhật hồ sơ tại trang quản lý tài khoản. Cả HTML và API hồ sơ cá nhân đặt `Cache-Control: no-store`.
 
 Token nộp báo cáo dùng đúng 24 ký tự hex viết thường `[0-9a-f]` (ví dụ UUID bỏ dấu `-`, cắt 24 ký tự), giữ cùng token khi gửi lại cùng yêu cầu để tránh tạo hai phiên bản do double-click. Khi nộp phiên bản mới, tạo token mới. Phần tải trả file riêng tư hoặc redirect URL ký ngắn hạn; không có đường dẫn file công khai.
 
@@ -86,6 +91,41 @@ Token nộp báo cáo dùng đúng 24 ký tự hex viết thường `[0-9a-f]` (
 - Dữ liệu không hợp lệ hoặc vi phạm nghiệp vụ: `400`; chưa đăng nhập/phiên hết hạn: `401`; sai quyền/thiếu CSRF: `403`; route không tồn tại: `404`; method không hỗ trợ: `405`; loại nội dung sai: `415`; file quá lớn: `413`; xung đột database: `409`.
 - Lỗi JSON theo ProblemDetail (`application/problem+json`), gồm `status`, `title`, `detail`; lỗi validation có thêm `errors` theo tên trường, không chứa giá trị mật khẩu nhập vào. Lỗi không dự kiến trả mã tra cứu, chi tiết lưu trong server log.
 
-Danh sách hiện chưa phân trang. Đây là API v1 phục vụ quy mô đồ án/khoa nhỏ; khi dữ liệu lớn, bổ sung phân trang và bộ lọc vào repository/service trước khi mở rộng client. Chưa cung cấp Swagger/OpenAPI tự sinh.
+Các danh sách nghiệp vụ cũ chưa phân trang; riêng email kết quả có phân trang tại database như phần bổ sung dưới. Đây là API v1 phục vụ quy mô đồ án/khoa nhỏ; khi dữ liệu lớn cần mở rộng phân trang và bộ lọc cho các module còn lại. Chưa cung cấp Swagger/OpenAPI tự sinh.
 
 Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừa vượt 20 MiB đã được kiểm tra trả JSON 413. Khi toàn request vượt 21 MiB, Tomcat có thể đóng kết nối trước khi client nhận body lỗi; client cần xử lý cả lỗi mạng khi upload quá lớn.
+
+## Bổ sung local 15/10/2026
+
+| Method / đường dẫn (sau /api/v1) | Quyền và dữ liệu |
+|---|---|
+| GET `/topics`, `/topics/mine`, `/topics/management` | Quyền cũ; thêm q, department, period |
+| GET `/topics/department` | Trưởng bộ môn; chỉ đề tài bộ môn mình |
+| PATCH `/topics/{id}/department-review` | Trưởng bộ môn; `{accept}` |
+| PUT `/topics/{id}` | Người đề xuất nháp trong hạn GV; `{title, content}`, hủy xác nhận bộ môn |
+| DELETE `/topics/{id}` | Người đề xuất nháp trong hạn, chưa có lịch sử |
+| PUT `/admin/accounts/{id}/profile` | Admin; `{name, email, department}` (department cho GV) |
+| DELETE `/admin/accounts/{id}` | Admin; tài khoản và hồ sơ chưa có tham chiếu |
+| PUT, DELETE `/admin/departments/{id}` | Admin; PUT `{id, name}`, giữ mã |
+| PUT `/admin/department-head` | Admin; `{department, teacher, appointed}` |
+| PUT, DELETE `/registration-periods/{id}` | Trưởng khoa; PUT DotDangKyForm; đợt có dữ liệu chỉ đổi tên |
+| PUT, DELETE `/announcements/{id}` | Admin hoặc Trưởng khoa với thông báo Khoa của mình; PUT ThongBaoRequest |
+
+GET `/admin/accounts` thêm q, role; `/announcements`, `/registration-periods`, `/catalog/departments` thêm q. Công bố qua `/topics/{id}/review` bắt buộc đã được bộ môn duyệt. Các ràng buộc còn lại xem [PRODUCT_RULES.md](PRODUCT_RULES.md). Tìm kiếm chưa phân trang.
+
+## Email kết quả — bổ sung 18/10/2026
+
+| Method / đường dẫn (sau /api/v1) | Quyền và hành vi |
+|---|---|
+| GET `/result-emails?q=&state=&page=0&size=20` | Trưởng khoa; tìm mã đề tài/SV/email, lọc PENDING/PROCESSING/ACCEPTED/FAILED, phân trang trong DB |
+| POST `/result-emails/{id}/retry` | Trưởng khoa + CSRF; chỉ FAILED, đặt lại PENDING/attempts=0; 204 khi thành công |
+
+JSON GET: `{content, page, size, totalElements, totalPages}`. content có id/topic/student/recipient/state/attempts/created/accepted, không có body/receipt/credential. page 0–1000000, size 1–100; q tối đa 200 ký tự, wildcard `%`/`_`/`!` được escape để tìm literal. Sai dữ liệu trả 400, chưa xác thực 401, sai quyền/CSRF 403. Retry không tạo bản ghi mới; bấm lại khi PENDING trả 400. Bộ lọc state không phân biệt chữ hoa/thường. Kiểm thử SMTP xem [EMAIL_LOCAL_TEST.md](EMAIL_LOCAL_TEST.md).
+
+## Bổ sung 19/10/2026
+
+- PUT `/topics/{id}` giữ title/content bắt buộc, thêm department/supervisors tùy chọn (bỏ qua giữ giá trị cũ). Chỉ người đề xuất nháp trong hạn GV, mọi thay đổi hủy duyệt bộ môn.
+- GET `/topics`, `/topics/mine`, `/topics/management`, `/topics/department` thêm type/state; endpoint department hỗ trợ period, luôn giới hạn đúng bộ môn.
+- PUT `/councils/{id}` nhận HoiDongRequest, DELETE `/councils/{id}`: Trưởng khoa, chỉ DangLap chưa dùng. Không đổi đợt qua PUT.
+- PUT `/registration-periods/{id}`: đợt có dữ liệu chỉ sửa tên/gia hạn End_SV và deadline GVPB, không rút ngắn. Có kết quả tổng hợp chỉ đổi tên. Đợt trống vẫn sửa đầy đủ.
+- PATCH duyệt bộ môn/công bố đề tài phải trước Begin_SV. Công bố điểm và duyệt đăng ký nhóm không bị áp dụng nhầm hạn này. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) và migration 08.

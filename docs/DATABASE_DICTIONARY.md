@@ -1,6 +1,6 @@
 # Từ điển CSDL bản đầu
 
-Đối chiếu các script 01–06: 22 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
+Đối chiếu các script 01–08: 24 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
 
 ## BO_MON
 
@@ -265,7 +265,9 @@
 - `(Ma_Nhom)` → `NHOM(Ma_Nhom)`
 - `(Ma_SV)` → `SV(Ma_SV)`
 
-## EMAIL_KET_QUA
+## EMAIL_KET_QUA — hàng đợi email kết quả
+
+Mỗi kết quả công bố tạo một bản ghi cho mỗi SV. UNIQUE đề tài/SV tránh tạo lại khi công bố lặp. Worker xử lý PENDING → PROCESSING → ACCEPTED hoặc thử lại có giới hạn → FAILED. ACCEPTED nghĩa là dịch vụ đã nhận, chưa chứng minh thư tới Inbox. Dữ liệu cũ được giữ; không tự tạo thư cho kết quả đã công bố trước khi khôi phục module.
 
 Lưu thông báo cá nhân cùng transaction công bố điểm; worker gửi sau khi transaction commit. Nội dung và người nhận là snapshot tại thời điểm công bố.
 
@@ -289,3 +291,23 @@ Lưu thông báo cá nhân cùng transaction công bố điểm; worker gửi sa
 - UNIQUE `(Ma_De_Tai, Ma_SV)` ngăn tạo nhiều bản ghi công bố cho cùng sinh viên/đề tài.
 - INDEX `(Trang_Thai, Lan_Thu_Tiep)` hỗ trợ worker chọn thư đến hạn. CHECK giới hạn bốn trạng thái.
 - ACCEPTED không có nghĩa thư chắc chắn tới Inbox. Nhà cung cấp đã nhận nhưng phản hồi bị mất vẫn có khả năng gửi trùng khi retry.
+
+## TRUONG_BO_MON (migration 07)
+
+| Cột | Kiểu SQL | NULL | Khóa/liên kết |
+|---|---|---|---|
+| Ma_Bo_Mon | VARCHAR(20) | Không | PK, FK → BO_MON.Ma_Bo_Mon |
+| Ma_GV | VARCHAR(20) | Không | FK → GV.Ma_GV |
+| Dang_Giu_Chuc | BOOLEAN DEFAULT TRUE | Không | Quyền đương nhiệm |
+
+Mỗi bộ môn tối đa một bản ghi chức vụ; ứng dụng kiểm tra GV thuộc bộ môn. Không phải bảng lịch sử nhiệm kỳ.
+
+## DUYET_BO_MON (migration 07)
+
+| Cột | Kiểu SQL | NULL | Khóa/liên kết |
+|---|---|---|---|
+| Ma_De_Tai | VARCHAR(20) | Không | PK, FK → DE_TAI.Ma_De_Tai |
+| Ma_GV | VARCHAR(20) | Không | FK → GV.Ma_GV, người duyệt |
+| Ngay_Duyet | DATETIME | Không | Thời điểm duyệt |
+
+Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–08 có 36 trigger, 4 view.

@@ -29,7 +29,7 @@ public class DotDangKyController {
 
     @GetMapping
     public String danhSach(Model model) {
-        model.addAttribute("dsDot", service.list());
+        model.addAttribute("dsDot", service.search((String) model.getAttribute("q")));
         if (!model.containsAttribute("form")) model.addAttribute("form", new DotDangKyForm());
         return "truongkhoa/dot-list";
     }
@@ -58,5 +58,52 @@ public class DotDangKyController {
             redirect.addFlashAttribute("form", form);
         }
         return "redirect:/dean/periods";
+    }
+
+    @ModelAttribute
+    void filters(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "") String department,
+            @RequestParam(defaultValue = "") String period,
+            @RequestParam(defaultValue = "") String role,
+            Model m) {
+        m.addAttribute("q", q);
+        m.addAttribute("departmentFilter", department);
+        m.addAttribute("periodFilter", period);
+        m.addAttribute("roleFilter", role);
+    }
+
+    @GetMapping("/{id}/edit")
+    public String editPage(@PathVariable String id, Model model) {
+        if (!model.containsAttribute("form")) model.addAttribute("form", service.editForm(id));
+        model.addAttribute("editingId", id);
+        return danhSach(model);
+    }
+
+    @PostMapping("/{id}/edit")
+    public String update(
+            @PathVariable String id,
+            @Valid @ModelAttribute("form") DotDangKyForm f,
+            BindingResult errors,
+            @AuthenticationPrincipal AccountPrincipal user,
+            Model model,
+            RedirectAttributes flash) {
+        model.addAttribute("editingId", id);
+        if (errors.hasErrors()) return danhSach(model);
+        return com.example.quanlydetai.controller.support.FormFeedback.formAction(
+                model,
+                flash,
+                "/dean/periods",
+                () -> service.update(id, f, user.getMaGV()),
+                () -> danhSach(model));
+    }
+
+    @PostMapping("/{id}/delete")
+    public String delete(
+            @PathVariable String id,
+            @AuthenticationPrincipal AccountPrincipal user,
+            RedirectAttributes flash) {
+        return com.example.quanlydetai.controller.support.FormFeedback.perform(
+                "/dean/periods", flash, () -> service.delete(id, user.getMaGV()));
     }
 }

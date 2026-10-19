@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <mxfile host="app.diagrams.net">
-  <diagram name="Schema_V2_22_bang" id="workflow-erd">
-    <mxGraphModel grid="1" page="1" pageWidth="2200" pageHeight="2400">
+  <diagram name="Schema_V2_24_bang" id="workflow-erd">
+    <mxGraphModel grid="1" page="1" pageWidth="2200" pageHeight="2660">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -179,10 +179,28 @@
         <mxCell id="FK_EMAIL_KET_QUA_1" value="FK (Ma_SV)" edge="1" parent="1" source="EMAIL_KET_QUA" target="SV" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=10;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="TRUONG_BO_MON" value="&lt;b&gt;TRUONG_BO_MON&lt;/b&gt;&lt;hr&gt;PK/FK Ma_Bo_Mon : VARCHAR(20)&lt;br&gt;FK Ma_GV : VARCHAR(20)&lt;br&gt;Dang_Giu_Chuc : BOOLEAN" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="40" y="2430.0" width="390" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="DUYET_BO_MON" value="&lt;b&gt;DUYET_BO_MON&lt;/b&gt;&lt;hr&gt;PK/FK Ma_De_Tai : VARCHAR(20)&lt;br&gt;FK Ma_GV : VARCHAR(20)&lt;br&gt;Ngay_Duyet : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="2430.0" width="390" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="dept_fk_0" edge="1" parent="1" source="TRUONG_BO_MON" target="BO_MON" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERzeroToOne;html=1;" value="FK RESTRICT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dept_fk_1" edge="1" parent="1" source="TRUONG_BO_MON" target="GV" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERmany;html=1;" value="FK RESTRICT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dept_fk_2" edge="1" parent="1" source="DUYET_BO_MON" target="DE_TAI" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERzeroToOne;html=1;" value="FK RESTRICT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dept_fk_3" edge="1" parent="1" source="DUYET_BO_MON" target="GV" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERmany;html=1;" value="FK RESTRICT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
-  <diagram name="Cong_bo_va_email" id="result-email-detail">
+  <diagram name="Email_ket_qua" id="result-email-detail">
     <mxGraphModel grid="1" page="1" pageWidth="1200" pageHeight="900">
       <root>
         <mxCell id="0" />
@@ -202,7 +220,7 @@
         <mxCell id="email-detail-fk-1" value="Ma_De_Tai → kết quả (mỗi thư có 1 kết quả)" edge="1" parent="1" source="EMAIL_KET_QUA" target="KET_QUA_DE_TAI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=open;fontSize=11;exitX=0;exitY=0.75;entryX=1;entryY=0.5;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="email-note" value="&lt;b&gt;Quy tắc thông báo kết quả&lt;/b&gt;&lt;br&gt;UNIQUE (Ma_De_Tai, Ma_SV): mỗi cặp tối đa một bản ghi.&lt;br&gt;Mỗi SV có 0..n thư; mỗi kết quả có 0..n thư.&lt;br&gt;Trạng thái: PENDING → PROCESSING → ACCEPTED hoặc retry/FAILED.&lt;br&gt;ACCEPTED: dịch vụ đã nhận, chưa xác nhận tới Inbox.&lt;br&gt;Lưu cùng transaction công bố; gửi sau commit. Không tự gửi lại dữ liệu lịch sử." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;">
+        <mxCell id="email-note" value="&lt;b&gt;Email công bố kết quả&lt;/b&gt;&lt;br&gt;Một bản ghi riêng cho mỗi SV của nhóm.&lt;br&gt;Tạo cùng transaction công bố; worker gửi sau commit.&lt;br&gt;PENDING / PROCESSING / ACCEPTED / FAILED.&lt;br&gt;Sinh viên tra cứu điểm theo đợt trên website." vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;">
           <mxGeometry x="40" y="680" width="1100" height="170" as="geometry" />
         </mxCell>
       </root>

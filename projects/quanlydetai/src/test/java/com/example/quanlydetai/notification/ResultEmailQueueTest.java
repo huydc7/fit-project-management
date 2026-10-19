@@ -104,4 +104,80 @@ class ResultEmailQueueTest {
         assertThat(emails.count()).isZero();
         assertThat(queue.claim()).isNull();
     }
+
+    @Test
+    void exhaustedExpiredLeaseDoesNotStopOtherRecipientsInTheSameBatch() {
+        var expired = pending();
+        expired.setState("PROCESSING");
+        expired.setAttempts(5);
+        expired.setCreatedAt(rules.now().minusDays(1));
+        emails.saveAndFlush(expired);
+        var active = new ResultEmail();
+        active.setId("active-lease");
+        active.setTopic("TEST_TOPIC");
+        active.setStudent("ACTIVE_SV");
+        active.setRecipient("active@example.test");
+        active.setSubject("Kết quả");
+        active.setBody("Điểm");
+        active.setState("PROCESSING");
+        active.setAttempts(5);
+        active.setCreatedAt(rules.now().minusHours(1));
+        active.setNextAttemptAt(rules.now().plusMinutes(2));
+        emails.saveAndFlush(active);
+        for (int i = 1; i <= 9; i++) {
+            var row = new ResultEmail();
+            row.setId("ready-" + i);
+            row.setTopic("TEST_TOPIC");
+            row.setStudent("TEST_SV" + i);
+            row.setRecipient("sv" + i + "@example.test");
+            row.setSubject("Kết quả");
+            row.setBody("Điểm");
+            row.setState("PENDING");
+            row.setCreatedAt(rules.now());
+            row.setNextAttemptAt(rules.now().minusSeconds(1));
+            emails.saveAndFlush(row);
+        }
+        new EmailDeliveryWorker(queue, (id, to, subject, body) -> "local-accepted", true)
+                .deliverBatch();
+        assertThat(emails.findById("queue-test").orElseThrow().getState()).isEqualTo("FAILED");
+        assertThat(emails.findById("active-lease").orElseThrow().getState())
+                .isEqualTo("PROCESSING");
+        assertThat(emails.findAll().stream().filter(e -> e.getId().startsWith("ready-")))
+                .hasSize(9)
+                .allSatisfy(
+                        e -> {
+                            assertThat(e.getState()).isEqualTo("ACCEPTED");
+                            assertThat(e.getAttempts()).isEqualTo(1);
+                        });
+    }
+
+    @Test
+    @WithMockUser(roles = "TRUONGKHOA")
+    void filtersBeforePaginationAndCanFindOldEmailsBeyondThePreviousHundredRowLimit() {
+        for (int i = 0; i < 105; i++) {
+            var row = new ResultEmail();
+            row.setId("search-" + i);
+            row.setTopic("SEARCH_TOPIC");
+            row.setStudent("SEARCH_SV" + i);
+            row.setRecipient("sv" + i + "@example.test");
+            row.setSubject("Không đưa nội dung này vào API");
+            row.setBody("Điểm riêng tư");
+            row.setState(i == 104 ? "FAILED" : "PENDING");
+            row.setCreatedAt(rules.now().minusDays(i));
+            row.setNextAttemptAt(rules.now());
+            emails.save(row);
+        }
+        emails.flush();
+        var oldest = queue.search(" search_sv104 ", "failed", 0, 20);
+        assertThat(oldest.totalElements()).isEqualTo(1);
+        assertThat(oldest.content())
+                .extracting(ResultEmailService.Status::id)
+                .containsExactly("search-104");
+        var page = queue.search("", "PENDING", 1, 20);
+        assertThat(page.totalElements()).isEqualTo(104);
+        assertThat(page.totalPages()).isEqualTo(6);
+        assertThat(page.content()).hasSize(20);
+        assertThat(queue.search("SEARCH_%", "", 0, 20).totalElements()).isZero();
+        assertThat(queue.search("", "ACCEPTED", 0, 20).content()).isEmpty();
+    }
 }

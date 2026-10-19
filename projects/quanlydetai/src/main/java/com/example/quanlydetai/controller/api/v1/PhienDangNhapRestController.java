@@ -29,6 +29,15 @@ public class PhienDangNhapRestController {
                                 token.getHeaderName(), token.getParameterName(), token.getToken()));
     }
 
+    @GetMapping("/profile")
+    public org.springframework.http.ResponseEntity<
+                    com.example.quanlydetai.dto.ThongTinCaNhanResponse>
+            profile() {
+        return org.springframework.http.ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(accounts.personalProfile());
+    }
+
     @PutMapping("/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void password(

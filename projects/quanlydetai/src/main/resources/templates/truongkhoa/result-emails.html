@@ -7,8 +7,22 @@
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
 <p th:unless="${deliveryEnabled}" class="notice notice-warning">Gửi email đang tắt. Các thư vẫn được lưu trong hàng đợi. Liên hệ quản trị viên để bật dịch vụ gửi.</p>
-<p class="muted">100 thông báo gần nhất. “Dịch vụ đã nhận” nghĩa là máy chủ gửi đã tiếp nhận thư; hãy kiểm tra hộp thư hoặc lịch sử gửi của dịch vụ để xác nhận phát thành công.</p>
-<p th:if="${#lists.isEmpty(emails)}">Chưa có thông báo kết quả.</p>
+<form method="get" th:action="@{/dean/result-emails}" class="inline-fields email-filters gap-sm space-bottom" role="search">
+<div><label for="email-query" class="field-label">Mã sinh viên, mã đề tài hoặc email</label><input id="email-query" name="q" class="field" type="search" maxlength="200" th:value="${q}" placeholder="Nhập từ khóa…"></div>
+<div><label for="email-state" class="field-label">Trạng thái</label><select id="email-state" name="state" class="select-field">
+<option value="">Tất cả trạng thái</option>
+<option value="PENDING" th:selected="${selectedState == 'PENDING'}">Đang chờ</option>
+<option value="PROCESSING" th:selected="${selectedState == 'PROCESSING'}">Đang gửi</option>
+<option value="ACCEPTED" th:selected="${selectedState == 'ACCEPTED'}">Dịch vụ đã nhận</option>
+<option value="FAILED" th:selected="${selectedState == 'FAILED'}">Thất bại</option>
+</select></div>
+<div><label for="email-size" class="field-label">Số dòng / trang</label><select id="email-size" name="size" class="select-field">
+<option th:each="n : ${ {20,50,100} }" th:value="${n}" th:text="${n}" th:selected="${emailPage.size == n}"></option>
+</select></div>
+<button class="button button-primary">Tìm kiếm</button><a class="button button-outline" th:href="@{/dean/result-emails}">Xóa bộ lọc</a>
+</form>
+<p class="muted"><span th:text="${emailPage.totalElements}"></span> thông báo phù hợp. “Dịch vụ đã nhận” nghĩa là máy chủ gửi đã tiếp nhận thư; hãy kiểm tra hộp thư hoặc lịch sử gửi của dịch vụ để xác nhận phát thành công.</p>
+<p th:if="${#lists.isEmpty(emails)}">Không có thông báo trong trang này. Hãy kiểm tra bộ lọc hoặc quay về trang đầu.</p>
 <div class="table-scroll" th:unless="${#lists.isEmpty(emails)}">
 <table class="data-table table-alternate">
 <thead><tr><th>Đề tài</th><th>Sinh viên</th><th>Địa chỉ nhận</th><th>Trạng thái</th><th>Lần thử</th><th>Thao tác</th></tr></thead>
@@ -20,4 +34,10 @@
 </td><td th:text="${e.attempts}"></td>
 <td><form th:if="${e.state == 'FAILED'}" method="post" th:action="@{/dean/result-emails/{id}/retry(id=${e.id})}"><button class="button button-outline">Thử gửi lại</button></form></td>
 </tr></tbody></table></div>
+<nav class="inline-fields gap-sm space-top-lg" aria-label="Phân trang email" th:if="${emailPage.totalPages > 0 || emailPage.page > 0}">
+<a class="button button-outline" th:if="${emailPage.page > 0}" th:href="@{/dean/result-emails(q=${q},state=${selectedState},size=${emailPage.size},page=${emailPage.page - 1})}">Trang trước</a>
+<span th:text="${'Trang ' + (emailPage.page + 1) + ' · ' + emailPage.totalPages + ' trang kết quả'}"></span>
+<a class="button button-outline" th:if="${emailPage.page + 1 < emailPage.totalPages}" th:href="@{/dean/result-emails(q=${q},state=${selectedState},size=${emailPage.size},page=${emailPage.page + 1})}">Trang sau</a>
+<a th:if="${emailPage.page > 0}" th:href="@{/dean/result-emails(q=${q},state=${selectedState},size=${emailPage.size})}">Trang đầu</a>
+</nav>
 </main></body></html>

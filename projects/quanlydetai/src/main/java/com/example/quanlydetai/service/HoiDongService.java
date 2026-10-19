@@ -86,6 +86,93 @@ public class HoiDongService {
         entities.flush();
     }
 
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public HoiDongRequest editForm(String id) {
+        currentUser.dean();
+        var h = entities.require(HoiDong.class, id);
+        requireEditable(h);
+        var rows = members(id);
+        return new HoiDongRequest(
+                h.getMaDot(),
+                rows.stream()
+                        .filter(m -> "ChuTich".equals(m.getVaiTro()))
+                        .findFirst()
+                        .map(ThanhVienHoiDong::getMaGV)
+                        .orElse(null),
+                rows.stream()
+                        .filter(m -> "ThuKy".equals(m.getVaiTro()))
+                        .findFirst()
+                        .map(ThanhVienHoiDong::getMaGV)
+                        .orElse(null),
+                rows.stream()
+                        .filter(m -> "ThanhVien".equals(m.getVaiTro()))
+                        .map(ThanhVienHoiDong::getMaGV)
+                        .toList());
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public void update(String id, @jakarta.validation.Valid HoiDongRequest f) {
+        var h = editableCouncil(id);
+        rules.check(
+                h.getMaDot().equals(f.period()),
+                "Không đổi đợt của hội đồng; hãy lập hội đồng mới nếu cần.");
+        List<String> all = new ArrayList<>(f.members());
+        all.add(f.chair());
+        all.add(f.secretary());
+        rules.check(
+                new HashSet<>(all).size() == all.size(),
+                "Chủ tịch, thư ký và các thành viên phải là những người khác nhau.");
+        all.forEach(gv -> entities.require(GiangVien.class, gv));
+        members(id).forEach(entities::remove);
+        entities.flush();
+        for (String gv : all) {
+            var m = new ThanhVienHoiDong();
+            m.setMaHd(id);
+            m.setMaGV(gv);
+            m.setVaiTro(
+                    gv.equals(f.chair())
+                            ? "ChuTich"
+                            : gv.equals(f.secretary()) ? "ThuKy" : "ThanhVien");
+            entities.insert(m);
+        }
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public void deleteDraft(String id) {
+        var h = editableCouncil(id);
+        members(id).forEach(entities::remove);
+        entities.flush();
+        entities.remove(h);
+        entities.flush();
+    }
+
+    private HoiDong editableCouncil(String id) {
+        currentUser.dean();
+        String period =
+                entities
+                        .query("select h.maDot from HoiDong h where h.maHd=?1", String.class, id)
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new com.example.quanlydetai.exception.BusinessException(
+                                                "Không tìm thấy hội đồng."));
+        entities.lock(DotDangKy.class, period);
+        var h = entities.lock(HoiDong.class, id);
+        requireEditable(h);
+        return h;
+    }
+
+    private void requireEditable(HoiDong h) {
+        rules.check(
+                "DangLap".equals(h.getTrangThai())
+                        && !entities.exists(
+                                "select r from HoiDongDeTai r where r.maHd=?1", h.getMaHd()),
+                "Chỉ sửa/xóa hội đồng đang lập và chưa phân công đề tài.");
+    }
+
     @Transactional
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void assignReviewer(String topic, String teacher) {

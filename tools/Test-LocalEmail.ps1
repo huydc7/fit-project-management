@@ -1,4 +1,4 @@
-param([string]$MavenRepository = '')
+param([string]$MavenRepository = '', [switch]$Offline)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $taskRoot
@@ -17,6 +17,7 @@ try {
     Push-Location (Join-Path $taskRoot 'projects/quanlydetai')
     try {
         $taskArgs = @('-B','-ntp','-Dtest=MailpitDeliveryIT','test')
+        if ($Offline) { $taskArgs += '-o' }
         if ($MavenRepository) { $taskArgs += "-Dmaven.repo.local=$MavenRepository" }
         & .\mvnw.cmd @taskArgs
         if ($LASTEXITCODE -ne 0) { throw 'Local SMTP verification failed. Inspect the Maven report above.' }

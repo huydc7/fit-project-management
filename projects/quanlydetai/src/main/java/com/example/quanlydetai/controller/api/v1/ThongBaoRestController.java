@@ -21,13 +21,25 @@ public class ThongBaoRestController {
     }
 
     @GetMapping
-    public List<ThongBaoResponse> list() {
-        return service.list();
+    public List<ThongBaoResponse> list(@RequestParam(defaultValue = "") String q) {
+        return service.search(q);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@Valid @RequestBody ThongBaoRequest body) {
         service.create(body);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void update(@PathVariable String id, @Valid @RequestBody ThongBaoRequest body) {
+        service.update(id, body);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
+        service.delete(id);
     }
 }

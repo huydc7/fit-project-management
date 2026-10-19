@@ -10,13 +10,13 @@
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
 </div>
-<form method="post" th:action="@{/dean/councils}" th:object="${form}" class="panel panel-body space-bottom-lg">
-<h2 class="item-title">Lập hội đồng 3–5 giảng viên</h2>
+<form method="post" th:action="${editingId != null} ? @{/dean/councils/{id}/edit(id=${editingId})} : @{/dean/councils}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title" th:text="${editingId != null ? 'Sửa hội đồng đang lập' : 'Lập hội đồng 3–5 giảng viên'}"></h2>
 <div class="space-bottom">
 <label class="field-label" for="period">Đợt</label>
 <select class="select-field" id="period" th:field="*{period}" required>
 <option value="">Chọn…</option>
-<option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}">
+<option th:each="o : ${periods}" th:if="${editingId == null || o.id == form.period}" th:value="${o.id}" th:text="${o.label}">
 </option>
 </select>
 <div class="error-text caption" th:errors="*{period}">
@@ -51,7 +51,7 @@
 <div class="error-text caption" th:errors="*{members}">
 </div>
 </div>
-<button class="button button-primary self-start" type="submit">Lưu</button>
+<button class="button button-primary self-start" type="submit" th:text="${editingId != null ? 'Lưu thay đổi' : 'Lưu'}">Lưu</button><a th:if="${editingId != null}" class="button button-outline" th:href="@{/dean/councils}">Hủy sửa</a>
 </form>
 <p class="muted" th:if="${#lists.isEmpty(councils)}">Chưa có hội đồng.</p>
 <article th:each="h : ${councils}" class="panel panel-body space-bottom">
@@ -63,6 +63,7 @@
 <li th:each="m : ${h.members}" th:text="${m.name + ' — ' + m.role}">
 </li>
 </ul>
+<div th:if="${h.state == 'DangLap' && #lists.isEmpty(h.topics)}" class="inline-fields gap-sm space-bottom"><a class="button button-outline" th:href="@{/dean/councils/{id}/edit(id=${h.id})}">Sửa thành viên</a><form method="post" th:action="@{/dean/councils/{id}/delete(id=${h.id})}" data-confirm="Xóa hội đồng đang lập này?"><button class="button button-danger">Xóa hội đồng nháp</button></form></div>
 <form th:if="${h.state == 'DangLap'}" method="post" th:action="@{/dean/councils/{id}/finalize(id=${h.id})}">
 <button class="button button-primary">Chốt và khóa thành viên</button>
 </form>

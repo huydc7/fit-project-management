@@ -25,8 +25,10 @@ public class TaiKhoanRestController {
     }
 
     @GetMapping
-    public List<TaiKhoanResponse> list() {
-        return service.list();
+    public List<TaiKhoanResponse> list(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "") String role) {
+        return service.search(q, role);
     }
 
     @PostMapping
@@ -46,5 +48,19 @@ public class TaiKhoanRestController {
     public void resetPassword(
             @PathVariable String id, @Valid @RequestBody DatLaiMatKhauRequest body) {
         service.resetPassword(id, body.password());
+    }
+
+    @PutMapping("/{id}/profile")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void profile(
+            @PathVariable String id,
+            @Valid @RequestBody com.example.quanlydetai.dto.HoSoRequest body) {
+        service.updateProfile(id, body);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
+        service.deleteUnusedAccount(id);
     }
 }

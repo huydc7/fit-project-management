@@ -69,4 +69,29 @@ public class HoiDongController {
         m.addAttribute("departments", referenceData.departments());
         m.addAttribute("teachers", referenceData.teachers());
     }
+
+    @GetMapping("/dean/councils/{id}/edit")
+    public String edit(@PathVariable String id, Model m) {
+        m.addAttribute("form", councils.editForm(id));
+        m.addAttribute("editingId", id);
+        return councilPage(m);
+    }
+
+    @PostMapping("/dean/councils/{id}/edit")
+    public String update(
+            @PathVariable String id,
+            @Valid @ModelAttribute("form") HoiDongRequest f,
+            BindingResult errors,
+            Model m,
+            RedirectAttributes flash) {
+        m.addAttribute("editingId", id);
+        if (errors.hasErrors()) return councilPage(m);
+        return formAction(
+                m, flash, "/dean/councils", () -> councils.update(id, f), () -> councilPage(m));
+    }
+
+    @PostMapping("/dean/councils/{id}/delete")
+    public String delete(@PathVariable String id, RedirectAttributes flash) {
+        return perform("/dean/councils", flash, () -> councils.deleteDraft(id));
+    }
 }

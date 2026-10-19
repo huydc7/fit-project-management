@@ -13,3 +13,9 @@ secrets/
 __pycache__/
 uploads/
 backups/
+tmp/
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+Desktop.ini

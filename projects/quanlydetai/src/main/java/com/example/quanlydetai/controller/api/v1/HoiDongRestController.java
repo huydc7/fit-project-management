@@ -41,6 +41,18 @@ public class HoiDongRestController {
         service.finalizeCouncil(id);
     }
 
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void update(@PathVariable String id, @Valid @RequestBody HoiDongRequest body) {
+        service.update(id, body);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
+        service.deleteDraft(id);
+    }
+
     @PutMapping("/topics/{id}/reviewer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void assignReviewer(

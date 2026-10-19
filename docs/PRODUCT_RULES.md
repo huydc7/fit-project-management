@@ -5,7 +5,7 @@ Các lựa chọn dưới đây là quy tắc triển khai cho bản đồ án; 
 ## Quy trình
 
 - Một khoa, bốn loại đợt MonHoc/NCKH/TLCN/KLTN. Giai đoạn GV trước giai đoạn SV. Hạn GVPB chỉ TLCN/KLTN; ngày hội đồng chỉ KLTN.
-- GV đề xuất trong thời gian GV; chọn 1–2 GVHD. Trưởng khoa duyệt để công bố hoặc từ chối (Huy). Nhóm chỉ chọn đề tài công bố cùng đợt trong thời gian SV.
+- GV đề xuất trong thời gian GV; chọn 1–2 GVHD. Trưởng bộ môn duyệt trong phạm vi bộ môn trước; Trưởng khoa công bố sau. Cả hai phải hoàn tất trước Begin_SV (chặn cả thời điểm bằng Begin_SV). Một trong hai bước có thể từ chối, chuyển trạng thái Huy. Sửa nháp hủy xác nhận bộ môn và phải duyệt lại. Nhóm chỉ chọn đề tài công bố cùng đợt trong thời gian SV.
 - Một SV thuộc tối đa một nhóm **trong mỗi đợt**, theo thiết kế SQL ban đầu. Theo rubric cập nhật, đăng ký đề tài cần 3–5 SV đã xác nhận, đúng một nhóm trưởng. Nhóm đang lập có thể có 1–2 SV. Lời mời cần SV xác nhận. Nhóm trưởng được giữ nguyên trong bản đầu.
 - Trưởng khoa duyệt đăng ký nhóm. Một đăng ký đang chờ hoặc đã chấp thuận giữ một nhóm/một đề tài bằng UNIQUE; từ chối hoặc rút giải phóng chỗ. Rút chỉ khi chờ duyệt và còn giai đoạn SV. Đăng ký nộp đúng hạn có thể được duyệt sau hạn.
 - Thành viên bị khóa khi chờ duyệt hoặc đã được chấp thuận. Khi bị từ chối/rút, nhóm chưa được gán đề tài nên có thể chỉnh thành viên và đăng ký lại trong thời gian SV.
@@ -22,7 +22,7 @@ Chỉ nhận điểm 0–10, tối đa hai chữ số thập phân và nhận x�
 
 ## Schema sau nâng cấp
 
-Giữ 19 bảng gốc, thêm `DANG_KY_DE_TAI`, `LOI_MOI_NHOM` và `EMAIL_KET_QUA`: tổng cộng **22 bảng**, 4 view và 35 trigger. DB mới chạy script 01–06 theo thứ tự. Script 06 bổ sung hàng đợi email và thay hai trigger sĩ số; không sửa thành viên/điểm đã có. Nhóm dưới 3 SV đã được duyệt trước migration giữ nguyên lịch sử; đăng ký mới áp dụng 3–5. Nhóm cũ đang chờ duyệt nhưng thiếu người phải rút để bổ sung thành viên trong thời gian SV đăng ký, rồi nộp lại.
+Giữ 19 bảng gốc, thêm `DANG_KY_DE_TAI`, `LOI_MOI_NHOM`, `EMAIL_KET_QUA`, `TRUONG_BO_MON`, `DUYET_BO_MON`: tổng cộng **24 bảng**, 4 view và 36 trigger. DB mới chạy script 01–08 theo thứ tự. Script 06 bổ sung hàng đợi email và thay hai trigger sĩ số; không sửa thành viên/điểm đã có. Nhóm dưới 3 SV đã được duyệt trước migration giữ nguyên lịch sử; đăng ký mới áp dụng 3–5. Nhóm cũ đang chờ duyệt nhưng thiếu người phải rút để bổ sung thành viên trong thời gian SV đăng ký, rồi nộp lại.
 
 Script 05 bổ sung danh mục bốn bộ môn theo lựa chọn của nhóm và hợp nhất các liên kết từ danh mục mẫu cũ. Dữ liệu thực hành khoa CNTT nằm ngoài source Java/JAR, mặc định tắt, chỉ được nhập ở dev; không tự cập nhật database đã có tài khoản. Thao tác refresh có chủ đích giữ ID/quan hệ, mật khẩu/trạng thái và lịch đợt cũ, xem SAMPLE_DATA.md.
 
@@ -34,8 +34,22 @@ Nâng cấp CSDL cũ không di chuyển URL báo cáo hoặc đổi điểm đã
 
 ## Phạm vi còn sau nghiệm thu local
 
-Deploy bằng tài khoản cloud thật, test Supabase/Aiven/Brevo thật, kiểm tra restart/restore và ghi URL; ảnh chụp giao diện sau khi nhóm chạy local; tổng hợp Word/ERD/ZIP theo yêu cầu nộp. Email công bố kết quả thuộc phạm vi bản đầu theo rubric mới. Chat, SMS, các email tự động khác, SSO, mobile, AI, đa khoa/đa trường, thống kê nâng cao, import Excel và cấu hình quy trình tùy ý để sau bản đầu.
+Deploy bằng tài khoản cloud thật, test Supabase/Aiven thật, kiểm tra restart/restore và ghi URL; ảnh chụp giao diện sau khi nhóm chạy local; tổng hợp Word/ERD/ZIP theo yêu cầu nộp. Kết quả được công bố và tra cứu trên website; email kết quả từng SV được khôi phục theo rubric ngày 18/10/2026. Chat, SMS, các email tự động khác, SSO, mobile, AI, đa khoa/đa trường, thống kê nâng cao, import Excel và cấu hình quy trình tùy ý để sau bản đầu.
 
-## Email kết quả
+## Công bố, email và tra cứu kết quả
 
-Công bố ghi trạng thái kết quả và các email cá nhân trong cùng transaction. Worker đọc hàng đợi sau commit, gửi ngoài transaction qua JavaMailSender SMTP hoặc Brevo HTTPS; tự thử lại tối đa 5 lần. Trưởng khoa xem 100 thư gần nhất và thử lại thư FAILED. ACCEPTED chỉ xác nhận dịch vụ đã nhận, không chứng minh đến Inbox. Khi app ngủ, queue giữ trong MySQL và chờ app chạy lại. Có thể gửi trùng nếu nhà cung cấp đã nhận nhưng phản hồi bị mất; không cam kết exactly-once. Không tự gửi lại kết quả đã công bố trước migration.
+Chủ tịch tổng hợp đủ phiếu rồi Trưởng khoa công bố. Một transaction ghi trạng thái DaCongBo, thời điểm và một email riêng cho từng SV của nhóm. Nếu transaction rollback, không còn thư để gửi. UNIQUE (Ma_De_Tai, Ma_SV) và khóa kết quả chặn công bố lặp tạo thêm thư. Không tự tạo thư cho kết quả đã công bố từ trước.
+
+Worker gửi sau commit qua SMTP hoặc HTTPS Brevo. Khi tắt gửi, thư vẫn ở hàng đợi. Mỗi thư có tên SV, đề tài, đợt, điểm và link `/student/results?period=...`. Chỉ nhóm mình và kết quả đã công bố được xem sau đăng nhập; email không cấp quyền truy cập mới.
+
+Worker thử tối đa 5 lần, giãn cách tăng dần; quá giới hạn thành FAILED để Trưởng khoa thử lại tại `/dean/result-emails`. ACCEPTED chỉ chứng minh dịch vụ nhận thư, không chứng minh Inbox. Nếu phản hồi gửi bị mất, retry có thể tạo thư trùng; không cam kết SMTP exactly-once. Có 24 entity, 24 bảng vật lý và 9 repository Spring Data sau SQL 01–08. Database đã có SQL 06 không cần đổi schema để khôi phục tính năng.
+
+## Chức vụ Trưởng bộ môn
+
+Admin bổ nhiệm GV thuộc đúng bộ môn, một người đương nhiệm mỗi bộ môn. ROLE_TRUONGBOMON được suy ra từ TRUONG_BO_MON; thu hồi được kiểm tra lại trên mỗi request. DUYET_BO_MON ghi xác nhận hiện tại, không phải lịch sử mọi lần duyệt. Migration 07 không tự bổ nhiệm hoặc tạo phiếu duyệt cho dữ liệu cũ. Quy tắc hai bước được thực thi trong service; SQL 07 thêm bảng/FK, không thêm trigger.
+
+Bản đầu cho phép Trưởng bộ môn duyệt đề xuất do chính mình tạo; bước Trưởng khoa vẫn bắt buộc. Người kiêm cả hai chức vụ chưa bị ràng buộc phải có người duyệt khác. Nếu khoa yêu cầu người duyệt độc lập, cần bổ sung quy trình ủy quyền. Admin chỉ sửa thông tin hồ sơ, không đổi mã, username hoặc vai trò qua API sửa hồ sơ; phải thu hồi chức Trưởng bộ môn trước khi chuyển bộ môn. Tài khoản/hồ sơ đã có liên kết lịch sử chỉ được khóa, không xóa.
+
+## Sửa đề tài, hội đồng và gia hạn đợt
+
+Đề xuất nháp sửa được bộ môn và GVHD, hủy duyệt cũ; hội đồng DangLap chưa dùng được sửa/xóa. Đợt có dữ liệu được gia hạn End_SV/hạn GVPB, không rút ngắn hoặc đổi các mốc bắt đầu, loại/ngày hội đồng; sau có kết quả tổng hợp chỉ đổi tên. SQL 08 bổ sung kiểm tra hạn duyệt/công bố, không đổi dữ liệu cũ. Chi tiết endpoint xem [REST_API.md](REST_API.md).

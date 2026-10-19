@@ -7,6 +7,7 @@
 <body>
   <main>
     <h1 class="page-title brand-text space-bottom-lg">Quản lý đợt đăng ký</h1>
+<form method="get" action="/dean/periods" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tìm mã, tên hoặc loại đợt" aria-label="Tìm kiếm" maxlength="200"><button class="button button-primary">Tìm kiếm</button><a href="/dean/periods" class="button button-outline">Bỏ lọc</a></form>
 
     <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}">
 </div>
@@ -27,7 +28,7 @@
 <th>Tên đợt</th>
 <th>Loại</th>
               <th>GV đăng ký</th>
-<th>SV đăng ký</th>
+<th>SV đăng ký</th><th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -52,9 +53,11 @@
                 <span th:text="${#temporals.format(d.endSV,'dd/MM HH:mm')}">
 </span>
               </td>
+<td><a class="button button-outline button-small" th:href="@{/dean/periods/{id}/edit(id=${d.maDot})}">Sửa đợt</a>
+<form method="post" th:action="@{/dean/periods/{id}/delete(id=${d.maDot})}" data-confirm="Xóa đợt chưa có dữ liệu này?"><button class="button button-danger button-small">Xóa đợt</button></form></td>
             </tr>
             <tr th:if="${#lists.isEmpty(dsDot)}">
-<td colspan="5" class="muted">Chưa có đợt nào.</td>
+<td colspan="6" class="muted">Chưa có đợt nào.</td>
 </tr>
           </tbody>
         </table>
@@ -62,13 +65,14 @@
     </div>
 
     <div class="panel">
-      <div class="panel-heading strong">Tạo đợt mới</div>
+      <div class="panel-heading strong" th:text="${editingId != null ? 'Sửa đợt đăng ký' : 'Tạo đợt mới'}"></div>
       <div class="panel-body">
-        <form th:action="@{/dean/periods}" th:object="${form}" method="post" class="form-grid grid-gap" id="formDot">
+        <p class="muted" th:if="${editingId != null}">Đợt đã có dữ liệu chỉ sửa tên và gia hạn kết thúc SV/hạn phản biện; không rút ngắn hoặc đổi mốc bắt đầu. Đợt đã có kết quả tổng hợp chỉ sửa tên.</p>
+        <form th:action="${editingId != null} ? @{/dean/periods/{id}/edit(id=${editingId})} : @{/dean/periods}" th:object="${form}" method="post" class="form-grid grid-gap" id="formDot">
 
           <div class="span-3">
             <label class="field-label" for="maDot">Mã đợt</label>
-<input type="text" class="field" th:field="*{maDot}" placeholder="DOT01" required>
+<input type="text" class="field" th:field="*{maDot}" th:readonly="${editingId != null}" placeholder="DOT01" required>
           </div>
           <div class="span-5">
             <label class="field-label" for="tenDotDangKy">Tên đợt</label>
@@ -113,7 +117,7 @@
           </div>
 
           <div class="span-full">
-            <button type="submit" class="button button-primary">Tạo đợt</button>
+            <button type="submit" class="button button-primary" th:text="${editingId != null ? 'Lưu thay đổi' : 'Tạo đợt'}">Lưu</button><a class="button button-outline" th:if="${editingId != null}" th:href="@{/dean/periods}">Hủy sửa</a>
           </div>
         </form>
       </div>

@@ -59,4 +59,13 @@ public class CurrentUserService {
         if (!"Admin".equals(entities.require(TaiKhoan.class, actor().getAccountId()).getVaiTro()))
             throw new AccessDeniedException("Chỉ quản trị viên được thực hiện.");
     }
+
+    public String departmentHead() {
+        String teacher = teacher();
+        var g = entities.require(com.example.quanlydetai.entity.GiangVien.class, teacher);
+        var head = entities.find(com.example.quanlydetai.entity.TruongBoMon.class, g.getMaBoMon());
+        if (head == null || !head.isDangGiuChuc() || !teacher.equals(head.getMaGV()))
+            throw new AccessDeniedException("Chỉ Trưởng bộ môn đương nhiệm được thực hiện.");
+        return g.getMaBoMon();
+    }
 }

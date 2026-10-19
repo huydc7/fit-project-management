@@ -42,7 +42,8 @@ public class ThongBaoService {
                                         t.getTieuDe(),
                                         t.getNoiDung(),
                                         t.getPhamVi(),
-                                        t.getNgayDang()))
+                                        t.getNgayDang(),
+                                        canManage(t)))
                 .toList();
     }
 
@@ -63,5 +64,38 @@ public class ThongBaoService {
         t.setPhamVi(f.scope());
         t.setNgayDang(rules.now());
         entities.insert(t);
+    }
+
+    public List<ThongBaoResponse> search(String q) {
+        return list().stream().filter(t -> SearchText.matches(q, t.title(), t.content())).toList();
+    }
+
+    private boolean canManage(ThongBao t) {
+        var a = entities.require(TaiKhoan.class, currentUser.actor().getAccountId());
+        return "Admin".equals(a.getVaiTro())
+                || ("Khoa".equals(t.getPhamVi())
+                        && a.getMaTk().equals(t.getMaTk())
+                        && currentUser.isDean(a.getMaGV()));
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN','TRUONGKHOA')")
+    public void update(String id, @jakarta.validation.Valid ThongBaoRequest f) {
+        ThongBao t = entities.lock(ThongBao.class, id);
+        if (!canManage(t)) throw new AccessDeniedException("Không được sửa thông báo này.");
+        if ("NhaTruong".equals(f.scope())) currentUser.admin();
+        t.setTieuDe(f.title().strip());
+        t.setNoiDung(f.content().strip());
+        t.setPhamVi(f.scope());
+        entities.flush();
+    }
+
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN','TRUONGKHOA')")
+    public void delete(String id) {
+        ThongBao t = entities.lock(ThongBao.class, id);
+        if (!canManage(t)) throw new AccessDeniedException("Không được xóa thông báo này.");
+        entities.remove(t);
+        entities.flush();
     }
 }

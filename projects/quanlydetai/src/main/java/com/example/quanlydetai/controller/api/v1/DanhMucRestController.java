@@ -22,8 +22,8 @@ public class DanhMucRestController {
     }
 
     @GetMapping("/departments")
-    public List<LuaChonResponse> departments() {
-        return service.departments();
+    public List<LuaChonResponse> departments(@RequestParam(defaultValue = "") String q) {
+        return service.searchDepartments(q);
     }
 
     @GetMapping("/lecturers")

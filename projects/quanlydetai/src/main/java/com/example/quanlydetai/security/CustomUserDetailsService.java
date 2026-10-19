@@ -16,10 +16,15 @@ import java.util.ArrayList;
 public class CustomUserDetailsService implements UserDetailsService {
     private final TaiKhoanRepository accounts;
     private final TruongKhoaRepository deans;
+    private final com.example.quanlydetai.repository.TruongBoMonRepository heads;
 
-    public CustomUserDetailsService(TaiKhoanRepository accounts, TruongKhoaRepository deans) {
+    public CustomUserDetailsService(
+            TaiKhoanRepository accounts,
+            TruongKhoaRepository deans,
+            com.example.quanlydetai.repository.TruongBoMonRepository heads) {
         this.accounts = accounts;
         this.deans = deans;
+        this.heads = heads;
     }
 
     @Override
@@ -50,6 +55,10 @@ public class CustomUserDetailsService implements UserDetailsService {
                 && deans.findById(account.getMaGV()).map(d -> d.isDangGiuChuc()).orElse(false)) {
             authorities.add(new SimpleGrantedAuthority("ROLE_TRUONGKHOA"));
         }
+        if ("GV".equals(account.getVaiTro())
+                && account.getMaGV() != null
+                && heads.active(account.getMaGV()).isPresent())
+            authorities.add(new SimpleGrantedAuthority("ROLE_TRUONGBOMON"));
         return new AccountPrincipal(
                 account.getMaTk(),
                 account.getTenDangNhap(),

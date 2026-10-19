@@ -6,6 +6,7 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Đề tài của tôi</h1>
+<div th:replace="~{layout/search :: topicFilters(@{/lecturer/topics})}"></div>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
@@ -77,6 +78,17 @@
 <p th:if="${t.group}">Nhóm: <span th:text="${t.group}">
 </span> · <a th:href="@{/lecturer/reports}">Xem báo cáo được phân công</a>
 </p>
+<p class="muted" th:if="${t.state == 'Nhap'}" th:text="${t.departmentApproved ? 'Bộ môn đã duyệt, chờ Trưởng khoa công bố.' : 'Chờ Trưởng bộ môn duyệt.'}"></p>
+<details th:if="${t.editable}" class="space-top"><summary>Sửa đề tài</summary>
+<form method="post" th:action="@{/lecturer/topics/{id}/edit(id=${t.id})}" class="space-top">
+<label class="field-label">Tên đề tài<input class="field space-bottom" name="title" th:value="${t.title}" required maxlength="300"></label>
+<label class="field-label">Nội dung<textarea class="field space-bottom" name="content" th:text="${t.content}" required maxlength="20000" rows="4"></textarea></label>
+<label class="field-label">Bộ môn<select class="select-field space-bottom" name="department" required><option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}" th:selected="${o.id == t.departmentId}"></option></select></label>
+<label class="field-label">Chọn 1–2 GVHD<select class="select-field space-bottom" name="supervisors" multiple required size="5"><option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}" th:selected="${#lists.contains(t.supervisorIds, o.id)}"></option></select></label>
+<p class="muted">Sau khi sửa, đề tài cần được bộ môn duyệt lại.</p>
+<button class="button button-primary">Lưu thay đổi</button></form></details>
+<form th:if="${t.editable}" method="post" th:action="@{/lecturer/topics/{id}/delete(id=${t.id})}" data-confirm="Xóa đề tài nháp này?" class="space-top">
+<button class="button button-danger">Xóa đề tài nháp</button></form>
 </article>
 </main>
 </body>

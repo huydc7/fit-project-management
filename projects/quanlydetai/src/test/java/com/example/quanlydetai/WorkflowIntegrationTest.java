@@ -35,6 +35,7 @@ class WorkflowIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder encoder;
     @Autowired EntityManager em;
+    @Autowired com.example.quanlydetai.repository.ResultEmailRepository emailRows;
     private static String hash;
     private final Map<String, MockHttpSession> sessions = new HashMap<>();
 
@@ -65,7 +66,7 @@ class WorkflowIntegrationTest {
         }
         account("wf.admin", "Admin", null, null);
         var now = LocalDateTime.now();
-        period("WF_SV", now.minusDays(10), now.minusDays(5), now.minusDays(4), now.plusDays(10));
+        period("WF_SV", now.minusDays(10), now.minusDays(5), now.plusDays(1), now.plusDays(10));
         period("WF_GV", now.minusDays(1), now.plusDays(1), now.plusDays(2), now.plusDays(10));
         if (jdbc.queryForObject(
                         "SELECT COUNT(*) FROM LOAI_DIEM WHERE Ma_Loai_Diem='GVPB'", Integer.class)
@@ -81,6 +82,8 @@ class WorkflowIntegrationTest {
                 now.minusDays(6));
         jdbc.update("INSERT INTO GVHD_DETAI(Ma_GV,Ma_De_Tai) VALUES ('WF_GV1','WF_DT')");
         jdbc.update("UPDATE DE_TAI SET Trang_Thai='DaCongBo' WHERE Ma_De_Tai='WF_DT'");
+        // Fixture advances from pre-publication into student registration, inside the test DB only.
+        jdbc.update("UPDATE DOT_DANG_KY SET Begin_SV=? WHERE Ma_Dot='WF_SV'", now.minusDays(4));
     }
 
     @Test
@@ -469,18 +472,47 @@ class WorkflowIntegrationTest {
                 .andExpect(model().attribute("results", org.hamcrest.Matchers.empty()));
         ok("wf.gv0", "/dean/topics/WF_DT/publish");
         assertThat(
-                        jdbc.queryForList(
-                                "SELECT Ma_SV FROM EMAIL_KET_QUA WHERE Ma_De_Tai='WF_DT'",
+                        jdbc.queryForObject(
+                                "SELECT Trang_Thai_Cong_Bo FROM KET_QUA_DE_TAI WHERE"
+                                        + " Ma_De_Tai='WF_DT'",
                                 String.class))
-                .containsExactlyInAnyOrder("WF_SV1", "WF_SV7", "WF_SV8");
+                .isEqualTo("DaCongBo");
         assertThat(
                         jdbc.queryForObject(
-                                "SELECT COUNT(*) FROM EMAIL_KET_QUA WHERE Trang_Thai='PENDING'",
+                                "SELECT Ngay_Cong_Bo FROM KET_QUA_DE_TAI WHERE Ma_De_Tai='WF_DT'",
+                                java.sql.Timestamp.class))
+                .isNotNull();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM EMAIL_KET_QUA WHERE Ma_De_Tai='WF_DT' AND"
+                                        + " Trang_Thai='PENDING'",
                                 Integer.class))
                 .isEqualTo(3);
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Nguoi_Nhan FROM EMAIL_KET_QUA WHERE Ma_De_Tai='WF_DT'",
+                                String.class))
+                .doesNotHaveDuplicates()
+                .hasSize(3);
         action("wf.gv0", "/dean/topics/WF_DT/publish").andExpect(flash().attributeExists("loi"));
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM EMAIL_KET_QUA", Integer.class))
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM EMAIL_KET_QUA WHERE Ma_De_Tai='WF_DT'",
+                                Integer.class))
                 .isEqualTo(3);
+        mvc.perform(get("/dean/result-emails").session(session("wf.sv1")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/dean/result-emails").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("emails", org.hamcrest.Matchers.hasSize(3)));
+        verifyEmailManagement();
+        for (String student : List.of("wf.sv7", "wf.sv8"))
+            mvc.perform(
+                            get("/api/v1/grades/results/mine")
+                                    .param("period", "WF_SV")
+                                    .session(session(student)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].score").value(6.75));
         mvc.perform(
                         get("/api/v1/grades/results/mine")
                                 .param("period", "WF_SV")
@@ -494,10 +526,13 @@ class WorkflowIntegrationTest {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/student/results").param("period", "WF_GV").session(session("wf.sv1")))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/dean/result-emails").session(session("wf.gv0")))
-                .andExpect(status().isOk());
-        mvc.perform(get("/dean/result-emails").session(session("wf.sv1")))
-                .andExpect(status().isForbidden());
+        mvc.perform(get("/dean/approvals").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "/dean/result-emails")));
         mvc.perform(get("/student/results").session(session("wf.sv1")))
                 .andExpect(model().attribute("results", org.hamcrest.Matchers.hasSize(1)));
         mvc.perform(get("/student/results").session(session("wf.sv2")))
@@ -518,6 +553,123 @@ class WorkflowIntegrationTest {
         okPages("wf.gv3", "/lecturer/grading", "/lecturer/reports");
         okPages("wf.sv1", "/student/groups", "/student/reports", "/student/results");
         okPages("wf.gv0", "/dean/approvals", "/dean/councils");
+        var period = em.find(com.example.quanlydetai.entity.DotDangKy.class, "WF_SV");
+        String extension =
+                "{\"maDot\":\"WF_SV\",\"tenDotDangKy\":\"Renamed\",\"loai\":\"MonHoc\",\"beginGV\":\""
+                        + period.getBeginGV()
+                        + "\",\"endGV\":\""
+                        + period.getEndGV()
+                        + "\",\"beginSV\":\""
+                        + period.getBeginSV()
+                        + "\",\"endSV\":\""
+                        + period.getEndSV().plusDays(1)
+                        + "\"}";
+        mvc.perform(
+                        put("/api/v1/registration-periods/WF_SV")
+                                .session(session("wf.gv0"))
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(extension))
+                .andExpect(status().isBadRequest());
+    }
+
+    private void verifyEmailManagement() throws Exception {
+        String api = "/api/v1/result-emails";
+        mvc.perform(get(api)).andExpect(status().isUnauthorized());
+        for (String user : List.of("wf.sv1", "wf.gv1", "wf.admin"))
+            mvc.perform(get(api).session(session(user))).andExpect(status().isForbidden());
+        mvc.perform(
+                        get(api).param("q", "wf_sv7")
+                                .param("state", "pending")
+                                .session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].student").value("WF_SV7"))
+                .andExpect(jsonPath("$.content[0].body").doesNotExist())
+                .andExpect(jsonPath("$.content[0].receipt").doesNotExist());
+        var ids =
+                jdbc.queryForList(
+                        "SELECT Ma_Email FROM EMAIL_KET_QUA ORDER BY Ngay_Tao DESC, Ma_Email DESC",
+                        String.class);
+        for (int page = 0; page < 2; page++)
+            mvc.perform(
+                            get(api).param("page", "" + page)
+                                    .param("size", "1")
+                                    .session(session("wf.gv0")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements").value(3))
+                    .andExpect(jsonPath("$.totalPages").value(3))
+                    .andExpect(jsonPath("$.content[0].id").value(ids.get(page)));
+        mvc.perform(get(api).param("q", "WF_%").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        for (String[] invalid :
+                List.of(
+                        new String[] {"state", "UNKNOWN"},
+                        new String[] {"page", "-1"},
+                        new String[] {"size", "101"},
+                        new String[] {"q", "x".repeat(201)}))
+            mvc.perform(get(api).param(invalid[0], invalid[1]).session(session("wf.gv0")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+        mvc.perform(
+                        get("/dean/result-emails")
+                                .param("q", "WF_SV7")
+                                .param("state", "PENDING")
+                                .session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("emails", org.hamcrest.Matchers.hasSize(1)));
+        String id = ids.getFirst();
+        mvc.perform(post(api + "/" + id + "/retry").session(session("wf.gv0")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(api + "/" + id + "/retry").with(csrf()).session(session("wf.sv1")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(api + "/" + id + "/retry").with(csrf()).session(session("wf.gv0")))
+                .andExpect(status().isBadRequest());
+        jdbc.update(
+                "UPDATE EMAIL_KET_QUA SET Trang_Thai='FAILED', So_Lan_Thu=5 WHERE Ma_Email=?", id);
+        em.clear();
+        mvc.perform(get(api).param("state", "FAILED").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/dean/result-emails").param("state", "FAILED").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Thử gửi lại")));
+        mvc.perform(post(api + "/" + id + "/retry").with(csrf()).session(session("wf.gv0")))
+                .andExpect(status().isNoContent());
+        em.flush();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT So_Lan_Thu FROM EMAIL_KET_QUA WHERE Ma_Email=?",
+                                Integer.class,
+                                id))
+                .isZero();
+        mvc.perform(post(api + "/" + id + "/retry").with(csrf()).session(session("wf.gv0")))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post(api + "/MISSING/retry").with(csrf()).session(session("wf.gv0")))
+                .andExpect(status().isBadRequest());
+        var now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        jdbc.update(
+                "UPDATE EMAIL_KET_QUA SET Trang_Thai='PROCESSING', So_Lan_Thu=5, Lan_Thu_Tiep=?"
+                        + " WHERE Ma_Email=?",
+                now.minusMinutes(1),
+                ids.get(0));
+        jdbc.update(
+                "UPDATE EMAIL_KET_QUA SET Trang_Thai='PROCESSING', So_Lan_Thu=5, Lan_Thu_Tiep=?"
+                        + " WHERE Ma_Email=?",
+                now.plusMinutes(2),
+                ids.get(1));
+        em.clear();
+        assertThat(emailRows.failExhausted(5, now)).isEqualTo(1);
+        assertThat(emailRows.findById(ids.get(0)).orElseThrow().getState()).isEqualTo("FAILED");
+        assertThat(emailRows.findById(ids.get(1)).orElseThrow().getState()).isEqualTo("PROCESSING");
+        assertThat(
+                        emailRows
+                                .findFirstByStateInAndNextAttemptAtLessThanEqualOrderByCreatedAtAscIdAsc(
+                                        List.of("PENDING", "PROCESSING"), now)
+                                .orElseThrow()
+                                .getId())
+                .isEqualTo(ids.get(2));
     }
 
     @Test
@@ -673,6 +825,81 @@ class WorkflowIntegrationTest {
                                 "SELECT COUNT(*) FROM DIEM_THANH_PHAN WHERE Ma_De_Tai='WF_DT'",
                                 Integer.class))
                 .isZero();
+    }
+
+    @Test
+    void tlcnReviewerDeadlineBlocksLateNewAndChangedScores() throws Exception {
+        verifyReviewerDeadline("TLCN");
+    }
+
+    @Test
+    void kltnReviewerDeadlineBlocksLateNewAndChangedScores() throws Exception {
+        verifyReviewerDeadline("KLTN");
+    }
+
+    private void verifyReviewerDeadline(String type) throws Exception {
+        String group = registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        upload("wf.sv1", group, "dddddddddddddddddddddddd")
+                .andExpect(flash().attributeExists("thanhCong"));
+        var now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+        jdbc.update(
+                "UPDATE DOT_DANG_KY SET Loai=?, Deadline_GVPB_Nop_Diem=?, Time_BC_HD=? WHERE"
+                        + " Ma_Dot='WF_SV'",
+                type,
+                now.minusDays(1),
+                "KLTN".equals(type) ? now.plusDays(1) : null);
+        em.clear();
+        action(
+                        "wf.gv2",
+                        "/lecturer/grading",
+                        "topic",
+                        "WF_DT",
+                        "type",
+                        "GVPB",
+                        "value",
+                        "8",
+                        "comment",
+                        "Review")
+                .andExpect(model().attributeExists("loi"));
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM DIEM_THANH_PHAN WHERE Ma_De_Tai='WF_DT'",
+                                Integer.class))
+                .isZero();
+        jdbc.update(
+                "UPDATE DOT_DANG_KY SET Deadline_GVPB_Nop_Diem=? WHERE Ma_Dot='WF_SV'",
+                now.plusDays(1));
+        em.clear();
+        ok(
+                "wf.gv2",
+                "/lecturer/grading",
+                "topic",
+                "WF_DT",
+                "type",
+                "GVPB",
+                "value",
+                "9",
+                "comment",
+                "Review");
+        jdbc.update(
+                "UPDATE DOT_DANG_KY SET Deadline_GVPB_Nop_Diem=? WHERE Ma_Dot='WF_SV'",
+                now.minusDays(1));
+        em.clear();
+        mvc.perform(
+                        put("/api/v1/grades/ballots")
+                                .session(session("wf.gv2"))
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(
+                                        "{\"topic\":\"WF_DT\",\"type\":\"GVPB\",\"value\":8,\"comment\":\"Late"
+                                            + " edit\"}"))
+                .andExpect(status().isBadRequest());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT Diem FROM DIEM_THANH_PHAN WHERE Ma_De_Tai='WF_DT'",
+                                BigDecimal.class))
+                .isEqualByComparingTo("9");
     }
 
     @Test

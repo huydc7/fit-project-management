@@ -15,6 +15,7 @@ import com.example.quanlydetai.entity.KetQuaDeTai;
 import com.example.quanlydetai.entity.Nhom;
 import com.example.quanlydetai.entity.ThanhVienHoiDong;
 import com.example.quanlydetai.entity.ThanhVienHoiDongId;
+import com.example.quanlydetai.exception.BusinessException;
 import com.example.quanlydetai.notification.ResultEmailService;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
@@ -71,6 +72,16 @@ public class DiemService {
     @PreAuthorize("hasRole('GV')")
     public void submit(@jakarta.validation.Valid DiemRequest f) {
         String gv = currentUser.teacher();
+        String period =
+                entities
+                        .query(
+                                "select t.maDot from DeTai t where t.maDeTai=?1",
+                                String.class,
+                                f.topic())
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(() -> new BusinessException("Không tìm thấy đề tài."));
+        entities.lock(DotDangKy.class, period);
         DeTai t = entities.lock(DeTai.class, f.topic());
         rules.check(
                 "DangThucHien".equals(t.getTrangThai())
@@ -328,10 +339,7 @@ public class DiemService {
             if (entities.find(GvpbDeTai.class, new GvpbDeTaiId(gv, t.getMaDeTai())) == null)
                 throw new AccessDeniedException("Bạn không phải GVPB của đề tài.");
             DotDangKy d = entities.require(DotDangKy.class, t.getMaDot());
-            rules.check(
-                    d.getDeadlineGvpbNopDiem() == null
-                            || !rules.now().isAfter(d.getDeadlineGvpbNopDiem()),
-                    "Đã quá hạn nộp điểm phản biện.");
+            rules.reviewerDeadline(d);
             return;
         }
         String council = council(t.getMaDeTai());

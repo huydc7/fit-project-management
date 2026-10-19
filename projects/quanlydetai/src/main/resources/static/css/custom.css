@@ -1080,6 +1080,51 @@ input:disabled,select:disabled,button:disabled {
   border-radius:4px
 }
 
+.personal-profile {
+  max-width:900px
+}
+
+.profile-heading {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  border-bottom:1px solid var(--line)
+}
+
+.profile-heading h2 {
+  margin:0 0 6px;
+  overflow-wrap:anywhere
+}
+
+.profile-details {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));
+  gap:26px 32px;
+  margin:0
+}
+
+.profile-details dt {
+  color:var(--muted);
+  font-size:12px;
+  margin-bottom:8px
+}
+
+.profile-details dd {
+  margin:0;
+  font-size:14px;
+  font-weight:600;
+  overflow-wrap:anywhere
+}
+
+.profile-positions {
+  grid-column:1/-1
+}
+
+.profile-positions dd span {
+  display:block;
+  margin-top:6px
+}
+
 .tag-neutral {
   background:#edf1f4;
   color:#576d7e
@@ -1862,3 +1907,19 @@ details[open]>summary {
   }
 
 }
+
+/* Result email filters wrap without squeezing labels or action buttons. */
+.email-filters {
+  flex-wrap:wrap;
+  align-items:flex-end
+}
+.email-filters>div {
+  flex:1 1 150px;
+  min-width:0
+}
+.email-filters>div:first-child {
+  flex-basis:240px
+}
+
+.topic-filters {flex-wrap:wrap}
+.topic-filters>.field,.topic-filters>.select-field {flex-basis:160px}

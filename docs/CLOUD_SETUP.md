@@ -1,6 +1,6 @@
 # Hướng dẫn tạo dịch vụ cloud
 
-Cập nhật email và migration ngày 06/10/2026. Nhóm chưa tạo tài khoản cloud; cấu hình trong repository là bản chuẩn bị, chưa có website online được xác nhận. Bắt đầu bằng [hướng dẫn tạo tài khoản và deploy từng bước](HUONG_DAN_DEPLOY_TUNG_BUOC.md), gồm Aiven, Supabase, Brevo và Render.
+Cập nhật ngày 18/10/2026: công bố gửi email riêng từng SV và cho tra cứu theo đợt trên web. Nhóm chưa tạo tài khoản cloud; cấu hình trong repository là bản chuẩn bị, chưa có website online được xác nhận. Bắt đầu bằng [hướng dẫn tạo tài khoản và deploy từng bước](HUONG_DAN_DEPLOY_TUNG_BUOC.md), gồm Aiven, Supabase, dịch vụ email và Render.
 
 ## Lựa chọn hosting và câu hỏi Vercel
 
@@ -16,8 +16,8 @@ Nguồn: [Vercel Container Images](https://vercel.com/docs/functions/container-i
 
 1. Đăng ký/đăng nhập Aiven Console bằng tài khoản nhóm được phép quản lý. Tạo project rồi tạo dịch vụ MySQL. Kiểm tra Free tier còn được cung cấp cho tài khoản/region; không chọn trial trả phí nhầm với Free.
 2. Free tier không cho chọn cloud/region cụ thể. Lưu service host, port, username, password và tải CA certificate từ trang kết nối. Không gửi password lên chat/GitHub.
-3. Kết nối bằng MySQL Workbench hoặc mysql CLI với TLS và CA của Aiven. Tạo database `quanlydetai`, chạy lần lượt các script 01–06 trên DB mới. Script có DELIMITER nên dùng công cụ hỗ trợ MySQL script.
-4. Kiểm tra đủ 22 bảng, 35 trigger, 4 view và procedure liên quan. Nếu thiếu quyền CREATE ROUTINE/TRIGGER, xử lý quyền/cấu hình dịch vụ trước khi deploy app; không bỏ qua script lỗi.
+3. Kết nối bằng MySQL Workbench hoặc mysql CLI với TLS và CA của Aiven. Tạo database `quanlydetai`, chạy lần lượt các script 01–08 trên DB mới. Script có DELIMITER nên dùng công cụ hỗ trợ MySQL script.
+4. Kiểm tra đủ 24 bảng, 36 trigger, 4 view và procedure liên quan. Nếu thiếu quyền CREATE ROUTINE/TRIGGER, xử lý quyền/cấu hình dịch vụ trước khi deploy app; không bỏ qua script lỗi.
 5. Tạo admin bằng BCrypt theo README; nhập hồ sơ cần thiết qua UI. Tài khoản runtime nên được cấp quyền dữ liệu cần thiết trên database; không dùng tài khoản migration để vận hành lâu dài.
 6. Trên Render, tạo biến `DB_CA_CERT` chứa toàn bộ nội dung CA PEM tải từ Aiven, gồm cả dòng BEGIN/END CERTIFICATE. Entry point Docker tạo truststore tạm riêng cho JDBC từ chứng thư này; chứng thư CA không phải mật khẩu. Profile prod yêu cầu VERIFY_IDENTITY để xác minh cả CA và hostname. Không sửa DB_URL để tắt hoặc hạ mức SSL.
 
@@ -62,3 +62,7 @@ Nguồn: [Render Docker](https://render.com/docs/docker), [Blueprint](https://re
 - Bucket private; không có secret/public URL báo cáo trong repo hoặc HTML.
 - Luồng đã triển khai chạy sau restart; có README để thành viên khác tái tạo.
 - Ghi rõ hạn chế của plan được chọn và các luồng ứng dụng còn đang phát triển.
+
+## Email kết quả theo rubric
+
+Đã khôi phục email từng SV. Local dùng Mailpit (EMAIL_LOCAL_TEST.md). Cloud cấu hình EMAIL_ENABLED=false trước, EMAIL_BACKEND=brevo, EMAIL_FROM sender đã xác minh, EMAIL_API_KEY và PUBLIC_BASE_URL đúng HTTPS. Sau kiểm tra mới bật gửi, công bố kết quả mới và đối chiếu Inbox/Spam từng SV. Hướng dẫn chi tiết ở HUONG_DAN_DEPLOY_TUNG_BUOC.md. Chưa triển khai hoặc kiểm chứng email Internet trong lượt local này.

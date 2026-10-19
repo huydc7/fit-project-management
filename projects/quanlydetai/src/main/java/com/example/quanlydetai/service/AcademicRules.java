@@ -39,11 +39,31 @@ public class AcademicRules {
     }
 
     public void teacherWindow(DotDangKy d) {
-        window(d.getBeginGV(), d.getEndGV(), "Đã ngoài thời gian giảng viên đăng ký.");
+        var fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        window(
+                d.getBeginGV(),
+                d.getEndGV(),
+                "Đợt chỉ nhận đề xuất từ "
+                        + d.getBeginGV().format(fmt)
+                        + " đến "
+                        + d.getEndGV().format(fmt)
+                        + " (giờ Việt Nam).");
     }
 
     public LocalDateTime now() {
         return LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
+    }
+
+    public void topicReviewWindow(DotDangKy d) {
+        check(
+                now().isBefore(d.getBeginSV()),
+                "Chỉ duyệt/công bố đề tài trước khi bắt đầu đăng ký sinh viên.");
+    }
+
+    public void reviewerDeadline(DotDangKy d) {
+        check(
+                d.getDeadlineGvpbNopDiem() == null || !now().isAfter(d.getDeadlineGvpbNopDiem()),
+                "Đã quá hạn nộp điểm phản biện.");
     }
 
     public boolean inWindow(LocalDateTime begin, LocalDateTime end) {

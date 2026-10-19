@@ -14,4 +14,11 @@ public record DeTaiResponse(
         String council,
         String group,
         boolean held,
-        boolean open) {}
+        boolean open,
+        String periodId,
+        String departmentId,
+        boolean editable,
+        boolean departmentApproved,
+        List<String> supervisorIds,
+        String periodType,
+        boolean reviewOpen) {}

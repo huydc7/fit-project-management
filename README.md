@@ -2,9 +2,13 @@
 
 Ứng dụng MVC dùng Java 21, Spring Boot, Spring Data JPA/Hibernate, Spring Security, Thymeleaf, HTML/CSS thuần, JavaScript thuần và MySQL. Bản đầu hỗ trợ đợt đăng ký, đề xuất/duyệt đề tài, nhóm và lời mời, duyệt đăng ký, báo cáo, phản biện/hội đồng, chấm/tổng hợp/công bố, tài khoản và thông báo. Quy ước giao diện xem [docs/UI_DESIGN.md](docs/UI_DESIGN.md).
 
-Bắt đầu tại [hướng dẫn local](docs/LOCAL_TEST.md). Xem [danh mục và dữ liệu thực hành](docs/SAMPLE_DATA.md), [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md), [bàn giao kỹ thuật](docs/HUY_HANDOFF.md), [kiểm chứng](docs/VERIFY_HUY.md), [cloud](docs/CLOUD_SETUP.md). Nếu chưa có tài khoản dịch vụ, làm theo [hướng dẫn deploy từng bước](docs/HUONG_DAN_DEPLOY_TUNG_BUOC.md).
+Bắt đầu tại [hướng dẫn local và kiểm thử](docs/LOCAL_TEST.md). Xem [danh mục và dữ liệu thực hành](docs/SAMPLE_DATA.md), [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md), [kiến trúc](docs/ARCHITECTURE.md) và [cloud](docs/CLOUD_SETUP.md). Nếu chưa có tài khoản dịch vụ, làm theo [hướng dẫn deploy từng bước](docs/HUONG_DAN_DEPLOY_TUNG_BUOC.md).
 
 Đưa source lên GitHub, mời thành viên và review qua Pull Request: [quy trình làm việc nhóm](docs/GITHUB_TEAMWORK.md).
+
+Email có tìm/lọc/phân trang và REST; danh sách đề tài tải dữ liệu liên quan theo tập mã để tránh truy vấn lặp theo từng dòng. Xem [thiết kế xử lý và giới hạn](docs/ARCHITECTURE.md).
+
+Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn đợt được mô tả trong [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md). Database mới chạy SQL 01–08; database đã có dữ liệu nâng cấp theo [hướng dẫn local](docs/LOCAL_TEST.md).
 
 ## Chạy Docker
 
@@ -17,11 +21,11 @@ Copy-Item .env.example .env
 .\tools\Start-Local.ps1 -Docker
 ```
 
-Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–06 tự nạp ở lần tạo volume đầu tiên; volume cũ đã có 01–05 cần `tools/Update-RubricDatabase.ps1` để sao lưu và nâng cấp 06 trước khi chạy bản mới. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
+Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–08 tự nạp ở lần tạo volume đầu tiên; volume cũ đã có 01–05 cần `tools/Update-RubricDatabase.ps1` để sao lưu và nâng cấp 06, sau đó `tools/Update-DepartmentReview.ps1` nâng cấp 07, rồi `tools/Update-TopicReviewDeadline.ps1` nâng cấp 08 trước khi chạy bản mới. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
 
 ## Chạy Java và MySQL đã cài
 
-Nạp `projects/Database/01_schema_mysql.sql` → `02_logic_mysql.sql` → `03_views_seed_mysql.sql` → `04_workflow_mysql.sql` → `05_department_catalog_mysql.sql` → `06_rubric_email_groups.sql`. CSDL có 22 bảng, 35 trigger, 4 view. Bản gốc đủ 01–03 cần 04/05/06; sao lưu trước khi nâng cấp. Hibernate dùng validate.
+Nạp `projects/Database/01_schema_mysql.sql` → `02_logic_mysql.sql` → `03_views_seed_mysql.sql` → `04_workflow_mysql.sql` → `05_department_catalog_mysql.sql` → `06_rubric_email_groups.sql` → `07_department_review.sql` → `08_topic_review_deadline.sql`. CSDL có 24 bảng, 36 trigger, 4 view. Bản gốc đủ 01–03 cần 04/05/06/07/08; sao lưu trước khi nâng cấp. Hibernate dùng validate.
 
 Tạo `.env.native` riêng với DB_URL trỏ localhost:3306/quanlydetai, DB_USERNAME/DB_PASSWORD của MySQL trên máy, PORT=8081 nếu Docker đang dùng 8080, STORAGE_BACKEND=local. Có thể bật dữ liệu thực hành theo SAMPLE_DATA.md. Chạy:
 
@@ -44,7 +48,7 @@ cd projects/quanlydetai
 .\mvnw.cmd clean verify
 ```
 
-H2, SMTP và HTTP giả lập không cần cloud. Test MySQL dùng DB riêng đã nạp 01–06; có thể tạo bằng `docker compose -f compose.test.yaml up -d --wait` (cổng 3308, mật khẩu chỉ dành cho test nằm trong file này). Đặt TEST_DB_URL, TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver, TEST_DB_USERNAME, TEST_DB_PASSWORD, TEST_DDL_MODE=validate, TEST_DB_INIT_SQL="SET time_zone='+07:00'" rồi chạy `mvnw.cmd '-Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,MySqlTriggerIntegrationTest' test`. Không chạy trên DB vận hành. JAR nằm trong target/quanlydetai-0.0.1-SNAPSHOT.jar.
+H2 và HTTP giả lập không cần cloud. Test MySQL dùng DB riêng đã nạp 01–08; có thể tạo bằng `docker compose -f compose.test.yaml up -d --wait` (cổng 3308, mật khẩu chỉ dành cho test nằm trong file này). Đặt TEST_DB_URL, TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver, TEST_DB_USERNAME, TEST_DB_PASSWORD, TEST_DDL_MODE=validate, TEST_DB_INIT_SQL="SET time_zone='+07:00'" rồi chạy `mvnw.cmd '-Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,CatalogIntegrationTest,MySqlTriggerIntegrationTest' test`. Không chạy trên DB vận hành. JAR nằm trong target/quanlydetai-0.0.1-SNAPSHOT.jar.
 
 ## Admin đầu tiên khi không dùng bộ thực hành
 
@@ -62,13 +66,13 @@ INSERT INTO TAI_KHOAN (Ma_TK,Ten_Dang_Nhap,Mat_Khau_Hash,Vai_Tro,Trang_Thai)
 VALUES ('ADMIN01','admin','<BCrypt vừa tạo>','Admin','HoatDong');
 ```
 
-Admin tạo hồ sơ/tài khoản và bổ nhiệm Trưởng khoa qua UI. Trưởng khoa là GV có Dang_Giu_Chuc=true, không phải vai trò mới trong TAI_KHOAN. Admin không mặc nhiên có quyền chấm điểm hoặc đọc báo cáo.
+Admin tạo hồ sơ/tài khoản, bổ nhiệm Trưởng khoa và Trưởng bộ môn qua UI. Đề tài mới cần Trưởng bộ môn duyệt trước, Trưởng khoa công bố sau. Trưởng khoa là GV có Dang_Giu_Chuc=true, không phải vai trò mới trong TAI_KHOAN. Admin không mặc nhiên có quyền chấm điểm hoặc đọc báo cáo.
 
 ## Source và triển khai
 
-22 entity bảng, 8 interface Spring Data JPA và JpaEntityRepository cho giao dịch nhiều entity (persist/flush/refresh/khóa ghi). Controller dùng DTO; service kiểm tra vai trò, quan hệ, thời gian và trạng thái. Không chứa hồ sơ/đề tài giả trong code nghiệp vụ. SQL view giữ cho truy vấn DB; đã bỏ lớp view và repository không còn sử dụng.
+24 entity bảng đang sử dụng, 9 interface Spring Data JPA và JpaEntityRepository cho giao dịch nhiều entity (persist/flush/refresh/khóa ghi). Controller dùng DTO; service kiểm tra vai trò, quan hệ, thời gian và trạng thái. Không chứa hồ sơ/đề tài giả trong code nghiệp vụ. SQL view giữ cho truy vấn DB; đã bỏ lớp view và repository không còn sử dụng.
 
-Công bố kết quả tạo một email cho mỗi thành viên trong cùng transaction; worker gửi sau commit, có thử lại và trang `/dean/result-emails`. Mặc định `EMAIL_ENABLED=false`; local dùng Mailpit, Render dùng Brevo HTTPS. Xem cấu hình và nghiệm thu trong hướng dẫn deploy từng bước. SV tra cứu điểm bằng `/student/results?period=...`, chỉ trong các đợt đã đăng ký.
+Trưởng khoa công bố kết quả sau khi chủ tịch tổng hợp. Sinh viên xem điểm và nhận xét trực tiếp tại `/student/results?period=...`, chỉ trong các đợt đã tham gia và chỉ sau công bố. Công bố đồng thời tạo một email riêng cho từng SV trong nhóm; worker gửi sau khi transaction hoàn tất. Trưởng khoa theo dõi và thử lại thư lỗi tại `/dean/result-emails`. Chạy `tools/Start-Local.ps1 -Docker -LocalEmail` để xem email local tại http://localhost:8025; hướng dẫn và kiểm thử SMTP ở [EMAIL_LOCAL_TEST.md](docs/EMAIL_LOCAL_TEST.md).
 
 Local lưu file trong uploads hoặc LOCAL_STORAGE_PATH, tải qua endpoint kiểm tra quyền. Cloud dùng Supabase private, signed URL 300 giây, TLS MySQL VERIFY_IDENTITY với CA; prod luôn tắt bộ dữ liệu thực hành. Cấu hình CI/Render có sẵn, chưa đồng nghĩa cloud đã nghiệm thu.
 
@@ -77,3 +81,5 @@ Không commit .env, .env.native, secret, uploads, target, truststore hoặc back
 ## Kiến trúc và API
 
 Xem [giải thích cấu trúc](docs/ARCHITECTURE.md) và [REST API v1](docs/REST_API.md). Controller HTML và REST dùng chung service; công cụ nhập dữ liệu thực hành chỉ ở test classpath, không được đóng gói vào JAR.
+
+Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio), [Use case](projects/Database/USE_CASE_FIT.drawio) và [từ điển CSDL](docs/DATABASE_DICTIONARY.md). Bản source chia sẻ không gồm cấu hình riêng, dữ liệu upload, database dump hoặc kết quả build; xem cách xuất ZIP trong [quy trình làm việc nhóm](docs/GITHUB_TEAMWORK.md).

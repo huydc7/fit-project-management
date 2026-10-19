@@ -36,7 +36,7 @@ jobs:
           MYSQL_PWD: ci-only-password
         run: |
           mysql -h 127.0.0.1 -uroot -e 'SET GLOBAL log_bin_trust_function_creators=1;'
-          for script in projects/Database/0{1,2,3,4,5,6}_*.sql; do
+          for script in projects/Database/0{1,2,3,4,5,6,7,8}_*.sql; do
             mysql -h 127.0.0.1 -uroot --default-character-set=utf8mb4 < "$script"
           done
       - name: Verify mappings and HTTP flows on MySQL
@@ -48,6 +48,6 @@ jobs:
           TEST_DB_PASSWORD: ci-only-password
           TEST_DDL_MODE: validate
           TEST_DB_INIT_SQL: "SET time_zone='+07:00'"
-        run: bash mvnw -B -ntp -Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,MySqlTriggerIntegrationTest test
+        run: bash mvnw -B -ntp -Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,CatalogIntegrationTest,MySqlTriggerIntegrationTest test
       - name: Verify Docker packaging
         run: docker build -t quanlydetai:ci .

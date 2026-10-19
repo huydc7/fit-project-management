@@ -21,8 +21,10 @@ services:
       - ./projects/Database/04_workflow_mysql.sql:/docker-entrypoint-initdb.d/04_workflow.sql:ro
       - ./projects/Database/05_department_catalog_mysql.sql:/docker-entrypoint-initdb.d/05_departments.sql:ro
       - ./projects/Database/06_rubric_email_groups.sql:/docker-entrypoint-initdb.d/06_rubric.sql:ro
+      - ./projects/Database/07_department_review.sql:/docker-entrypoint-initdb.d/07_department_review.sql:ro
+      - ./projects/Database/08_topic_review_deadline.sql:/docker-entrypoint-initdb.d/08_topic_review_deadline.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql -h127.0.0.1 -uroot quanlydetai -e 'SELECT 1 FROM EMAIL_KET_QUA LIMIT 1'"]
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql -h127.0.0.1 -uroot quanlydetai -e 'SELECT 1 FROM DUYET_BO_MON LIMIT 1'"]
       interval: 5s
       timeout: 5s
       retries: 30

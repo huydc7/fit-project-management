@@ -97,7 +97,7 @@ class FoundationIntegrationTest {
 
     @Test
     void authenticatesWithBcryptAndRejectsWrongPassword() throws Exception {
-        // Optional SMTP is deliberately unavailable in this test environment.
+        // Website health depends on the application and database.
         mvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));

@@ -6,7 +6,8 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Duyệt, phân công và công bố</h1>
-<p><a class="button button-outline" th:href="@{/dean/result-emails}">Theo dõi email kết quả</a></p>
+<div th:replace="~{layout/search :: topicFilters(@{/dean/approvals})}"></div>
+<p><a th:href="@{/dean/result-emails}">Theo dõi email kết quả</a></p>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
@@ -24,7 +25,9 @@
 </span>
 </p>
 <form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/dean/topics/{id}/review(id=${t.id})}">
-<button class="button button-success space-right-sm" name="accept" value="true">Duyệt và công bố đề tài</button>
+<p class="muted" th:unless="${t.departmentApproved}">Chưa được Trưởng bộ môn duyệt.</p>
+<p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt: phải hoàn tất trước giờ SV bắt đầu đăng ký.</p>
+<button class="button button-success space-right-sm" name="accept" value="true" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Duyệt và công bố đề tài</button>
 <button class="button button-danger" name="accept" value="false">Từ chối</button>
 </form>
 <div th:if="${t.state == 'DangThucHien'}">

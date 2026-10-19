@@ -27,12 +27,12 @@ class MySqlTriggerIntegrationTest {
         jdbc.update("INSERT INTO BO_MON VALUES ('SIZE_BM','Size test')");
         jdbc.update(
                 "INSERT INTO GV(Ma_GV,Ho_Ten,Email,Ma_Bo_Mon) VALUES"
-                    + " ('SIZE_GV','Teacher','size@example.test','SIZE_BM')");
+                        + " ('SIZE_GV','Teacher','size@example.test','SIZE_BM')");
         jdbc.update("INSERT INTO TRUONG_KHOA(Ma_GV,Dang_Giu_Chuc) VALUES ('SIZE_GV',true)");
         jdbc.update(
                 "INSERT INTO DOT_DANG_KY VALUES ('SIZE_DOT','SIZE_GV','Size"
-                    + " period','MonHoc',NOW()-INTERVAL 10 DAY,NOW()-INTERVAL 5 DAY,NOW()-INTERVAL"
-                    + " 4 DAY,NOW()+INTERVAL 10 DAY,NULL,NULL)");
+                    + " period','MonHoc',NOW()-INTERVAL 10 DAY,NOW()-INTERVAL 5 DAY,NOW()+INTERVAL"
+                    + " 1 DAY,NOW()+INTERVAL 10 DAY,NULL,NULL)");
         jdbc.update(
                 "INSERT INTO"
                     + " DE_TAI(Ma_De_Tai,Ten_De_Tai,Ma_Bo_Mon,Noi_Dung,Trang_Thai,Ma_Dot,Ma_GV_Dang_Ky,Ngay_Dang_Ky)"
@@ -41,9 +41,10 @@ class MySqlTriggerIntegrationTest {
                     + " DAY)");
         jdbc.update("INSERT INTO GVHD_DETAI VALUES ('SIZE_GV','SIZE_DT')");
         jdbc.update("UPDATE DE_TAI SET Trang_Thai='DaCongBo' WHERE Ma_De_Tai='SIZE_DT'");
+        jdbc.update("UPDATE DOT_DANG_KY SET Begin_SV=NOW()-INTERVAL 4 DAY WHERE Ma_Dot='SIZE_DOT'");
         jdbc.update(
                 "INSERT INTO NHOM(Ma_Nhom,Ten_Nhom,Ma_Dot) VALUES ('SIZE_N','Size"
-                    + " group','SIZE_DOT')");
+                        + " group','SIZE_DOT')");
         for (int i = 1; i <= 6; i++) {
             jdbc.update(
                     "INSERT INTO SV(Ma_SV,Ho_Ten,Email) VALUES (?,?,?)",
@@ -70,7 +71,7 @@ class MySqlTriggerIntegrationTest {
                         () ->
                                 jdbc.update(
                                         "UPDATE NHOM SET Ma_De_Tai='SIZE_DT' WHERE"
-                                            + " Ma_Nhom='SIZE_N'"));
+                                                + " Ma_Nhom='SIZE_N'"));
         assertThat(failure).isNotNull();
         assertThat(DatabaseErrorMessages.extractRootCauseMessage(failure)).contains("3-5 SV");
         addMember(3);
@@ -90,6 +91,36 @@ class MySqlTriggerIntegrationTest {
                                 "SELECT COUNT(*) FROM THANH_VIEN_NHOM WHERE Ma_Nhom='SIZE_N'",
                                 Integer.class))
                 .isEqualTo(5);
+    }
+
+    @Test
+    void mysqlRejectsLateTopicPublicationAndDepartmentApproval() {
+        seedGroup();
+        jdbc.update(
+                "INSERT INTO"
+                    + " DE_TAI(Ma_De_Tai,Ten_De_Tai,Ma_Bo_Mon,Noi_Dung,Trang_Thai,Ma_Dot,Ma_GV_Dang_Ky,Ngay_Dang_Ky)"
+                    + " VALUES"
+                    + " ('SIZE_LATE','Late','SIZE_BM','Content','Nhap','SIZE_DOT','SIZE_GV',NOW()-INTERVAL"
+                    + " 6 DAY)");
+        jdbc.update("INSERT INTO GVHD_DETAI VALUES ('SIZE_GV','SIZE_LATE')");
+        var publication =
+                catchThrowable(
+                        () ->
+                                jdbc.update(
+                                        "UPDATE DE_TAI SET Trang_Thai='DaCongBo' WHERE"
+                                                + " Ma_De_Tai='SIZE_LATE'"));
+        assertThat(publication).isNotNull();
+        assertThat(DatabaseErrorMessages.extractRootCauseMessage(publication))
+                .contains("Chi cong bo");
+        var approval =
+                catchThrowable(
+                        () ->
+                                jdbc.update(
+                                        "INSERT INTO DUYET_BO_MON(Ma_De_Tai,Ma_GV,Ngay_Duyet)"
+                                                + " VALUES ('SIZE_LATE','SIZE_GV',NOW())"));
+        assertThat(approval).isNotNull();
+        assertThat(DatabaseErrorMessages.extractRootCauseMessage(approval))
+                .contains("Chi duyet bo mon");
     }
 
     @Test

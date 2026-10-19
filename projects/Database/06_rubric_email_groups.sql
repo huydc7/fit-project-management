@@ -1,6 +1,7 @@
 -- Rubric update 06/10/2026: new registrations need 3-5 students; durable email queue.
 -- Non-destructive: no existing members/results are rewritten, no old results are emailed.
 -- Run on quanlydetai AFTER scripts 01-05. Back up before applying to an existing DB.
+-- EMAIL_KET_QUA is used by the restored result publication email module.
 SET NAMES utf8mb4;
 USE quanlydetai;
 

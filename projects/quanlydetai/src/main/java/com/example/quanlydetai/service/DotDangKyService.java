@@ -117,4 +117,127 @@ public class DotDangKyService {
     private boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public List<DotDangKyView> search(String q) {
+        return list().stream()
+                .filter(d -> SearchText.matches(q, d.maDot(), d.tenDotDangKy(), d.loai()))
+                .toList();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public DotDangKyForm editForm(String id) {
+        DotDangKy d = entityManager.find(DotDangKy.class, id);
+        if (d == null) throw new BusinessException("Không tìm thấy đợt.");
+        DotDangKyForm f = new DotDangKyForm();
+        f.setMaDot(d.getMaDot());
+        f.setTenDotDangKy(d.getTenDotDangKy());
+        f.setLoai(d.getLoai());
+        f.setBeginGV(d.getBeginGV());
+        f.setEndGV(d.getEndGV());
+        f.setBeginSV(d.getBeginSV());
+        f.setEndSV(d.getEndSV());
+        f.setDeadlineGvpbNopDiem(d.getDeadlineGvpbNopDiem());
+        f.setTimeBcHd(d.getTimeBcHd());
+        return f;
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TRUONGKHOA') and #maGV == authentication.principal.maGV")
+    public void update(String id, @jakarta.validation.Valid DotDangKyForm f, String maGV) {
+        security.requireTruongKhoa(maGV);
+        if (!id.equals(f.getMaDot())) throw new BusinessException("Không được thay đổi mã đợt.");
+        var errors = kiemTra(f);
+        if (!errors.isEmpty()) throw new BusinessException(String.join(" ", errors));
+        DotDangKy d =
+                entityManager.find(
+                        DotDangKy.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if (d == null) throw new BusinessException("Không tìm thấy đợt.");
+        boolean occupied = hasActivity(id);
+        if (occupied
+                && (!java.util.Objects.equals(d.getLoai(), f.getLoai())
+                        || !sameMinute(d.getBeginGV(), f.getBeginGV())
+                        || !sameMinute(d.getEndGV(), f.getEndGV())
+                        || !sameMinute(d.getBeginSV(), f.getBeginSV())
+                        || !sameMinute(d.getTimeBcHd(), f.getTimeBcHd())))
+            throw new BusinessException(
+                    "Đợt đã có dữ liệu: không đổi loại, mốc GV, bắt đầu SV hoặc ngày hội đồng; chỉ"
+                            + " được sửa tên và gia hạn.");
+        if (occupied) {
+            boolean extended =
+                    !sameMinute(d.getEndSV(), f.getEndSV())
+                            || !sameMinute(d.getDeadlineGvpbNopDiem(), f.getDeadlineGvpbNopDiem());
+            if (f.getEndSV()
+                            .isBefore(
+                                    d.getEndSV().truncatedTo(java.time.temporal.ChronoUnit.MINUTES))
+                    || (d.getDeadlineGvpbNopDiem() != null
+                            && (f.getDeadlineGvpbNopDiem() == null
+                                    || f.getDeadlineGvpbNopDiem()
+                                            .isBefore(
+                                                    d.getDeadlineGvpbNopDiem()
+                                                            .truncatedTo(
+                                                                    java.time.temporal.ChronoUnit
+                                                                            .MINUTES)))))
+                throw new BusinessException("Không được rút ngắn hạn của đợt đã có dữ liệu.");
+            if (extended
+                    && !entityManager
+                            .createQuery(
+                                    "select k from KetQuaDeTai k where k.maDeTai in (select"
+                                            + " t.maDeTai from DeTai t where t.maDot=:id)")
+                            .setParameter("id", id)
+                            .setMaxResults(1)
+                            .getResultList()
+                            .isEmpty())
+                throw new BusinessException("Đợt đã có kết quả tổng hợp; chỉ được sửa tên.");
+        }
+        d.setTenDotDangKy(f.getTenDotDangKy().strip());
+        if (occupied) {
+            if (!sameMinute(d.getEndSV(), f.getEndSV())) d.setEndSV(f.getEndSV());
+            if (!sameMinute(d.getDeadlineGvpbNopDiem(), f.getDeadlineGvpbNopDiem()))
+                d.setDeadlineGvpbNopDiem(f.getDeadlineGvpbNopDiem());
+            entityManager.flush();
+            return;
+        }
+        d.setLoai(f.getLoai());
+        d.setBeginGV(f.getBeginGV());
+        d.setEndGV(f.getEndGV());
+        d.setBeginSV(f.getBeginSV());
+        d.setEndSV(f.getEndSV());
+        d.setDeadlineGvpbNopDiem(f.getDeadlineGvpbNopDiem());
+        d.setTimeBcHd(f.getTimeBcHd());
+        entityManager.flush();
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('TRUONGKHOA') and #maGV == authentication.principal.maGV")
+    public void delete(String id, String maGV) {
+        security.requireTruongKhoa(maGV);
+        DotDangKy d =
+                entityManager.find(
+                        DotDangKy.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        if (d == null) throw new BusinessException("Không tìm thấy đợt.");
+        if (hasActivity(id))
+            throw new BusinessException("Đợt đã có đề tài/nhóm/hội đồng; không thể xóa.");
+        entityManager.remove(d);
+        entityManager.flush();
+    }
+
+    private boolean sameMinute(java.time.LocalDateTime a, java.time.LocalDateTime b) {
+        return a == null
+                ? b == null
+                : b != null
+                        && a.truncatedTo(java.time.temporal.ChronoUnit.MINUTES)
+                                .equals(b.truncatedTo(java.time.temporal.ChronoUnit.MINUTES));
+    }
+
+    private boolean hasActivity(String id) {
+        for (String type : List.of("DeTai", "Nhom", "HoiDong"))
+            if (!entityManager
+                    .createQuery("select e from " + type + " e where e.maDot=:id")
+                    .setParameter("id", id)
+                    .setMaxResults(1)
+                    .getResultList()
+                    .isEmpty()) return true;
+        return false;
+    }
 }

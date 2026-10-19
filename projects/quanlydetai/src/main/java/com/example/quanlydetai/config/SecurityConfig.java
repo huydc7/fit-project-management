@@ -93,6 +93,8 @@ public class SecurityConfig {
                                                 "/thong-bao",
                                                 "/tai-khoan/mat-khau")
                                         .authenticated()
+                                        .requestMatchers("/department/**")
+                                        .hasRole("TRUONGBOMON")
                                         .requestMatchers("/dean/**")
                                         .hasRole("TRUONGKHOA")
                                         .requestMatchers("/lecturer/**")
@@ -105,6 +107,7 @@ public class SecurityConfig {
                                                 "/",
                                                 "/error",
                                                 "/announcements",
+                                                "/announcements/**",
                                                 "/accounts/**",
                                                 "/reports/**")
                                         .authenticated()

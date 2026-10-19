@@ -6,6 +6,7 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Đề tài đã công bố</h1>
+<div th:replace="~{layout/search :: topicFilters(@{/student/topics})}"></div>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">

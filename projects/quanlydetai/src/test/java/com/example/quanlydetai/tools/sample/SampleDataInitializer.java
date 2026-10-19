@@ -182,7 +182,9 @@ public class SampleDataInitializer implements ApplicationRunner {
                 association.setMaGV(requiredMapping(teacherIds, supervisor));
                 persist(association);
             }
-            if (topic.published()) entity.setTrangThai("DaCongBo");
+            // Strict phase gate also applies to new sample topics; never reopen an existing period.
+            if (topic.published() && LocalDateTime.now(VIETNAM).isBefore(period.getBeginSV()))
+                entity.setTrangThai("DaCongBo");
             entityManager.flush();
         }
         var notice = data.notice();

@@ -1,0 +1,9 @@
+<html xmlns:th="http://www.thymeleaf.org"><body>
+<form method="get" class="panel panel-body space-bottom inline-fields gap-sm topic-filters" th:fragment="topicFilters(action)" th:action="${action}">
+<input class="field" name="q" th:value="${q}" placeholder="Tìm theo mã, tên hoặc nội dung đề tài" aria-label="Tìm đề tài" maxlength="200">
+<select class="select-field" name="department" aria-label="Lọc bộ môn"><option value="">Tất cả bộ môn</option><option th:each="d:${departments}" th:value="${d.id}" th:text="${d.label}" th:selected="${d.id == departmentFilter}"></option></select>
+<select class="select-field" name="period" aria-label="Lọc đợt"><option value="">Tất cả đợt</option><option th:each="p:${periods}" th:value="${p.id}" th:text="${p.label}" th:selected="${p.id == periodFilter}"></option></select>
+<select class="select-field" name="type" aria-label="Lọc loại đợt"><option value="">Tất cả loại đợt</option><option th:each="v : ${ {'MonHoc','NCKH','TLCN','KLTN'} }" th:value="${v}" th:text="${v}" th:selected="${v == typeFilter}"></option></select>
+<select class="select-field" name="state" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option th:each="v : ${ {'Nhap','DaCongBo','DangThucHien','HoanThanh','Huy'} }" th:value="${v}" th:text="${v}" th:selected="${v == stateFilter}"></option></select>
+<button class="button button-primary">Tìm kiếm</button><a class="button button-outline" th:href="${action}">Bỏ lọc</a>
+</form></body></html>

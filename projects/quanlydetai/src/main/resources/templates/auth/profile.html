@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+<title>Thông tin cá nhân | FIT HCMUTE</title>
+</head>
+<body>
+<main class="personal-profile">
+<h1 class="page-title space-bottom">Thông tin cá nhân</h1>
+<section class="panel" aria-labelledby="profile-name">
+<div class="panel-body profile-heading">
+<span class="avatar" aria-hidden="true">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+</span>
+<div>
+<h2 id="profile-name" class="section-title" th:text="${profile.fullName}"></h2>
+<span class="muted" th:text="${profile.role == 'SV' ? 'Sinh viên' : 'Giảng viên'}"></span>
+</div>
+</div>
+<dl class="profile-details panel-body">
+<div><dt th:text="${profile.role == 'SV' ? 'Mã số sinh viên' : 'Mã số giảng viên'}"></dt><dd th:text="${profile.code}"></dd></div>
+<div><dt>Họ và tên</dt><dd th:text="${profile.fullName}"></dd></div>
+<div><dt>Email</dt><dd th:text="${#strings.isEmpty(profile.email) ? 'Chưa cập nhật' : profile.email}"></dd></div>
+<div><dt>Tên đăng nhập</dt><dd th:text="${profile.username}"></dd></div>
+<div th:if="${profile.role == 'GV'}"><dt>Bộ môn</dt><dd th:text="${profile.departmentName}"></dd></div>
+<div><dt>Khoa</dt><dd>Khoa Công nghệ thông tin (FIT)</dd></div>
+<div th:if="${profile.role == 'GV'}" class="profile-positions">
+<dt>Chức vụ hiện tại</dt>
+<dd>
+<span th:if="${profile.dean}">Trưởng khoa Công nghệ thông tin</span>
+<span th:if="${profile.departmentHead}" th:text="${'Trưởng bộ môn ' + profile.departmentName}"></span>
+<span th:if="${!profile.dean and !profile.departmentHead}">Giảng viên</span>
+</dd>
+</div>
+</dl>
+</section>
+<p class="muted caption space-top">Nếu thông tin chưa chính xác, vui lòng liên hệ quản trị viên để cập nhật.</p>
+</main>
+</body>
+</html>

@@ -31,4 +31,25 @@ public class QuanTriDanhMucRestController {
     public void dean(@Valid @RequestBody BoNhiemRequest body) {
         service.dean(body.teacher(), body.appointed());
     }
+
+    @PutMapping("/departments/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void update(@PathVariable String id, @Valid @RequestBody BoMonRequest body) {
+        if (!id.equals(body.id()))
+            throw new com.example.quanlydetai.exception.BusinessException(
+                    "Không được đổi mã bộ môn.");
+        service.updateDepartment(id, body.name());
+    }
+
+    @DeleteMapping("/departments/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id) {
+        service.deleteDepartment(id);
+    }
+
+    @PutMapping("/department-head")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void head(@Valid @RequestBody com.example.quanlydetai.dto.TruongBoMonRequest body) {
+        service.appointDepartmentHead(body);
+    }
 }

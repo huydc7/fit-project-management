@@ -23,8 +23,17 @@ public class ResultEmailController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("emails", emails.statuses());
+    public String list(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "") String state,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Model model) {
+        var results = emails.search(q, state, page, size);
+        model.addAttribute("emails", results.content());
+        model.addAttribute("emailPage", results);
+        model.addAttribute("q", q);
+        model.addAttribute("selectedState", state.strip().toUpperCase(java.util.Locale.ROOT));
         model.addAttribute("deliveryEnabled", enabled);
         return "truongkhoa/result-emails";
     }

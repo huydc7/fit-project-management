@@ -6,53 +6,33 @@ Cập nhật 06/10/2026. Dành cho Huy và nhóm chưa có tài khoản cloud. T
 
 | Dịch vụ | Dùng để làm gì | Thông tin đưa vào Render |
 |---|---|---|
-| Aiven MySQL | Tài khoản web, đề tài, nhóm, điểm, hàng đợi email | DB_URL, DB_USERNAME, DB_PASSWORD, DB_CA_CERT |
+| Aiven MySQL | Tài khoản web, đề tài, nhóm, điểm | DB_URL, DB_USERNAME, DB_PASSWORD, DB_CA_CERT |
 | Supabase Storage | File báo cáo trong bucket private | SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET |
-| Brevo | Email thông báo điểm tới từng sinh viên | EMAIL_FROM, EMAIL_API_KEY |
+| Dịch vụ email | Email công bố kết quả riêng từng SV | EMAIL_BACKEND, EMAIL_FROM, EMAIL_API_KEY |
 | Render | Chạy Docker chứa Spring Boot và giao diện Thymeleaf | Các biến trên, profile prod và URL web |
 
 Docker là cách đóng gói ứng dụng; Render là nơi chạy gói đó. Không phải lựa chọn một trong hai. Supabase PostgreSQL đi kèm project không thay thế MySQL của đồ án.
 
-Làm theo thứ tự: kiểm thử local → Aiven → Supabase → Brevo → Render → nghiệm thu HTTPS. Có thể tạo tài khoản Render trước, nhưng chỉ tạo web service sau khi đã có database và bucket.
+Làm theo thứ tự: kiểm thử local → Aiven → Supabase → xác minh dịch vụ email → Render → nghiệm thu HTTPS. Có thể tạo tài khoản Render trước, nhưng chỉ tạo web service sau khi đã có database và bucket.
 
 Chuẩn bị GitHub có quyền vào repository nhóm, email bạn kiểm soát để xác minh các dịch vụ, MySQL Workbench và mật khẩu riêng cho từng dịch vụ. Lưu secret trong trình quản lý mật khẩu hoặc dashboard; không gửi chúng vào chat, chụp lên báo cáo hoặc commit GitHub. Chọn Free khi có lựa chọn, kiểm tra trang xác nhận chi phí trước khi tạo dịch vụ. Nếu không thấy Free, dừng ở bước đó để kiểm tra thay vì tự chọn gói trả phí.
 
 ## 2. Kiểm tra local trước
 
-DB mới chạy SQL 01 → 02 → 03 → 04 → 05 → 06 trong `projects/Database`. DB đã có 01–05 chỉ cần nâng cấp 06; không chạy lại bộ seed để xử lý nâng cấp.
+DB mới chạy SQL 01 → 02 → 03 → 04 → 05 → 06 → 07 trong `projects/Database`. DB đã có 01–05 nâng cấp 06 rồi 07; không chạy lại bộ seed để xử lý nâng cấp.
 
 Nếu dùng MySQL Docker của dự án, script sau dừng app, sao lưu toàn DB vào `backups`, rồi chạy migration 06. Nó không xóa thành viên, báo cáo hay điểm:
 
 ```powershell
 cd D:\project_web\final_projects
 .\tools\Update-RubricDatabase.ps1
+.\tools\Update-DepartmentReview.ps1
 .\tools\Start-Local.ps1 -Docker
 ```
 
-Nếu dùng MySQL cài trên Windows: dừng tiến trình Spring Boot, xuất backup bằng Workbench, mở `06_rubric_email_groups.sql` trên đúng connection và chạy toàn bộ script. Sau đó chạy lại `Start-Local.ps1 -EnvFile .env.native`. Không dùng `ddl-auto=create/update` để thay migration.
+Nếu dùng MySQL cài trên Windows: dừng tiến trình Spring Boot, xuất backup bằng Workbench, mở `06_rubric_email_groups.sql` rồi `07_department_review.sql` trên đúng connection và chạy toàn bộ mỗi script. Nếu DB đã có 06, chỉ nạp 07. Sau đó chạy lại `Start-Local.ps1 -EnvFile .env.native`. Không dùng `ddl-auto=create/update` để thay migration.
 
-Thử email bằng Mailpit, không gửi ra hộp thư thật:
-
-```powershell
-docker compose --profile mail up -d mailpit
-```
-
-Thêm/sửa vào `.env` đang dùng, không copy đè toàn file:
-
-```dotenv
-EMAIL_ENABLED=true
-EMAIL_BACKEND=smtp
-EMAIL_FROM=fit@example.test
-PUBLIC_BASE_URL=http://localhost:8080
-MAIL_HOST=localhost
-MAIL_PORT=1025
-```
-
-Chạy lại app. Compose tự dùng hostname `mailpit`; Maven native dùng `localhost`. Nếu web native chạy cổng 8081, sửa PUBLIC_BASE_URL tương ứng. Mở [hộp thư local](http://localhost:8025), thực hiện công bố điểm của một nhóm mới. Mỗi thành viên phải có một thư riêng. Trưởng khoa xem hàng đợi tại `/dean/result-emails`; thời gian chờ bình thường khoảng một chu kỳ 15 giây. Mailpit là máy chủ SMTP nhận thư thật trong local, nhưng không chuyển chúng tới Gmail. Đây là bằng chứng kiểm thử, chưa phải nghiệm thu email online.
-
-Nếu không dùng Docker cho bất kỳ thành phần nào, tải Mailpit bản Windows từ [hướng dẫn cài đặt chính thức](https://mailpit.axllent.org/docs/install/), giải nén và chạy `mailpit.exe`; giữ MAIL_HOST=localhost. Không cần cài một mail server công cộng.
-
-Email đã công bố trước migration không được tự gửi lại. Khi đổi từ Mailpit sang Brevo, kiểm tra hàng đợi PENDING/FAILED trước khi bật gửi để không phát các thư thử còn tồn. Không đưa các địa chỉ `example.test` vào kịch bản gửi thật.
+Chạy `tools/Start-Local.ps1 -Docker -LocalEmail` để thử gửi email sau công bố tại hộp thư http://localhost:8025, đồng thời cho SV tra cứu theo đợt trên web. Không cần tài khoản email cloud khi thử local; xem EMAIL_LOCAL_TEST.md.
 
 ## 3. Aiven: tạo MySQL và nạp cấu trúc
 
@@ -79,6 +59,8 @@ Trên **database cloud mới**, mở và chạy toàn bộ từng file theo th�
 04_workflow_mysql.sql
 05_department_catalog_mysql.sql
 06_rubric_email_groups.sql
+07_department_review.sql
+08_topic_review_deadline.sql
 ```
 
 Kiểm tra Action Output sau mỗi file. Script có DELIMITER nên chạy toàn bộ bằng Workbench hoặc mysql CLI hỗ trợ script, không dán từng đoạn thân trigger. Nếu gặp lỗi quyền CREATE ROUTINE/TRIGGER hoặc binary logging, kiểm tra cấu hình/quyền của Aiven trước khi tiếp tục; không bỏ các trigger để cho app chạy.
@@ -87,9 +69,9 @@ Xác nhận cấu trúc:
 
 ```sql
 SELECT COUNT(*) AS base_tables FROM information_schema.TABLES
- WHERE TABLE_SCHEMA='quanlydetai' AND TABLE_TYPE='BASE TABLE'; -- 22
+ WHERE TABLE_SCHEMA='quanlydetai' AND TABLE_TYPE='BASE TABLE'; -- 24
 SELECT COUNT(*) AS triggers_count FROM information_schema.TRIGGERS
- WHERE TRIGGER_SCHEMA='quanlydetai'; -- 35
+ WHERE TRIGGER_SCHEMA='quanlydetai'; -- 36
 SELECT COUNT(*) AS views_count FROM information_schema.VIEWS
  WHERE TABLE_SCHEMA='quanlydetai'; -- 4
 ```
@@ -183,19 +165,19 @@ Không đặt Root Directory thành `projects/quanlydetai`, vì Dockerfile hiệ
 | SUPABASE_URL / SUPABASE_KEY | Bước 4 |
 | SUPABASE_BUCKET | `bao-cao-de-tai` |
 | EMAIL_BACKEND | `brevo` |
-| EMAIL_FROM / EMAIL_API_KEY | Bước 5 |
-| EMAIL_ENABLED | `false` lúc triển khai lần đầu |
-| PUBLIC_BASE_URL | URL HTTPS thật do Render cấp; cập nhật sau lần tạo service |
+| EMAIL_FROM / EMAIL_API_KEY | Sender đã xác minh / API key riêng |
+| EMAIL_ENABLED | `false` tới khi nghiệm thu email |
+| PUBLIC_BASE_URL | URL HTTPS thật của web |
 
-Nếu chưa biết URL, có thể tạm bỏ PUBLIC_BASE_URL khi EMAIL_ENABLED=false; sau khi service được tạo, sao chép chính xác URL trên dashboard rồi lưu biến này. Không để link localhost trong email online. Không thêm dấu nháy bao quanh giá trị trên dashboard. PORT để Render cung cấp; Spring đọc sẵn biến này.
+Không thêm dấu nháy bao quanh giá trị trên dashboard. PORT để Render cung cấp; Spring đọc sẵn biến này.
 
-Create Web Service và theo dõi build/deploy logs. Dấu hiệu sẵn sàng: trạng thái Live, mở `/actuator/health` trả `UP`, `/login` tải được. `ddl-auto=validate` sẽ ngăn app chạy nếu thiếu bảng, kể cả `EMAIL_KET_QUA`.
+Create Web Service và theo dõi build/deploy logs. Dấu hiệu sẵn sàng: trạng thái Live, mở `/actuator/health` trả `UP`, `/login` tải được. `ddl-auto=validate` sẽ ngăn app chạy nếu thiếu bảng như `TRUONG_BO_MON` và `DUYET_BO_MON`.
 
-Nhóm cũng có thể dùng New → Blueprint với `render.yaml` thay cho các bước nhập service thủ công; **chỉ chọn một cách** để không tạo hai service trùng. Blueprint có EMAIL_ENABLED=false; nếu dùng Blueprint, sau khi bật gửi thật cũng cập nhật giá trị đó trong bản cấu hình đã review để lần sync tiếp theo không tắt lại.
+Nhóm cũng có thể dùng New → Blueprint với `render.yaml` thay cho các bước nhập service thủ công; **chỉ chọn một cách** để không tạo hai service trùng.
 
 ### 6.4 Tạo admin đầu tiên trên cloud
 
-Không có mật khẩu admin hardcode. Không dùng nguyên database mẫu local chứa địa chỉ giả làm dữ liệu gửi thật. Tạo hash từ terminal PowerShell tương tác trên máy:
+Không có mật khẩu admin hardcode. Dữ liệu thực hành là giả lập, không phải hồ sơ thật của trường. Tạo hash từ terminal PowerShell tương tác trên máy:
 
 ```powershell
 cd D:\project_web\final_projects\projects\quanlydetai
@@ -211,7 +193,7 @@ INSERT INTO TAI_KHOAN (Ma_TK,Ten_Dang_Nhap,Mat_Khau_Hash,Vai_Tro,Trang_Thai)
 VALUES ('ADMIN01','admin','THAY_BANG_CHUOI_BCRYPT','Admin','HoatDong');
 ```
 
-Đăng nhập web bằng `admin` và mật khẩu bạn vừa nhập. Admin tạo tài khoản/hồ sơ GV, SV, bổ nhiệm một GV làm Trưởng khoa. Dùng địa chỉ nhận do các thành viên nhóm kiểm soát để thử email. Tài khoản Aiven/Render/Supabase/Brevo và tài khoản admin của web là các tài khoản khác nhau.
+Đăng nhập web bằng `admin` và mật khẩu bạn vừa nhập. Admin tạo tài khoản/hồ sơ GV, SV, bổ nhiệm một GV làm Trưởng khoa. Tài khoản Aiven/Render/Supabase và tài khoản admin của web là các tài khoản khác nhau.
 
 ## 7. Nghiệm thu online và lấy bằng chứng báo cáo
 
@@ -232,19 +214,15 @@ Render Free ngủ sau 15 phút không có traffic và cần thời gian khởi �
 | Hiện tượng | Kiểm tra trước |
 |---|---|
 | Build không thấy Dockerfile/COPY thất bại | Repo/branch đã push chưa; root directory có đang để trống không |
-| Schema-validation missing table EMAIL_KET_QUA | Chạy migration 06 trên đúng Aiven DB |
+| Schema-validation missing table TRUONG_BO_MON/DUYET_BO_MON | Chạy migration 07 trên đúng Aiven DB |
 | Communications link failure | Aiven Running, đúng host/port, quyền truy cập mạng |
 | Access denied MySQL | Runtime user, mật khẩu, quyền trên quanlydetai |
 | PKIX / hostname verification failed | Nội dung CA và host khớp service Aiven; không tắt SSL |
 | Upload 401/403 | Đúng legacy service_role, Project URL, bucket private tồn tại |
 | Đăng nhập lại sau mỗi deploy | Session hiện lưu trong RAM; đây là giới hạn đã biết |
-| Email chờ mãi | EMAIL_ENABLED, trạng thái Render, kết nối DB; worker không chạy khi service ngủ |
-| Email FAILED | API key/sender/account activation/quota; xem logs dịch vụ, sửa rồi Trưởng khoa bấm Thử gửi lại |
-| Email ACCEPTED nhưng chưa đến | Brevo logs xem Delivered/Bounced/Blocked, kiểm tra Spam và địa chỉ SV |
-| Link thư mở localhost | Sửa PUBLIC_BASE_URL trước công bố mới; thư trong queue giữ nội dung snapshot lúc tạo |
-
-Worker tự thử tối đa 5 lần, chờ tăng dần khi thất bại. Nếu dịch vụ đã nhận nhưng phản hồi bị mất hoặc app dừng trước lúc ghi nhận, thử lại có thể tạo thư trùng. Bản này không tuyên bố gửi đúng một lần tuyệt đối; nút công bố lặp không tạo thêm bản ghi queue nhờ giao dịch và khóa UNIQUE.
 
 ## 9. Việc bạn có thể làm ngay
 
-Tạo Aiven Free và kết nối Workbench trước. Sau đó tạo Supabase bucket và Brevo sender/API key theo các bước trên. Khi xong chỉ cần cho biết bước đã hoàn tất hoặc nội dung lỗi đã che secret. Không gửi mật khẩu, API key, file `.env` hoặc ảnh dashboard chưa che thông tin nhạy cảm.
+Tạo Aiven Free và kết nối Workbench trước. Sau đó tạo Supabase bucket và cấu hình Render theo các bước trên. Khi xong chỉ cần cho biết bước đã hoàn tất hoặc nội dung lỗi đã che secret. Không gửi mật khẩu, API key, file `.env` hoặc ảnh dashboard chưa che thông tin nhạy cảm.
+
+Email PENDING: kiểm tra EMAIL_ENABLED và app có đang chạy. FAILED: sửa sender/API key/quota rồi thử lại ở `/dean/result-emails`. ACCEPTED: xem log dịch vụ và Inbox/Spam, không kết luận thư đã đến chỉ từ trạng thái này. Link đã tạo là snapshot, cần PUBLIC_BASE_URL đúng trước công bố.

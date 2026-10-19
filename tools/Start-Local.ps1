@@ -1,22 +1,42 @@
-param([switch]$Docker, [string]$EnvFile = '.env')
+param([switch]$Docker, [switch]$LocalEmail, [string]$EnvFile = '.env')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $taskEnvPath = if ([IO.Path]::IsPathRooted($EnvFile)) { $EnvFile } else { Join-Path $taskRoot $EnvFile }
+$taskSavedEmail = @{}
+function Enable-TaskLocalEmail {
+    # Process overrides only: do not edit .env or contact an external mail provider.
+    $taskMailValues = @{
+        EMAIL_ENABLED='true'; EMAIL_BACKEND='smtp'; EMAIL_FROM='fit@example.test'; EMAIL_API_KEY=''
+        MAIL_HOST='localhost'; MAIL_PORT='1025'; MAIL_USERNAME=''; MAIL_PASSWORD=''
+        MAIL_AUTH='false'; MAIL_STARTTLS='false'
+    }
+    foreach ($taskKey in $taskMailValues.Keys) {
+        $taskSavedEmail[$taskKey] = [Environment]::GetEnvironmentVariable($taskKey, 'Process')
+        [Environment]::SetEnvironmentVariable($taskKey, $taskMailValues[$taskKey], 'Process')
+    }
+}
+function Restore-TaskEmailEnvironment {
+    foreach ($taskKey in $taskSavedEmail.Keys) {
+        [Environment]::SetEnvironmentVariable($taskKey, $taskSavedEmail[$taskKey], 'Process')
+    }
+}
 if ($Docker) {
     Push-Location $taskRoot
     try {
         if (-not (Test-Path -LiteralPath $taskEnvPath)) { throw 'Create the selected environment file and set local passwords first.' }
-        & docker compose --env-file $taskEnvPath --profile app up --build -d
+        $taskComposeArgs = @('compose','--env-file',$taskEnvPath,'--profile','app')
+        if ($LocalEmail) { Enable-TaskLocalEmail; $taskComposeArgs += @('--profile','mail') }
+        & docker @taskComposeArgs up --build -d
         if ($LASTEXITCODE -ne 0) { throw 'Docker failed. Make sure Docker Desktop is running, then check compose logs.' }
         Write-Host 'Open http://localhost:8080 (or PORT from .env).'
-    } finally { Pop-Location }
+        if ($LocalEmail) { Write-Host 'Local email inbox: http://localhost:8025 (Mailpit captures messages, no external delivery).' }
+    } finally { Restore-TaskEmailEnvironment; Pop-Location }
     exit
 }
 # Native Maven does not automatically load .env. Only recognized project variables are imported.
 $allowedKeys = @('DB_URL','DB_USERNAME','DB_PASSWORD','PORT','STORAGE_BACKEND','LOCAL_STORAGE_PATH',
-    'SUPABASE_URL','SUPABASE_KEY','SUPABASE_BUCKET',
-    'EMAIL_ENABLED','EMAIL_BACKEND','EMAIL_FROM','EMAIL_API_KEY','PUBLIC_BASE_URL',
-    'MAIL_HOST','MAIL_PORT','MAIL_USERNAME','MAIL_PASSWORD','MAIL_AUTH','MAIL_STARTTLS')
+    'SUPABASE_URL','SUPABASE_KEY','SUPABASE_BUCKET','EMAIL_ENABLED','EMAIL_BACKEND','EMAIL_FROM',
+    'EMAIL_API_KEY','PUBLIC_BASE_URL','MAIL_HOST','MAIL_PORT','MAIL_USERNAME','MAIL_PASSWORD','MAIL_AUTH','MAIL_STARTTLS')
 if (Test-Path -LiteralPath $taskEnvPath) {
     foreach ($entryLine in Get-Content -LiteralPath $taskEnvPath -Encoding UTF8) {
         if ($entryLine -match '^\s*([A-Z_]+)\s*=(.*)$') {
@@ -34,8 +54,17 @@ if (Test-Path -LiteralPath $taskEnvPath) {
 if ([string]::IsNullOrWhiteSpace($env:DB_PASSWORD)) { throw 'Set DB_PASSWORD in the selected environment file or the current environment.' }
 if ([string]::IsNullOrWhiteSpace($env:LOCAL_STORAGE_PATH)) { $env:LOCAL_STORAGE_PATH = Join-Path $taskRoot 'uploads' }
 $env:SPRING_PROFILES_ACTIVE = 'dev'
+if ($LocalEmail) {
+    Push-Location $taskRoot
+    try {
+        & docker compose --env-file $taskEnvPath --profile mail up -d mailpit
+        if ($LASTEXITCODE -ne 0) { throw 'Could not start local Mailpit. Check Docker Desktop and ports 1025/8025.' }
+    } finally { Pop-Location }
+    Enable-TaskLocalEmail
+    Write-Host 'Local email inbox: http://localhost:8025 (Mailpit captures messages, no external delivery).'
+}
 Push-Location (Join-Path $taskRoot 'projects/quanlydetai')
 try {
     & .\mvnw.cmd -ntp spring-boot:run '-Dspring-boot.run.jvmArguments=-Duser.timezone=Asia/Ho_Chi_Minh'
     if ($LASTEXITCODE -ne 0) { throw 'Application failed. Check the startup error above (database/schema/JDK/password).' }
-} finally { Pop-Location }
+} finally { Restore-TaskEmailEnvironment; Pop-Location }

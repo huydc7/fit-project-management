@@ -6,6 +6,7 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Quản lý tài khoản</h1>
+<form method="get" action="/admin/accounts" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tên đăng nhập, mã, họ tên hoặc email" aria-label="Tìm kiếm" maxlength="200"><select name="role" class="select-field" aria-label="Lọc vai trò"><option value="">Tất cả vai trò</option><option th:each="r:${ {'Admin','GV','SV'} }" th:value="${r}" th:selected="${r == roleFilter}" th:text="${r}"></option></select><button class="button button-primary">Tìm kiếm</button><a href="/admin/accounts" class="button button-outline">Bỏ lọc</a></form>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
@@ -78,8 +79,8 @@
 <thead>
 <tr>
 <th>Tài khoản</th>
-<th>Vai trò</th>
-<th>Mã hồ sơ</th>
+<th>Vai trò / Chức vụ</th>
+<th>Mã hồ sơ</th><th>Họ tên / Email / Bộ môn</th>
 <th>Trạng thái</th>
 <th>Thao tác</th>
 </tr>
@@ -88,13 +89,24 @@
 <tr th:each="a : ${accounts}">
 <td th:text="${a.username}">
 </td>
-<td th:text="${a.role}">
+<td>
+<span th:text="${a.roleLabel()}"></span>
+<div th:if="${a.dean}" class="space-top-sm"><span class="tag">Trưởng khoa</span></div>
+<div th:if="${a.departmentHead}" class="space-top-sm"><span class="tag">Trưởng bộ môn</span></div>
 </td>
 <td th:text="${a.profile}">
 </td>
+<td><strong th:text="${a.name}"></strong><br><span th:text="${a.email}"></span><br><span th:text="${a.department}"></span></td>
 <td th:text="${a.state}">
 </td>
 <td>
+<details th:if="${a.role != 'Admin'}"><summary>Sửa hồ sơ</summary>
+<form method="post" th:action="@{/admin/accounts/{id}/profile(id=${a.id})}" class="space-top">
+<label class="field-label">Họ tên<input class="field space-bottom" name="name" th:value="${a.name}" required maxlength="150"></label>
+<label class="field-label">Email<input type="email" class="field space-bottom" name="email" th:value="${a.email}" required maxlength="255"></label>
+<label th:if="${a.role == 'GV'}" class="field-label">Bộ môn<select class="select-field space-bottom" name="department" required><option th:each="d:${departments}" th:value="${d.id}" th:text="${d.label}" th:selected="${d.id == a.department}"></option></select></label>
+<button class="button button-primary button-small">Lưu hồ sơ</button></form></details>
+<form method="post" th:action="@{/admin/accounts/{id}/delete(id=${a.id})}" class="space-top-sm" data-confirm="Xóa tài khoản và hồ sơ chưa có liên kết? Nếu đã có lịch sử, hãy dùng Khóa."><button class="button button-danger button-small">Xóa khi chưa sử dụng</button></form>
 <form method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
 <input type="hidden" name="active" th:value="${a.state != 'HoatDong'}">
 <button class="button button-small button-neutral" th:text="${a.state == 'HoatDong' ? 'Khóa' : 'Mở khóa'}">
@@ -112,6 +124,24 @@
 </tbody>
 </table>
 </div>
+<section class="panel panel-body space-top"><h2 class="section-title">Quản lý bộ môn</h2>
+<p class="muted">Chỉ xóa bộ môn chưa có giảng viên, đề tài hoặc chức vụ liên kết.</p>
+<form method="get" th:action="@{/admin/accounts}" class="inline-fields gap-sm space-bottom">
+<label class="field-label">Tìm bộ môn<input class="field" name="departmentQuery" th:value="${departmentQuery}" placeholder="Mã hoặc tên bộ môn"></label>
+<button class="button button-outline">Tìm bộ môn</button></form>
+<p th:if="${#lists.isEmpty(managedDepartments)}" class="muted">Không tìm thấy bộ môn phù hợp.</p>
+<div th:each="d:${managedDepartments}" class="space-bottom">
+<form method="post" th:action="@{/admin/departments/{id}/edit(id=${d.id})}" class="inline-fields gap-sm">
+<strong th:text="${d.id}"></strong><input class="field" name="name" th:value="${d.label}" aria-label="Tên bộ môn" required maxlength="150"><button class="button button-outline">Lưu tên</button></form>
+<form method="post" th:action="@{/admin/departments/{id}/delete(id=${d.id})}" data-confirm="Xóa bộ môn chưa sử dụng này?"><button class="button button-danger button-small">Xóa bộ môn</button></form>
+</div></section>
+<section class="panel panel-body space-top"><h2 class="section-title">Trưởng bộ môn</h2>
+<p th:each="h:${heads}" th:text="${h.id + ' — ' + h.label}"></p>
+<form method="post" th:action="@{/admin/department-head}">
+<label class="field-label">Bộ môn<select class="select-field space-bottom" name="department" required><option th:each="d:${departments}" th:value="${d.id}" th:text="${d.label}"></option></select></label>
+<label class="field-label">Giảng viên thuộc bộ môn<select class="select-field space-bottom" name="teacher" required><option th:each="g:${teachers}" th:value="${g.id}" th:text="${g.label}"></option></select></label>
+<button class="button button-primary" name="appointed" value="true">Bổ nhiệm / Thay thế</button>
+<button class="button button-danger" name="appointed" value="false">Thu hồi chức vụ</button></form></section>
 </main>
 </body>
 </html>

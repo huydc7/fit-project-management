@@ -25,8 +25,8 @@ public class DotDangKyRestController {
     }
 
     @GetMapping
-    public List<DotDangKyView> list() {
-        return service.list();
+    public List<DotDangKyView> list(@RequestParam(defaultValue = "") String q) {
+        return service.search(q);
     }
 
     @PostMapping
@@ -35,5 +35,25 @@ public class DotDangKyRestController {
             @Valid @RequestBody DotDangKyForm body,
             @AuthenticationPrincipal AccountPrincipal user) {
         service.create(body, user.getMaGV());
+    }
+
+    @GetMapping("/{id}")
+    public DotDangKyForm detail(@PathVariable String id) {
+        return service.editForm(id);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void update(
+            @PathVariable String id,
+            @Valid @RequestBody DotDangKyForm body,
+            @AuthenticationPrincipal AccountPrincipal user) {
+        service.update(id, body, user.getMaGV());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable String id, @AuthenticationPrincipal AccountPrincipal user) {
+        service.delete(id, user.getMaGV());
     }
 }

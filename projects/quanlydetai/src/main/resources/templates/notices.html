@@ -6,6 +6,7 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Thông báo chính thức</h1>
+<form method="get" action="/announcements" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tìm tiêu đề hoặc nội dung thông báo" aria-label="Tìm kiếm" maxlength="200"><button class="button button-primary">Tìm kiếm</button><a href="/announcements" class="button button-outline">Bỏ lọc</a></form>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
@@ -41,6 +42,13 @@
 </p>
 <p class="pre-wrap" th:text="${n.content}">
 </p>
+<details th:if="${n.manageable}"><summary>Sửa thông báo</summary>
+<form method="post" th:action="@{/announcements/{id}/edit(id=${n.id})}" class="space-top">
+<label class="field-label">Tiêu đề<input class="field space-bottom" name="title" th:value="${n.title}" required maxlength="300"></label>
+<label class="field-label">Nội dung<textarea class="field space-bottom" name="content" th:text="${n.content}" required maxlength="20000" rows="4"></textarea></label>
+<label class="field-label">Phạm vi<select class="select-field space-bottom" name="scope"><option value="Khoa" th:selected="${n.scope == 'Khoa'}">Khoa</option><option value="NhaTruong" sec:authorize="hasRole('ADMIN')" th:selected="${n.scope == 'NhaTruong'}">Nhà trường</option></select></label>
+<button class="button button-primary">Lưu thay đổi</button></form></details>
+<form th:if="${n.manageable}" method="post" th:action="@{/announcements/{id}/delete(id=${n.id})}" data-confirm="Xóa thông báo này?" class="space-top"><button class="button button-danger">Xóa thông báo</button></form>
 </article>
 </main>
 </body>

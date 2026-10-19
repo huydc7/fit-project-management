@@ -27,6 +27,12 @@
 <span>Tổng quan</span>
 </a>
 </li>
+<li sec:authorize="hasAnyRole('SV', 'GV')">
+<a class="nav-link" th:href="@{/accounts/profile}" th:classappend="${currentPath == '/accounts/profile'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/accounts/profile' ? 'page' : null}">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+<span>Thông tin cá nhân</span>
+</a>
+</li>
 <li sec:authorize="hasRole('SV')">
 <a class="nav-link" th:href="@{/student/groups}" th:classappend="${currentPath == '/student/groups'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/student/groups' ? 'page' : null}">
 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -111,6 +117,7 @@
 <span>Hội đồng</span>
 </a>
 </li>
+<li sec:authorize="hasRole('TRUONGBOMON')"><a class="nav-link" th:href="@{/department/topics}" th:classappend="${currentPath == '/department/topics'} ? 'active' : ''">Duyệt đề tài bộ môn</a></li>
 <li sec:authorize="hasRole('ADMIN')">
 <a class="nav-link" th:href="@{/admin/accounts}" th:classappend="${currentPath == '/admin/accounts'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/admin/accounts' ? 'page' : null}">
 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -146,7 +153,8 @@
 <small>
 <span sec:authorize="hasRole('ADMIN')">Quản trị viên</span>
 <span sec:authorize="hasRole('TRUONGKHOA')">Trưởng khoa</span>
-<span sec:authorize="hasRole('GV') and !hasRole('TRUONGKHOA')">Giảng viên</span>
+<span sec:authorize="hasRole('TRUONGBOMON') and !hasRole('TRUONGKHOA')">Trưởng bộ môn</span>
+<span sec:authorize="hasRole('GV') and !hasAnyRole('TRUONGKHOA', 'TRUONGBOMON')">Giảng viên</span>
 <span sec:authorize="hasRole('SV')">Sinh viên</span>
 </small>
 </div>
@@ -161,7 +169,8 @@
 <span class="muted">
 <span sec:authorize="hasRole('ADMIN')">Quản trị viên</span>
 <span sec:authorize="hasRole('TRUONGKHOA')">Trưởng khoa</span>
-<span sec:authorize="hasRole('GV') and !hasRole('TRUONGKHOA')">Giảng viên</span>
+<span sec:authorize="hasRole('TRUONGBOMON') and !hasRole('TRUONGKHOA')">Trưởng bộ môn</span>
+<span sec:authorize="hasRole('GV') and !hasAnyRole('TRUONGKHOA', 'TRUONGBOMON')">Giảng viên</span>
 <span sec:authorize="hasRole('SV')">Sinh viên</span>
 </span>
 </div>
@@ -183,6 +192,7 @@
 <span aria-hidden="true">⌄</span>
 </summary>
 <div class="account-dropdown">
+<a sec:authorize="hasAnyRole('SV', 'GV')" th:href="@{/accounts/profile}">Thông tin cá nhân</a>
 <a th:href="@{/accounts/password}">Đổi mật khẩu</a>
 <form th:action="@{/logout}" method="post">
 <button type="submit">Đăng xuất</button>
