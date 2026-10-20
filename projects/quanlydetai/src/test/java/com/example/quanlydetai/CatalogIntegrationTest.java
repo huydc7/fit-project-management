@@ -37,47 +37,82 @@ class CatalogIntegrationTest {
     private LocalDateTime now;
 
     @Test
-    void fullDraftEditingMovesDepartmentAndSupervisorsAndRequiresNewApproval() throws Exception {
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+    void fullDraftEditingClearsAssignmentsAndRequiresNewDepartmentSelection() throws Exception {
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G2\"]}")
                 .andExpect(status().isNoContent());
-        String body =
-                "{\"title\":\"Đề tài AI\",\"content\":\"Yêu cầu"
-                        + " mới\",\"department\":\"CT_B2\",\"supervisors\":[\"CT_G1\",\"CT_G3\"]}";
-        api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body.replace("CT_G3", "CT_G1"))
+        String body = "{\"title\":\"Đề tài AI\",\"content\":\"Yêu cầu mới\",\"department\":\"CT_B2\"}";
+        api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC",
+                body.replace("}", ",\"supervisors\":[\"CT_G1\"]}"))
                 .andExpect(status().isBadRequest());
-        assertThat(
-                        jdbc.queryForObject(
-                                "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
-                                Integer.class))
-                .isEqualTo(1);
+        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
+                .containsExactly("CT_G2");
         api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body).andExpect(status().isNoContent());
-        assertThat(
-                        jdbc.queryForObject(
-                                "SELECT Ma_Bo_Mon FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'",
-                                String.class))
+        assertThat(jdbc.queryForObject("SELECT Ma_Bo_Mon FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
                 .isEqualTo("CT_B2");
-        assertThat(
-                        jdbc.queryForList(
-                                "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
-                                String.class))
-                .containsExactlyInAnyOrder("CT_G1", "CT_G3");
-        assertThat(
-                        jdbc.queryForObject(
-                                "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
-                                Integer.class))
-                .isZero();
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
-                .andExpect(status().isForbidden());
-        api("ct.g3", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
-                .andExpect(status().isNoContent());
+        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class)).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}").andExpect(status().isForbidden());
+        api("ct.g3", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G3\"]}").andExpect(status().isNoContent());
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT Ma_GV_Xac_Nhan FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
+                .isEqualTo("CT_G0");
+        assertThat(jdbc.queryForObject("SELECT Ngay_Xac_Nhan FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", LocalDateTime.class)).isNotNull();
         api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body).andExpect(status().isBadRequest());
     }
 
     @Test
+    void proposalCannotAssignSupervisorsAndDepartmentValidatesBeforeWriting() throws Exception {
+        String proposal = "{\"period\":\"CT_PERIOD\",\"title\":\"Đề xuất mới\",\"content\":\"Nội dung\",\"department\":\"CT_B1\"}";
+        api("ct.g1", "POST", "/api/v1/topics", proposal).andExpect(status().isCreated());
+        String id = jdbc.queryForObject("SELECT Ma_De_Tai FROM DE_TAI WHERE Ten_De_Tai='Đề xuất mới'", String.class);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai=?", Integer.class, id)).isZero();
+        api("ct.g1", "POST", "/api/v1/topics", proposal.replace("}", ",\"supervisors\":[\"CT_G1\"]}"))
+                .andExpect(status().isBadRequest());
+        for (String payload : List.of(
+                "{\"accept\":true}",
+                "{\"accept\":true,\"supervisors\":[]}",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G1\"]}",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G2\",\"CT_G3\"]}",
+                "{\"accept\":true,\"supervisors\":[\"CT_G2\",\"UNKNOWN\"]}")) {
+            api("ct.g2", "PATCH", "/api/v1/topics/" + id + "/department-review", payload)
+                    .andExpect(status().isBadRequest());
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai=?", Integer.class, id)).isZero();
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai=?", Integer.class, id)).isZero();
+        }
+        api("ct.g2", "PATCH", "/api/v1/topics/" + id + "/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G2\"]}").andExpect(status().isNoContent());
+        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai=?", String.class, id))
+                .containsExactly("CT_G2"); // The proposer CT_G1 is not automatically a supervisor.
+    }
+
+    @Test
+    void htmlDepartmentSelectsSupervisorsAndRejectionDoesNotRequireThem() throws Exception {
+        mvc.perform(get("/department/topics").session(session("ct.g2")))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"supervisors\"")));
+        mvc.perform(post("/department/topics/CT_TOPIC/review").session(session("ct.g2")).with(csrf())
+                .param("accept", "true").param("supervisors", "CT_G2", "CT_G3"))
+                .andExpect(status().is3xxRedirection());
+        em.flush(); em.clear();
+        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
+                .containsExactlyInAnyOrder("CT_G2", "CT_G3");
+    }
+
+    @Test
+    void deanAndDepartmentCanRejectAnUnassignedProposal() throws Exception {
+        jdbc.update("DELETE FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'");
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":false}")
+                .andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
+                .isEqualTo("Huy");
+    }
+
+    @Test
     void reviewClosesWhenStudentRegistrationHasStarted() throws Exception {
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         jdbc.update(
                 "UPDATE DOT_DANG_KY SET End_GV=?, Begin_SV=? WHERE Ma_Dot='CT_PERIOD'",
@@ -86,7 +121,7 @@ class CatalogIntegrationTest {
         em.clear();
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isBadRequest());
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isBadRequest());
         assertThat(
                         jdbc.queryForObject(
@@ -338,11 +373,11 @@ class CatalogIntegrationTest {
     void departmentApprovalIsRequiredScopedAndInvalidatedByEditing() throws Exception {
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isBadRequest());
-        api("ct.g3", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g3", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isForbidden());
-        api("ct.g1", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g1", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isForbidden());
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api(
                         "ct.g1",
@@ -357,7 +392,7 @@ class CatalogIntegrationTest {
                 .isZero();
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isBadRequest());
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());

@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}"><head><title>Duyệt đề tài bộ môn</title></head><body><main>
 <h1 class="page-title">Duyệt đề tài bộ môn</h1>
-<p class="muted">Bộ môn duyệt nội dung trước; Trưởng khoa quyết định công bố. Nội dung sửa sau duyệt phải được duyệt lại.</p>
+<p class="muted">Bộ môn duyệt nội dung và chọn 1–2 GVHD; Trưởng khoa xác nhận danh sách rồi công bố. Nội dung sửa sau duyệt phải được duyệt lại.</p>
 <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}"></div><div th:if="${loi}" class="notice notice-error" th:text="${loi}"></div>
 <div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>
 <p th:if="${#lists.isEmpty(topics)}" class="muted">Không có đề tài phù hợp.</p>
@@ -8,5 +8,17 @@
 <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state}"></p><p class="pre-wrap" th:text="${t.content}"></p>
 <p th:text="${t.departmentApproved ? 'Bộ môn đã duyệt.' : 'Chưa có xác nhận duyệt của bộ môn.'}"></p>
 <p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt trước giai đoạn SV đăng ký.</p>
-<form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}"><button th:disabled="${t.departmentApproved || !t.reviewOpen}" class="button button-primary" name="accept" value="true">Duyệt và chuyển Trưởng khoa</button><button class="button button-danger" name="accept" value="false">Từ chối</button></form>
+<p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
+<p>GVHD bộ môn lựa chọn: <span th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></span></p>
+<form th:if="${t.state == 'Nhap' &amp;&amp; !t.departmentApproved &amp;&amp; t.reviewOpen}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}">
+<input type="hidden" name="accept" value="true">
+<label class="field-label" th:for="${'supervisors-' + t.id}">Chọn 1–2 GVHD (giữ Ctrl để chọn nhiều)</label>
+<select class="select-field space-bottom" name="supervisors" multiple required size="5" th:id="${'supervisors-' + t.id}">
+<option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}" th:selected="${#lists.contains(t.supervisorIds, g.id)}"></option>
+</select>
+<button class="button button-primary">Duyệt, chọn GVHD và chuyển Trưởng khoa</button>
+</form>
+<form th:if="${t.state == 'Nhap' &amp;&amp; t.reviewOpen}" method="post" class="space-top" th:action="@{/department/topics/{id}/review(id=${t.id})}">
+<button class="button button-danger" name="accept" value="false">Từ chối đề tài</button>
+</form>
 </article></main></body></html>

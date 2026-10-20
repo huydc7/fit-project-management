@@ -88,7 +88,7 @@ public class DeTaiRestController {
 
     @PatchMapping("/{id}/department-review")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void departmentReview(@PathVariable String id, @Valid @RequestBody DuyetRequest body) {
-        service.reviewDepartment(id, body.accept());
+    public void departmentReview(@PathVariable String id, @Valid @RequestBody com.example.quanlydetai.dto.DepartmentReviewRequest body) {
+        service.reviewDepartment(id, body.accept(), body.supervisors());
     }
 }

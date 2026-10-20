@@ -21,4 +21,7 @@ public record DeTaiResponse(
         boolean departmentApproved,
         List<String> supervisorIds,
         String periodType,
-        boolean reviewOpen) {}
+        boolean reviewOpen,
+        String proposerId,
+        String confirmedBy,
+        java.time.LocalDateTime confirmedAt) {}

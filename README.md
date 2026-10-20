@@ -83,3 +83,13 @@ Không commit .env, .env.native, secret, uploads, target, truststore hoặc back
 Xem [giải thích cấu trúc](docs/ARCHITECTURE.md) và [REST API v1](docs/REST_API.md). Controller HTML và REST dùng chung service; công cụ nhập dữ liệu thực hành chỉ ở test classpath, không được đóng gói vào JAR.
 
 Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio), [Use case](projects/Database/USE_CASE_FIT.drawio) và [từ điển CSDL](docs/DATABASE_DICTIONARY.md). Bản source chia sẻ không gồm cấu hình riêng, dữ liệu upload, database dump hoặc kết quả build; xem cách xuất ZIP trong [quy trình làm việc nhóm](docs/GITHUB_TEAMWORK.md).
+
+## Luồng đề tài và GVHD (SQL 09)
+
+GV chỉ đề xuất nội dung → Trưởng bộ môn duyệt và chọn 1–2 GVHD → Trưởng khoa xác nhận và công bố.
+Database mới cần chạy SQL 01–09. Database đã có 01–08: dừng web, sao lưu, chạy
+`projects/Database/09_department_supervisor_assignment.sql` trong Workbench rồi khởi động lại.
+Migration giữ dữ liệu và quyết định cũ, không tự điền người/ngày xác nhận lịch sử.
+Nếu cần thay danh sách của đề tài nháp đã được duyệt ở bản cũ, người đề xuất sửa lại nháp để
+hủy xác nhận và danh sách cũ, sau đó bộ môn duyệt và chọn lại. Không nhập lại dữ liệu mẫu để nâng cấp.
+Hướng dẫn chi tiết: `docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md`.

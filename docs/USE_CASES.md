@@ -7,9 +7,9 @@ Sơ đồ chỉnh sửa được: [USE_CASE_FIT.drawio](../projects/Database/USE
 | FR01 | Người dùng đăng nhập, đổi mật khẩu | BCrypt; phiên tài khoản bị khóa/đổi mật khẩu phải mất hiệu lực |
 | FR02 | Admin quản lý hồ sơ, tài khoản, bộ môn, chức vụ | Chỉ xóa chưa tham chiếu; GV phải thuộc bộ môn được bổ nhiệm |
 | FR03 | Trưởng khoa quản lý đợt | Hai cửa sổ GV/SV đúng thứ tự; bảo toàn lịch đợt có dữ liệu |
-| FR04 | GV đề xuất/sửa/xóa nháp, tìm đề tài | Người đề xuất trong hạn GV; sửa tên/nội dung/bộ môn/GVHD hủy duyệt cũ |
-| FR05 | Trưởng bộ môn duyệt | Đúng bộ môn, đề tài Nhap; lưu người/ngày duyệt |
-| FR06 | Trưởng khoa công bố đề tài | Đã được bộ môn duyệt, 1–2 GVHD; cả hai bước duyệt phải trước Begin_SV |
+| FR04 | GV đề xuất/sửa/xóa nháp, tìm đề tài | Người đề xuất trong hạn GV; sửa tên/nội dung/bộ môn hủy duyệt cũ và GVHD |
+| FR05 | Trưởng bộ môn duyệt | Đúng bộ môn, đề tài Nhap; chọn 1–2 GVHD và lưu người/ngày duyệt trong cùng transaction |
+| FR06 | Trưởng khoa công bố đề tài | Xác nhận 1–2 GVHD do bộ môn chọn; lưu người/ngày xác nhận; cả hai bước duyệt phải trước Begin_SV |
 | FR07 | SV lập nhóm, mời/xác nhận | Chỉ trưởng nhóm gửi đăng ký/nộp báo cáo; đủ 3–5 người lúc đăng ký |
 | FR08 | Đăng ký/rút/duyệt nhóm | Trong hạn tương ứng, giữ chỗ và ràng buộc một nhóm mỗi đợt |
 | FR09 | Nhóm trưởng nộp báo cáo; GV được phân công xem | Kiểm tra quyền sở hữu, loại/kích thước tệp |

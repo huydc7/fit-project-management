@@ -5,7 +5,7 @@ Các lựa chọn dưới đây là quy tắc triển khai cho bản đồ án; 
 ## Quy trình
 
 - Một khoa, bốn loại đợt MonHoc/NCKH/TLCN/KLTN. Giai đoạn GV trước giai đoạn SV. Hạn GVPB chỉ TLCN/KLTN; ngày hội đồng chỉ KLTN.
-- GV đề xuất trong thời gian GV; chọn 1–2 GVHD. Trưởng bộ môn duyệt trong phạm vi bộ môn trước; Trưởng khoa công bố sau. Cả hai phải hoàn tất trước Begin_SV (chặn cả thời điểm bằng Begin_SV). Một trong hai bước có thể từ chối, chuyển trạng thái Huy. Sửa nháp hủy xác nhận bộ môn và phải duyệt lại. Nhóm chỉ chọn đề tài công bố cùng đợt trong thời gian SV.
+- GV chỉ đề xuất nội dung/bộ môn trong thời gian GV, không chọn GVHD. Trưởng bộ môn duyệt trong phạm vi bộ môn và chọn 1–2 GVHD; Trưởng khoa xác nhận danh sách rồi công bố trong cùng transaction. Cả hai phải hoàn tất trước Begin_SV (chặn cả thời điểm bằng Begin_SV). Một trong hai bước có thể từ chối, chuyển trạng thái Huy. Sửa nháp hủy xác nhận bộ môn và xóa danh sách GVHD; bộ môn phải duyệt và chọn lại. Nhóm chỉ chọn đề tài công bố cùng đợt trong thời gian SV.
 - Một SV thuộc tối đa một nhóm **trong mỗi đợt**, theo thiết kế SQL ban đầu. Theo rubric cập nhật, đăng ký đề tài cần 3–5 SV đã xác nhận, đúng một nhóm trưởng. Nhóm đang lập có thể có 1–2 SV. Lời mời cần SV xác nhận. Nhóm trưởng được giữ nguyên trong bản đầu.
 - Trưởng khoa duyệt đăng ký nhóm. Một đăng ký đang chờ hoặc đã chấp thuận giữ một nhóm/một đề tài bằng UNIQUE; từ chối hoặc rút giải phóng chỗ. Rút chỉ khi chờ duyệt và còn giai đoạn SV. Đăng ký nộp đúng hạn có thể được duyệt sau hạn.
 - Thành viên bị khóa khi chờ duyệt hoặc đã được chấp thuận. Khi bị từ chối/rút, nhóm chưa được gán đề tài nên có thể chỉnh thành viên và đăng ký lại trong thời gian SV.
@@ -52,4 +52,4 @@ Bản đầu cho phép Trưởng bộ môn duyệt đề xuất do chính mình 
 
 ## Sửa đề tài, hội đồng và gia hạn đợt
 
-Đề xuất nháp sửa được bộ môn và GVHD, hủy duyệt cũ; hội đồng DangLap chưa dùng được sửa/xóa. Đợt có dữ liệu được gia hạn End_SV/hạn GVPB, không rút ngắn hoặc đổi các mốc bắt đầu, loại/ngày hội đồng; sau có kết quả tổng hợp chỉ đổi tên. SQL 08 bổ sung kiểm tra hạn duyệt/công bố, không đổi dữ liệu cũ. Chi tiết endpoint xem [REST_API.md](REST_API.md).
+Đề xuất nháp sửa được bộ môn và nội dung, không sửa GVHD; hủy duyệt cũ và danh sách GVHD; hội đồng DangLap chưa dùng được sửa/xóa. Đợt có dữ liệu được gia hạn End_SV/hạn GVPB, không rút ngắn hoặc đổi các mốc bắt đầu, loại/ngày hội đồng; sau có kết quả tổng hợp chỉ đổi tên. SQL 08 bổ sung kiểm tra hạn duyệt/công bố, không đổi dữ liệu cũ. Chi tiết endpoint xem [REST_API.md](REST_API.md).

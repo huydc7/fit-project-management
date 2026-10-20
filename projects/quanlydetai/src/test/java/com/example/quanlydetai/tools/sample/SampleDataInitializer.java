@@ -176,15 +176,8 @@ public class SampleDataInitializer implements ApplicationRunner {
             entity.setNgayDangKy(period.getBeginGV().plusHours(1));
             entity.setTrangThai("Nhap");
             persist(entity);
-            for (String supervisor : topic.supervisors()) {
-                GvhdDeTai association = new GvhdDeTai();
-                association.setMaDeTai(id);
-                association.setMaGV(requiredMapping(teacherIds, supervisor));
-                persist(association);
-            }
-            // Strict phase gate also applies to new sample topics; never reopen an existing period.
-            if (topic.published() && LocalDateTime.now(VIETNAM).isBefore(period.getBeginSV()))
-                entity.setTrangThai("DaCongBo");
+            // The first fixture teacher is the proposer only. Department heads select
+            // supervisors through the real approval flow; imports never fabricate decisions.
             entityManager.flush();
         }
         var notice = data.notice();

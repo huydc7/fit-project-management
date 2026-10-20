@@ -30,7 +30,7 @@ public class DeTaiController {
     @GetMapping("/lecturer/topics")
     public String teacherTopics(Model m) {
         if (!m.containsAttribute("form"))
-            m.addAttribute("form", new DeTaiRequest(null, null, null, null, List.of()));
+            m.addAttribute("form", new DeTaiRequest(null, null, null, null, null));
         options(m);
         m.addAttribute(
                 "topics",

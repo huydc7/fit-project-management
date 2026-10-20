@@ -32,6 +32,7 @@ public class TruongBoMonController {
         m.addAttribute("q", q);
         m.addAttribute("departments", topics.departments());
         m.addAttribute("periods", topics.periods());
+        m.addAttribute("teachers", topics.teachers());
         m.addAttribute("departmentFilter", department);
         m.addAttribute("periodFilter", period);
         m.addAttribute("typeFilter", type);
@@ -41,7 +42,8 @@ public class TruongBoMonController {
 
     @PostMapping("/{id}/review")
     public String review(
-            @PathVariable String id, @RequestParam boolean accept, RedirectAttributes flash) {
-        return perform("/department/topics", flash, () -> topics.reviewDepartment(id, accept));
+            @PathVariable String id, @RequestParam boolean accept,
+            @RequestParam(required = false) java.util.List<String> supervisors, RedirectAttributes flash) {
+        return perform("/department/topics", flash, () -> topics.reviewDepartment(id, accept, supervisors));
     }
 }

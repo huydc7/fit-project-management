@@ -66,3 +66,10 @@ Importer và DTO của file JSON ở `src/test/java/com/example/quanlydetai/tool
 Các fixture kiểm thử bảo vệ phân quyền, thời gian, giới hạn nhóm, tính điểm và bảo toàn dữ liệu; chúng không được đóng gói vào JAR. Xem ARCHITECTURE.md để phân biệt controller HTML, REST, service, repository và entity.
 
 Từ SQL 08, chỉ công bố đề tài trước Begin_SV. Khi nhập mới, công cụ giữ đề tài Nhap nếu đợt mẫu đã bắt đầu SV đăng ký, dù mẫu có published=true; không nới lịch cũ để vượt kiểm tra. Không áp dụng nhập lại hoặc đổi trạng thái đề tài đã có. Tạo đợt kiểm thử mới để chạy trọn hai giai đoạn.
+
+## Sau SQL 09
+
+Đề tài mới nhập từ bộ mẫu luôn ở Nhap, chưa có GVHD và chưa có quyết định duyệt giả lập.
+Trường supervisors trong JSON chỉ giúp xác định GV đề xuất từ mục đầu tiên; không tạo phân công.
+Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để chọn GVHD, sau đó Trưởng khoa xác nhận.
+Refresh không thay quyết định, GVHD hoặc trạng thái của đề tài đã tồn tại.

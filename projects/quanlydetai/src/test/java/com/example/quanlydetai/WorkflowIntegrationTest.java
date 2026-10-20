@@ -777,8 +777,6 @@ class WorkflowIntegrationTest {
                 "Details",
                 "department",
                 "WF_BM",
-                "supervisors",
-                "WF_GV1",
                 "maGvDangKy",
                 "WF_GV2");
         assertThat(
@@ -796,9 +794,7 @@ class WorkflowIntegrationTest {
                         "content",
                         "Details",
                         "department",
-                        "WF_BM",
-                        "supervisors",
-                        "WF_GV1")
+                        "WF_BM")
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("loi"));
         mvc.perform(get("/lecturer/topics").session(session("wf.gv1"))).andExpect(status().isOk());

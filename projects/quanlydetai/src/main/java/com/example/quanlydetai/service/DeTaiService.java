@@ -73,11 +73,6 @@ public class DeTaiService {
         DotDangKy dot = entities.lock(DotDangKy.class, f.period());
         rules.teacherWindow(dot);
         entities.require(BoMon.class, f.department());
-        var distinct = new LinkedHashSet<>(f.supervisors());
-        rules.check(
-                distinct.size() == f.supervisors().size(),
-                "Giảng viên hướng dẫn không được trùng nhau.");
-        distinct.forEach(id -> entities.require(GiangVien.class, id));
         DeTai t = new DeTai();
         t.setMaDeTai(rules.id("DT"));
         t.setTenDeTai(f.title().strip());
@@ -88,12 +83,7 @@ public class DeTaiService {
         t.setTrangThai("Nhap");
         t.setNgayDangKy(rules.now());
         entities.insert(t);
-        for (String id : distinct) {
-            GvhdDeTai h = new GvhdDeTai();
-            h.setMaGV(id);
-            h.setMaDeTai(t.getMaDeTai());
-            entities.insert(h);
-        }
+
     }
 
     @Transactional
@@ -117,10 +107,13 @@ public class DeTaiService {
                     "Đề tài cần được Trưởng bộ môn duyệt trước khi công bố.");
         rules.check("Nhap".equals(t.getTrangThai()), "Chỉ duyệt đề tài đang chờ công bố.");
         rules.topicReviewWindow(dot);
-        int count =
-                entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
-                        .size();
-        rules.check(count >= 1 && count <= 2, "Đề tài cần 1–2 giảng viên hướng dẫn.");
+        if (approve) {
+            int count = entities.query(
+                    "select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id).size();
+            rules.check(count >= 1 && count <= 2, "Bộ môn phải chọn 1–2 GVHD trước khi công bố.");
+            t.setMaGvXacNhan(currentUser.teacher());
+            t.setNgayXacNhan(rules.now());
+        }
         t.setTrangThai(approve ? "DaCongBo" : "Huy");
         entities.flush();
     }
@@ -231,7 +224,8 @@ public class DeTaiService {
                                     approved.contains(id),
                                     supervisorIds.getOrDefault(id, List.of()),
                                     d.getLoai(),
-                                    rules.now().isBefore(d.getBeginSV()));
+                                    rules.now().isBefore(d.getBeginSV()),
+                                    t.getMaGvDangKy(), t.getMaGvXacNhan(), t.getNgayXacNhan());
                         })
                 .toList();
     }
@@ -283,24 +277,13 @@ public class DeTaiService {
         if (f.department() != null) {
             entities.require(BoMon.class, f.department());
         }
-        if (f.supervisors() != null) {
-            var distinct = new LinkedHashSet<>(f.supervisors());
-            rules.check(
-                    distinct.size() == f.supervisors().size(),
-                    "Giảng viên hướng dẫn không được trùng nhau.");
-            distinct.forEach(gv -> entities.require(GiangVien.class, gv));
-            entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
-                    .forEach(entities::remove);
-            entities.flush();
-            for (String gv : distinct) {
-                var h = new GvhdDeTai();
-                h.setMaDeTai(id);
-                h.setMaGV(gv);
-                entities.insert(h);
-            }
-        }
+        // Invalidate approval before changing assignments; MySQL locks an approved list.
         var approval = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approval != null) entities.remove(approval);
+        entities.flush();
+        entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
+                .forEach(entities::remove);
+        entities.flush();
         if (f.department() != null) t.setMaBoMon(f.department());
         t.setTenDeTai(f.title().strip());
         t.setNoiDung(f.content().strip());
@@ -314,10 +297,11 @@ public class DeTaiService {
         rules.check(
                 !entities.exists("select r from DangKyDeTai r where r.maDeTai=?1", id),
                 "Đề tài đã có lịch sử đăng ký; không được xóa.");
-        entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
-                .forEach(entities::remove);
         var approval = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approval != null) entities.remove(approval);
+        entities.flush();
+        entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
+                .forEach(entities::remove);
         entities.flush();
         entities.remove(t);
         entities.flush();
@@ -357,7 +341,7 @@ public class DeTaiService {
 
     @Transactional
     @PreAuthorize("hasRole('TRUONGBOMON')")
-    public void reviewDepartment(String id, boolean approve) {
+    public void reviewDepartment(String id, boolean approve, List<String> supervisors) {
         String department = currentUser.departmentHead();
         String period =
                 entities
@@ -378,11 +362,30 @@ public class DeTaiService {
         var review = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approve) {
             rules.check(review == null, "Đề tài đã được bộ môn duyệt.");
+            rules.check(supervisors != null && supervisors.size() >= 1 && supervisors.size() <= 2,
+                    "Chọn từ 1 đến 2 giảng viên hướng dẫn.");
+            var distinct = new LinkedHashSet<>(supervisors);
+            rules.check(distinct.size() == supervisors.size(), "Giảng viên hướng dẫn không được trùng nhau.");
+            for (String gv : distinct) {
+                rules.check(gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
+                entities.require(GiangVien.class, gv);
+            }
+            entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
+                    .forEach(entities::remove);
+            entities.flush();
+            for (String gv : distinct) {
+                var assignment = new GvhdDeTai();
+                assignment.setMaDeTai(id);
+                assignment.setMaGV(gv);
+                entities.insert(assignment);
+            }
+            entities.flush();
             review = new com.example.quanlydetai.entity.DuyetBoMon();
             review.setMaDeTai(id);
             review.setMaGV(currentUser.teacher());
             review.setNgayDuyet(rules.now());
             entities.insert(review);
+            entities.flush();
         } else {
             if (review != null) entities.remove(review);
             t.setTrangThai("Huy");

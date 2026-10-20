@@ -61,14 +61,14 @@ Mở http://localhost:8081. Ctrl+C để dừng web. MySQL trên máy tiếp t�
 
 Tài khoản mẫu và chính sách dữ liệu được ghi trong SAMPLE_DATA.md. Với database nâng cấp từ bộ cũ, tên đăng nhập đổi nhưng mật khẩu, trạng thái và mã hồ sơ cũ được giữ. Khi mời SV hoặc phân công GV, lấy mã hồ sơ thực tế từ trang Admin hoặc Workbench; không dùng username làm mã.
 
-1. gv.hoangnam đề xuất vào một đợt còn trong thời gian GV; Trưởng bộ môn đã được Admin bổ nhiệm duyệt đúng bộ môn trước, rồi truongkhoa duyệt công bố. Thử đề xuất vào đợt đã qua giai đoạn GV để kiểm tra chặn.
+1. gv.hoangnam chỉ đề xuất nội dung vào đợt còn hạn GV; Trưởng bộ môn đã được bổ nhiệm duyệt đúng bộ môn và chọn 1–2 GVHD, rồi truongkhoa xác nhận và công bố. Thử đề xuất vào đợt đã qua giai đoạn GV để kiểm tra chặn.
 2. sv.22110001 tạo nhóm ở đợt Đồ án môn học học kỳ I, mời hai SV và từng người xác nhận lời mời. Nhóm cần 3–5 người khi đăng ký; mỗi SV chỉ có một nhóm mỗi đợt.
 3. Nhóm trưởng đăng ký đề tài Cổng đăng ký và quản lý đề tài sinh viên. truongkhoa chấp thuận. Thử rút/từ chối với yêu cầu khác để xác nhận giải phóng giữ chỗ.
 4. truongkhoa phân công gv.minhanh phản biện; hội đồng gồm gv.thanhbinh chủ tịch, gv.thuha thư ký, gv.quochuy thành viên. Chốt rồi gán đề tài. GVHD gv.hoangnam không được chấm.
 5. Nhóm trưởng nộp PDF/DOCX/ZIP dưới 20 MiB; thử nhiều phiên bản, tải đúng file và kiểm tra người ngoài nhóm không tải được.
 6. Phản biện chấm 9, mỗi thành viên hội đồng chấm 6, có nhận xét. Điểm -1, 10.01 hoặc 6.123 bị chặn. Sau phiếu đầu tiên, không nộp báo cáo mới.
 7. Chủ tịch tổng hợp khi đủ phiếu: điểm 6,75. Thư ký không được tổng hợp; sau tổng hợp các phiếu bị khóa.
-8. Trưởng khoa công bố trước Begin_SV. Thành viên nhóm xem kết quả theo đợt; SV ngoài nhóm không xem hoặc tải bằng cách đổi ID. Trước công bố, nhóm chưa thấy điểm. Nếu chạy với `-LocalEmail`, mở http://localhost:8025: mỗi thành viên nhận một thư có điểm và link đúng đợt. Trưởng khoa theo dõi tại `/dean/result-emails`; sinh viên vẫn tra cứu trên website.
+8. Trưởng khoa công bố kết quả sau khi Chủ tịch tổng hợp. Thành viên nhóm xem kết quả theo đợt; SV ngoài nhóm không xem hoặc tải bằng cách đổi ID. Trước công bố, nhóm chưa thấy điểm. Nếu chạy với `-LocalEmail`, mở http://localhost:8025: mỗi thành viên nhận một thư có điểm và link đúng đợt. Trưởng khoa theo dõi tại `/dean/result-emails`; sinh viên vẫn tra cứu trên website.
 9. admin thử tạo, khóa/mở và reset mật khẩu tài khoản; kiểm tra phiên cũ hết quyền. Admin đăng thông báo Nhà trường; Trưởng khoa chỉ đăng Khoa.
 
 Mỗi lần đổi vai trò, đăng xuất hoặc dùng trình duyệt/profile khác. Đợt và đề tài cũ giữ mã và thời gian đã có; đối chiếu tên trên màn hình, không giả định mã mới đã thay toàn bộ mã cũ.

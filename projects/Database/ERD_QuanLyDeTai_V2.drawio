@@ -20,8 +20,8 @@
         <mxCell id="DOT_DANG_KY" value="&lt;b&gt;DOT_DANG_KY&lt;/b&gt;&lt;hr&gt;PK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_Truong_Khoa : VARCHAR(20)&lt;br&gt;Ten_Dot_Dang_Ky : VARCHAR(200)&lt;br&gt;Loai : VARCHAR(20)&lt;br&gt;Begin_GV : DATETIME&lt;br&gt;End_GV : DATETIME&lt;br&gt;Begin_SV : DATETIME&lt;br&gt;End_SV : DATETIME&lt;br&gt;Deadline_GVPB_Nop_Diem : DATETIME&lt;br&gt;Time_BC_HD : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
           <mxGeometry x="40" y="430" width="390" height="285" as="geometry" />
         </mxCell>
-        <mxCell id="DE_TAI" value="&lt;b&gt;DE_TAI&lt;/b&gt;&lt;hr&gt;PK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Ten_De_Tai : VARCHAR(300)&lt;br&gt;FK Ma_Bo_Mon : VARCHAR(20)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Trang_Thai : VARCHAR(30)&lt;br&gt;FK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_GV_Dang_Ky : VARCHAR(20)&lt;br&gt;Ngay_Dang_Ky : DATETIME" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
-          <mxGeometry x="570" y="430" width="390" height="241" as="geometry" />
+        <mxCell id="DE_TAI" value="&lt;b&gt;DE_TAI&lt;/b&gt;&lt;hr&gt;PK Ma_De_Tai : VARCHAR(20)&lt;br&gt;Ten_De_Tai : VARCHAR(300)&lt;br&gt;FK Ma_Bo_Mon : VARCHAR(20)&lt;br&gt;Noi_Dung : TEXT&lt;br&gt;Trang_Thai : VARCHAR(30)&lt;br&gt;FK Ma_Dot : VARCHAR(20)&lt;br&gt;FK Ma_GV_Dang_Ky : VARCHAR(20)&lt;br&gt;Ngay_Dang_Ky : DATETIME&lt;br&gt;FK Ma_GV_Xac_Nhan : VARCHAR(20) NULL&lt;br&gt;Ngay_Xac_Nhan : DATETIME NULL" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
+          <mxGeometry x="570" y="430" width="390" height="281.0" as="geometry" />
         </mxCell>
         <mxCell id="GVHD_DETAI" value="&lt;b&gt;GVHD_DETAI&lt;/b&gt;&lt;hr&gt;PK FK Ma_GV : VARCHAR(20)&lt;br&gt;PK FK Ma_De_Tai : VARCHAR(20)" vertex="1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;">
           <mxGeometry x="1100" y="430" width="390" height="109" as="geometry" />
@@ -195,6 +195,9 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="dept_fk_3" edge="1" parent="1" source="DUYET_BO_MON" target="GV" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERmany;html=1;" value="FK RESTRICT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-dean-confirmation" value="FK Ma_GV_Xac_Nhan (NULL cho dữ liệu cũ)" style="edgeStyle=orthogonalEdgeStyle;endArrow=ERone;startArrow=ERmany;html=1;" edge="1" parent="1" source="DE_TAI" target="GV">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>

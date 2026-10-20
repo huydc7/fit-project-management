@@ -43,7 +43,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Đề tài hướng dẫn/đề xuất | GET `/topics/mine` | GV |
 | Quản lý đề tài | GET `/topics/management` | TKhoa |
 | Đề xuất đề tài | POST `/topics` | GV; DeTaiRequest |
-| Duyệt đề tài | PATCH `/topics/{id}/review` | TKhoa; `{accept: true/false}` |
+| Duyệt đề tài | PATCH `/topics/{id}/review` | TKhoa; `{accept: true/false}`; chấp thuận xác nhận GVHD bộ môn đã chọn rồi công bố |
 | Nhóm của mình | GET, POST `/groups` | SV; POST: `{period, name}` |
 | Mời thành viên | POST `/groups/{id}/invitations` | Trưởng nhóm; `{student}` là Ma_SV |
 | Xóa thành viên | DELETE `/groups/{id}/members/{student}` | Trưởng nhóm; còn được sửa |
@@ -124,8 +124,17 @@ JSON GET: `{content, page, size, totalElements, totalPages}`. content có id/top
 
 ## Bổ sung 19/10/2026
 
-- PUT `/topics/{id}` giữ title/content bắt buộc, thêm department/supervisors tùy chọn (bỏ qua giữ giá trị cũ). Chỉ người đề xuất nháp trong hạn GV, mọi thay đổi hủy duyệt bộ môn.
+- PUT `/topics/{id}` giữ title/content bắt buộc, department tùy chọn. Người đề xuất không được gửi supervisors; mọi thay đổi hủy duyệt bộ môn và xóa danh sách GVHD.
 - GET `/topics`, `/topics/mine`, `/topics/management`, `/topics/department` thêm type/state; endpoint department hỗ trợ period, luôn giới hạn đúng bộ môn.
 - PUT `/councils/{id}` nhận HoiDongRequest, DELETE `/councils/{id}`: Trưởng khoa, chỉ DangLap chưa dùng. Không đổi đợt qua PUT.
 - PUT `/registration-periods/{id}`: đợt có dữ liệu chỉ sửa tên/gia hạn End_SV và deadline GVPB, không rút ngắn. Có kết quả tổng hợp chỉ đổi tên. Đợt trống vẫn sửa đầy đủ.
 - PATCH duyệt bộ môn/công bố đề tài phải trước Begin_SV. Công bố điểm và duyệt đăng ký nhóm không bị áp dụng nhầm hạn này. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) và migration 08.
+
+## Phân công GVHD theo bộ môn (SQL 09)
+
+- POST `/topics`: `{period,title,content,department}`. Gửi `supervisors` sẽ bị từ chối.
+- PUT `/topics/{id}`: `{title,content,department?}`. Sửa nháp xóa xác nhận bộ môn và GVHD.
+- PATCH `/topics/{id}/department-review`: `{accept:true,supervisors:["GV01","GV02"]}`.
+  Chỉ Trưởng bộ môn đúng phạm vi; bắt buộc 1–2 mã GV khác nhau. Từ chối: `{accept:false}`, không cần supervisors.
+- PATCH `/topics/{id}/review`: `{accept:true}` để Trưởng khoa xác nhận và công bố.
+  Không thay đổi GVHD ở endpoint này. Trả về proposerId, confirmedBy, confirmedAt trong danh sách đề tài.

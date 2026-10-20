@@ -38,13 +38,13 @@
         <mxCell id="periods" value="Quản lý và tìm đợt đăng ký" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="400" y="240" width="310" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="publish" value="Duyệt công bố đề tài&#10;(bộ môn duyệt, trước SV)" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="publish" value="Xác nhận GVHD và công bố đề tài&#10;(bộ môn duyệt, trước SV)" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="400" y="390" width="310" height="90" as="geometry" />
         </mxCell>
         <mxCell id="assign" value="Duyệt nhóm; phân công phản biện&#10;và hội đồng" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="400" y="540" width="310" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="headreview" value="Duyệt đề tài trong bộ môn&#10;(trước giai đoạn SV)" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="headreview" value="Duyệt đề tài và chọn 1–2 GVHD&#10;(trước giai đoạn SV)" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="400" y="690" width="310" height="90" as="geometry" />
         </mxCell>
         <mxCell id="proposal" value="Đề xuất, tìm, sửa/xóa nháp&#10;trong hạn; sửa phải duyệt lại" style="ellipse;whiteSpace=wrap;html=0;fillColor=#ffffff;strokeColor=#2875a1;fontSize=14;" vertex="1" parent="1">

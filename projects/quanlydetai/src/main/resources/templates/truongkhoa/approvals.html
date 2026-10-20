@@ -19,15 +19,17 @@
 </h3>
 <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state}">
 </p>
+<p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
+<p th:if="${t.confirmedBy}">Trưởng khoa xác nhận: <span th:text="${t.confirmedBy}"></span> · <span th:text="${t.confirmedAt}"></span></p>
 <p class="pre-wrap" th:text="${t.content}">
 </p>
-<p>GVHD: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
+<p>GVHD do bộ môn lựa chọn: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
 </span>
 </p>
 <form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/dean/topics/{id}/review(id=${t.id})}">
 <p class="muted" th:unless="${t.departmentApproved}">Chưa được Trưởng bộ môn duyệt.</p>
 <p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt: phải hoàn tất trước giờ SV bắt đầu đăng ký.</p>
-<button class="button button-success space-right-sm" name="accept" value="true" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Duyệt và công bố đề tài</button>
+<button class="button button-success space-right-sm" name="accept" value="true" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Xác nhận GVHD và công bố đề tài</button>
 <button class="button button-danger" name="accept" value="false">Từ chối</button>
 </form>
 <div th:if="${t.state == 'DangThucHien'}">

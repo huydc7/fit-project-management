@@ -132,6 +132,17 @@ public class DeTai extends AbstractEntity {
         this.ngayDangKy = ngayDangKy;
     }
 
+    @Column(name = "Ma_GV_Xac_Nhan", length = 20)
+    private String maGvXacNhan;
+
+    @Column(name = "Ngay_Xac_Nhan")
+    private LocalDateTime ngayXacNhan;
+
+    public String getMaGvXacNhan() { return maGvXacNhan; }
+    public void setMaGvXacNhan(String value) { maGvXacNhan = value; }
+    public LocalDateTime getNgayXacNhan() { return ngayXacNhan; }
+    public void setNgayXacNhan(LocalDateTime value) { ngayXacNhan = value; }
+
     @Override
     protected Object entityId() {
         return maDeTai;

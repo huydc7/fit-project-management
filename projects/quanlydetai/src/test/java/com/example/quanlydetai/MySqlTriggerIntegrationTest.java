@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Requires scripts 01-06 on an isolated MySQL database. */
+/** Requires scripts 01-09 on an isolated MySQL database. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -120,7 +120,30 @@ class MySqlTriggerIntegrationTest {
                                                 + " VALUES ('SIZE_LATE','SIZE_GV',NOW())"));
         assertThat(approval).isNotNull();
         assertThat(DatabaseErrorMessages.extractRootCauseMessage(approval))
-                .contains("Chi duyet bo mon");
+                .contains("Chi duyet");
+    }
+
+    @Test
+    void mysqlDepartmentApprovalRequiresSupervisorsAndFreezesTheirList() {
+        jdbc.update("INSERT INTO BO_MON VALUES ('ASSIGN_BM','Assignment department')");
+        jdbc.update("INSERT INTO GV(Ma_GV,Ho_Ten,Email,Ma_Bo_Mon) VALUES "
+                + "('ASSIGN_HEAD','Head','head@example.test','ASSIGN_BM'),"
+                + "('ASSIGN_GV','Teacher','teacher@example.test','ASSIGN_BM')");
+        jdbc.update("INSERT INTO TRUONG_KHOA VALUES ('ASSIGN_HEAD',true)");
+        jdbc.update("INSERT INTO TRUONG_BO_MON VALUES ('ASSIGN_BM','ASSIGN_HEAD',true)");
+        jdbc.update("INSERT INTO DOT_DANG_KY VALUES ('ASSIGN_DOT','ASSIGN_HEAD','Assignment','MonHoc',"
+                + "'2099-01-01','2099-01-02','2099-01-03','2099-01-04',NULL,NULL)");
+        jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky) "
+                + "VALUES ('ASSIGN_DT','Assignment','Content','ASSIGN_BM','ASSIGN_DOT','ASSIGN_GV','Nhap','2099-01-01 01:00:00')");
+        String approve = "INSERT INTO DUYET_BO_MON VALUES ('ASSIGN_DT','ASSIGN_HEAD',NOW())";
+        Throwable missing = catchThrowable(() -> jdbc.update(approve));
+        assertThat(DatabaseErrorMessages.extractRootCauseMessage(missing)).contains("1-2 GVHD");
+        jdbc.update("INSERT INTO GVHD_DETAI VALUES ('ASSIGN_GV','ASSIGN_DT')");
+        jdbc.update(approve);
+        Throwable change = catchThrowable(() -> jdbc.update("DELETE FROM GVHD_DETAI WHERE Ma_De_Tai='ASSIGN_DT'"));
+        assertThat(DatabaseErrorMessages.extractRootCauseMessage(change)).contains("Huy xac nhan");
+        jdbc.update("DELETE FROM DUYET_BO_MON WHERE Ma_De_Tai='ASSIGN_DT'");
+        assertThat(jdbc.update("DELETE FROM GVHD_DETAI WHERE Ma_De_Tai='ASSIGN_DT'")).isEqualTo(1);
     }
 
     @Test

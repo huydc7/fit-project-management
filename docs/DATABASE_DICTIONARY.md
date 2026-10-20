@@ -311,3 +311,10 @@ Mỗi bộ môn tối đa một bản ghi chức vụ; ứng dụng kiểm tra G
 | Ngay_Duyet | DATETIME | Không | Thời điểm duyệt |
 
 Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–08 có 36 trigger, 4 view.
+
+## Bổ sung SQL 09: xác nhận danh sách GVHD
+
+DE_TAI thêm Ma_GV_Xac_Nhan VARCHAR(20) NULL, FK tới GV(Ma_GV), và Ngay_Xac_Nhan DATETIME NULL.
+Dữ liệu cũ giữ NULL, không suy đoán người xác nhận. GVHD_DETAI giữ danh sách do bộ môn chọn;
+DUYET_BO_MON ghi người/ngày quyết định. Khi còn xác nhận bộ môn, trigger khóa thêm/xóa GVHD.
+Sửa đề tài nháp phải hủy xác nhận trước rồi xóa danh sách. Duyệt bộ môn mới yêu cầu đủ 1–2 GVHD.
