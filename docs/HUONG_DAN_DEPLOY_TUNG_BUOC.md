@@ -61,6 +61,7 @@ Trên **database cloud mới**, mở và chạy toàn bộ từng file theo th�
 06_rubric_email_groups.sql
 07_department_review.sql
 08_topic_review_deadline.sql
+09_department_supervisor_assignment.sql
 ```
 
 Kiểm tra Action Output sau mỗi file. Script có DELIMITER nên chạy toàn bộ bằng Workbench hoặc mysql CLI hỗ trợ script, không dán từng đoạn thân trigger. Nếu gặp lỗi quyền CREATE ROUTINE/TRIGGER hoặc binary logging, kiểm tra cấu hình/quyền của Aiven trước khi tiếp tục; không bỏ các trigger để cho app chạy.
@@ -71,7 +72,7 @@ Xác nhận cấu trúc:
 SELECT COUNT(*) AS base_tables FROM information_schema.TABLES
  WHERE TABLE_SCHEMA='quanlydetai' AND TABLE_TYPE='BASE TABLE'; -- 24
 SELECT COUNT(*) AS triggers_count FROM information_schema.TRIGGERS
- WHERE TRIGGER_SCHEMA='quanlydetai'; -- 36
+ WHERE TRIGGER_SCHEMA='quanlydetai'; -- 38
 SELECT COUNT(*) AS views_count FROM information_schema.VIEWS
  WHERE TABLE_SCHEMA='quanlydetai'; -- 4
 ```

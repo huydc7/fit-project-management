@@ -1,6 +1,6 @@
 # Từ điển CSDL bản đầu
 
-Đối chiếu các script 01–08: 24 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
+Đối chiếu các script 01–09: 24 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
 
 ## BO_MON
 
@@ -310,7 +310,7 @@ Mỗi bộ môn tối đa một bản ghi chức vụ; ứng dụng kiểm tra G
 | Ma_GV | VARCHAR(20) | Không | FK → GV.Ma_GV, người duyệt |
 | Ngay_Duyet | DATETIME | Không | Thời điểm duyệt |
 
-Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–08 có 36 trigger, 4 view.
+Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–09 có 38 trigger, 4 view.
 
 ## Bổ sung SQL 09: xác nhận danh sách GVHD
 

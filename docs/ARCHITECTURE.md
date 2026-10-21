@@ -38,7 +38,7 @@ Controller HTML nhận form, gọi service rồi render/redirect. REST nhận JS
 
 Dự án **đang dùng Spring Data JPA** với chín interface repository, gồm chức vụ Trưởng bộ môn. Các giao dịch nhiều bảng dùng thêm EntityManager qua JpaEntityRepository để giữ khóa ghi, persist, flush và refresh giá trị do trigger thiết lập. Đây là repository tùy chỉnh, không phải thay thế JPA. Một phần JPQL còn nằm trong service; nếu phát triển lớn hơn, có thể chuyển từng nhóm truy vấn sang repository chuyên biệt khi cần tối ưu hoặc tái sử dụng.
 
-Package `entity` chứa 24 lớp ánh xạ các bảng sau SQL 01–08, gồm EMAIL_KET_QUA cho hàng đợi email kết quả. DTO tách dữ liệu giao tiếp HTTP khỏi entity lưu trữ.
+Package `entity` chứa 24 lớp ánh xạ các bảng sau SQL 01–09, gồm EMAIL_KET_QUA cho hàng đợi email kết quả. DTO tách dữ liệu giao tiếp HTTP khỏi entity lưu trữ.
 
 URL giao diện và API dùng tiếng Anh theo [URLS.md](URLS.md); các trang cũ có chuyển hướng GET, còn form/API dùng URL mới. Nâng cấp schema phải bảo toàn tài khoản, nhóm, báo cáo và điểm đã có, không nhập lại dữ liệu mẫu để ghi đè dữ liệu vận hành. `04_workflow_mysql.sql` là tên migration lịch sử, giữ nguyên để tương thích quy trình cài database.
 

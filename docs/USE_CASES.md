@@ -25,7 +25,7 @@ Sơ đồ chỉnh sửa được: [USE_CASE_FIT.drawio](../projects/Database/USE
 | NFR03 | Không lộ bí mật trong log/API | DTO không có hash; AOP không ghi tham số, nội dung hoặc lỗi thô |
 | NFR04 | Giao diện tiếng Việt, URL tiếng Anh | Form dùng nhãn, validation và tìm kiếm không phân biệt dấu |
 | NFR05 | Theo dõi lỗi/vận hành | AOP ghi kết quả/thời gian; email có hàng đợi, giới hạn thử lại và trang theo dõi cho Trưởng khoa |
-| NFR06 | Chạy lại được trên local | Maven Wrapper, Docker, SQL 01–08, dữ liệu mẫu nhập có chủ đích |
+| NFR06 | Chạy lại được trên local | Maven Wrapper, Docker, SQL 01–09, dữ liệu mẫu nhập có chủ đích |
 | NFR07 | Hiệu năng | Đề tài tải liên kết theo tập mã; email lọc/phân trang tại DB. Chưa nghiệm thu tải lớn/phân trang các danh sách khác |
 
 Các chức năng chung đăng nhập/đổi mật khẩu/thông báo được mô tả trong bảng để sơ đồ chính tập trung vào nghiệp vụ học thuật. Báo cáo Word và deploy chưa thuộc lượt hoàn thiện local này.

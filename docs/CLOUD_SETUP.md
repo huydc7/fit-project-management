@@ -16,8 +16,8 @@ Nguồn: [Vercel Container Images](https://vercel.com/docs/functions/container-i
 
 1. Đăng ký/đăng nhập Aiven Console bằng tài khoản nhóm được phép quản lý. Tạo project rồi tạo dịch vụ MySQL. Kiểm tra Free tier còn được cung cấp cho tài khoản/region; không chọn trial trả phí nhầm với Free.
 2. Free tier không cho chọn cloud/region cụ thể. Lưu service host, port, username, password và tải CA certificate từ trang kết nối. Không gửi password lên chat/GitHub.
-3. Kết nối bằng MySQL Workbench hoặc mysql CLI với TLS và CA của Aiven. Tạo database `quanlydetai`, chạy lần lượt các script 01–08 trên DB mới. Script có DELIMITER nên dùng công cụ hỗ trợ MySQL script.
-4. Kiểm tra đủ 24 bảng, 36 trigger, 4 view và procedure liên quan. Nếu thiếu quyền CREATE ROUTINE/TRIGGER, xử lý quyền/cấu hình dịch vụ trước khi deploy app; không bỏ qua script lỗi.
+3. Kết nối bằng MySQL Workbench hoặc mysql CLI với TLS và CA của Aiven. Tạo database `quanlydetai`, chạy lần lượt các script 01–09 trên DB mới. Script có DELIMITER nên dùng công cụ hỗ trợ MySQL script.
+4. Kiểm tra đủ 24 bảng, 38 trigger, 4 view và procedure liên quan. Nếu thiếu quyền CREATE ROUTINE/TRIGGER, xử lý quyền/cấu hình dịch vụ trước khi deploy app; không bỏ qua script lỗi.
 5. Tạo admin bằng BCrypt theo README; nhập hồ sơ cần thiết qua UI. Tài khoản runtime nên được cấp quyền dữ liệu cần thiết trên database; không dùng tài khoản migration để vận hành lâu dài.
 6. Trên Render, tạo biến `DB_CA_CERT` chứa toàn bộ nội dung CA PEM tải từ Aiven, gồm cả dòng BEGIN/END CERTIFICATE. Entry point Docker tạo truststore tạm riêng cho JDBC từ chứng thư này; chứng thư CA không phải mật khẩu. Profile prod yêu cầu VERIFY_IDENTITY để xác minh cả CA và hostname. Không sửa DB_URL để tắt hoặc hạ mức SSL.
 

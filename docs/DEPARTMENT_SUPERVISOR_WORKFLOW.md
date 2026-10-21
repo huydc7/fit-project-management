@@ -15,15 +15,12 @@ GV đề xuất không tự động là GVHD. Bộ môn có thể chọn GV khá
 
 Không chạy bộ test tự động trên database đang dùng. Không nhập lại dữ liệu mẫu để nâng cấp.
 
-1. Dừng website bằng Ctrl+C trong PowerShell.
-2. Trong MySQL Workbench, kết nối đúng localhost:3306 của .env.native.
-3. Sao lưu schema quanlydetai (Server → Data Export, gồm triggers/routines nếu có).
-4. Nếu database đã có SQL 01–08, mở duy nhất file:
-
-   D:/MON HOC/ltW/project_Web/fit-project-management/projects/Database/09_department_supervisor_assignment.sql
-
-5. Chạy toàn bộ file, kiểm tra Action Output không có lỗi. Script dùng USE quanlydetai.
-6. Database mới hoàn toàn phải chạy 01–09 theo thứ tự. Docker volume mới đã có mount SQL 09; volume cũ vẫn cần chạy migration.
+1. Xác định đúng MySQL đang dùng: Docker mặc định `127.0.0.1:3307`; MySQL cài trên máy lấy host/cổng từ `DB_URL` trong `.env.native` (thường là 3306). Hai database độc lập.
+2. Dừng website: Java chạy trực tiếp dùng Ctrl+C; Docker dùng `docker compose --profile app stop app`. Giữ MySQL chạy để sao lưu và nâng cấp.
+3. Trong MySQL Workbench, kết nối đúng server ở bước 1 và sao lưu schema `quanlydetai` (Server → Data Export, gồm triggers/routines nếu có).
+4. Nếu database đã có SQL 01–08, mở duy nhất file `projects/Database/09_department_supervisor_assignment.sql` trong repository đã clone. Không chạy lại script tạo schema.
+5. Chạy toàn bộ file, kiểm tra Action Output không có lỗi. Script dùng `USE quanlydetai`; không đổi tên schema kiểm thử rồi nhập nguyên script vào server chứa dữ liệu cần giữ.
+6. Database mới hoàn toàn phải chạy 01–09 theo thứ tự. Docker volume mới đã có mount SQL 09; volume cũ vẫn cần chạy migration. Sau SQL 09 có 24 bảng, 38 trigger và 4 view.
 7. Chạy kiểm tra:
 
 ```sql
@@ -33,14 +30,17 @@ SHOW COLUMNS FROM DE_TAI LIKE 'Ngay_Xac_Nhan';
 SHOW TRIGGERS WHERE `Table` IN ('DUYET_BO_MON','GVHD_DETAI');
 ```
 
-8. Khởi động từ thư mục gốc dự án:
+8. Khởi động từ thư mục gốc dự án bằng một trong hai cách phù hợp:
 
 ```powershell
-$env:DB_PASSWORD = Read-Host "Nhap mat khau MySQL"
+# MySQL cài trên máy, cấu hình DB_URL/DB_USERNAME/DB_PASSWORD trong .env.native:
 .\tools\Start-Local.ps1 -EnvFile .env.native
+
+# Hoặc website và MySQL Docker:
+.\tools\Start-Local.ps1 -Docker
 ```
 
-Mở http://localhost:8081. Dùng đợt mới có thời gian GV hiện tại và Begin_SV trong tương lai để duyệt và công bố trước Begin_SV.
+Mở `http://localhost:<PORT>` theo file env đã chọn (mặc định 8080). Không ghi đè file env đang dùng. Dùng đợt mới có thời gian GV hiện tại và Begin_SV trong tương lai để duyệt và công bố trước Begin_SV.
 
 ## Dữ liệu cũ
 
@@ -68,5 +68,5 @@ cd projects/quanlydetai
 .\mvnw.cmd test
 ```
 
-Mặc định H2. MySQL trigger tests chỉ chạy khi TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver và phải dùng database riêng đã nạp 01–09.
+Mặc định H2. MySQL trigger tests chỉ chạy khi TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver. Dùng MySQL kiểm thử ở container/server riêng đã nạp SQL 01–09 với schema `quanlydetai`; xem [kiểm thử MySQL](LOCAL_TEST.md). Không dùng server chứa database đang vận hành.
 Không đặt TEST_DDL_MODE=create-drop khi trỏ MySQL có dữ liệu cần giữ.

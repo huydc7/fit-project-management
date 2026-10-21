@@ -76,7 +76,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Đổi mật khẩu mình | PUT `/session/password` | TK; `{currentPassword, newPassword, confirmation}` |
 | Thông tin cá nhân mình | GET `/session/profile` | SV/GV; chỉ hồ sơ của phiên đăng nhập, Admin trả 403; không nhận mã tài khoản cần xem |
 
-DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`, `supervisors` (1–2 Ma_GV). DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
+DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`. Người đề xuất không được gửi `supervisors`; Trưởng bộ môn chọn 1–2 Ma_GV qua DepartmentReviewRequest khi duyệt. DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
 
 `GET /admin/accounts` trả thêm hai cờ `dean` và `departmentHead` cho chức vụ **đang giữ**. Cả hai có thể cùng `true` khi kiêm nhiệm; sau thu hồi/thay thế, lần tải danh sách tiếp theo phản ánh dữ liệu mới. `role` vẫn là `GV` cho giảng viên, bao gồm Trưởng khoa/Trưởng bộ môn; bộ lọc `role=GV` vẫn trả các tài khoản này. Giao diện quản trị hiển thị tên vai trò tiếng Việt và nhãn chức vụ riêng.
 
@@ -101,8 +101,8 @@ Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừ
 |---|---|
 | GET `/topics`, `/topics/mine`, `/topics/management` | Quyền cũ; thêm q, department, period |
 | GET `/topics/department` | Trưởng bộ môn; chỉ đề tài bộ môn mình |
-| PATCH `/topics/{id}/department-review` | Trưởng bộ môn; `{accept}` |
-| PUT `/topics/{id}` | Người đề xuất nháp trong hạn GV; `{title, content}`, hủy xác nhận bộ môn |
+| PATCH `/topics/{id}/department-review` | Trưởng bộ môn; `{accept:true, supervisors:["GV01"]}` hoặc `{accept:false}` |
+| PUT `/topics/{id}` | Người đề xuất nháp trong hạn GV; `{title, content, department?}`, hủy xác nhận bộ môn và danh sách GVHD |
 | DELETE `/topics/{id}` | Người đề xuất nháp trong hạn, chưa có lịch sử |
 | PUT `/admin/accounts/{id}/profile` | Admin; `{name, email, department}` (department cho GV) |
 | DELETE `/admin/accounts/{id}` | Admin; tài khoản và hồ sơ chưa có tham chiếu |

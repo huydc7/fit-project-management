@@ -1,11 +1,11 @@
 # Chạy và kiểm thử local
 
-Ứng dụng dùng MySQL thật ở cả hai cách chạy. MySQL Docker ở cổng 3307; MySQL cài trên máy thường ở cổng 3306. Hai database độc lập. Trong lần làm việc này, website Docker chạy ở http://localhost:8080.
+Ứng dụng dùng MySQL thật ở cả hai cách chạy. MySQL Docker ở cổng 3307; MySQL cài trên máy thường ở cổng 3306. Hai database độc lập. Với cấu hình mặc định, website Docker chạy ở http://localhost:8080.
 
 ## Docker
 
 1. Mở Docker Desktop, đợi engine chạy.
-2. Tại D:\project_web\final_projects, tạo .env từ .env.example nếu chưa có. Điền MYSQL_ROOT_PASSWORD và DB_PASSWORD; giữ DB_USERNAME=quanlydetai, MYSQL_PORT=3307, PORT=8080, STORAGE_BACKEND=local.
+2. Tại thư mục gốc repository, tạo .env từ .env.example nếu chưa có. Điền MYSQL_ROOT_PASSWORD và DB_PASSWORD; giữ DB_USERNAME=quanlydetai, MYSQL_PORT=3307, PORT=8080, STORAGE_BACKEND=local.
 3. Nếu cần dữ liệu thực hành: điền SAMPLE_DATA_PASSWORD trong .env, khởi động MySQL rồi chạy `tools/Import-SampleData.ps1 -DockerDatabase`. Web không tự nhập dữ liệu; xem SAMPLE_DATA.md.
 4. Chạy:
 
@@ -27,9 +27,9 @@ docker compose logs --tail 100 app
 docker compose logs --tail 100 mysql
 ```
 
-Ứng dụng cần chạy qua bước ApplicationRunner; chỉ dòng Started chưa đảm bảo nhập dữ liệu thành công. Kiểm tra http://localhost:8080/actuator/health trả UP và đăng nhập thực tế. Nếu mật khẩu mẫu không hợp lệ, sửa .env rồi tạo lại container bằng `docker compose --profile app up -d app`; restart không nạp biến mới.
+Kiểm tra http://localhost:8080/actuator/health trả UP và đăng nhập thực tế. Web không tự nhập dữ liệu mẫu. Thay đổi SAMPLE_DATA_PASSWORD không đổi mật khẩu của tài khoản đã tồn tại; dùng chức năng đặt lại mật khẩu của Admin khi cần. Khi thay cấu hình .env, tạo lại container bằng `docker compose --profile app up -d app`; restart không nạp biến mới.
 
-Dừng bằng `docker compose --profile app down`, dữ liệu còn trong volume. Chạy lại bằng `docker compose --profile app up -d`. Khi sửa source, thêm --build. Không dùng down -v để nâng cấp. SQL 01–08 tự nạp chỉ khi tạo volume lần đầu; volume cũ cần nạp migration thích hợp bằng Workbench/CLI.
+Dừng bằng `docker compose --profile app down`, dữ liệu còn trong volume. Chạy lại bằng `docker compose --profile app up -d`. Khi sửa source, thêm --build. Không dùng down -v để nâng cấp. SQL 01–09 tự nạp chỉ khi tạo volume lần đầu; volume cũ cần nạp migration thích hợp bằng Workbench/CLI. Xem [nâng cấp phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md#nâng-cấp-database-đang-dùng-trên-máy) cho SQL 09.
 
 ## Xem MySQL Docker bằng Workbench
 
@@ -37,7 +37,7 @@ Tạo connection Standard TCP/IP: hostname 127.0.0.1, port 3307, username từ D
 
 ## MySQL đã cài + Java
 
-Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–08 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ đủ 01–03 cần sao lưu rồi nạp 04/05/06/07; DB đủ 01–05 nâng cấp 06 rồi 07, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
+Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–09 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ cần sao lưu rồi chạy các script còn thiếu theo thứ tự đến 09; DB đủ 01–08 chỉ chạy `09_department_supervisor_assignment.sql`, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
 
 Dùng .env.native riêng để giữ cấu hình Docker:
 
@@ -83,14 +83,14 @@ Mỗi lần đổi vai trò, đăng xuất hoặc dùng trình duyệt/profile k
 
 Các bước trên kiểm tra môi trường local. Triển khai cloud cần nghiệm thu riêng theo [CLOUD_SETUP.md](CLOUD_SETUP.md).
 
-## Duyệt hai bước từ 15/10/2026
+## Nâng cấp duyệt bộ môn (SQL 07)
 
-Database đã có 01–06: chạy `tools/Update-DepartmentReview.ps1` trước khi rebuild ứng dụng. Script sao lưu rồi thêm hai bảng; không nạp lại mẫu. Sau nâng cấp, Admin bổ nhiệm Trưởng bộ môn. Kiểm tra đề tài nháp phải được duyệt đúng bộ môn trước khi Trưởng khoa công bố; thu hồi chức vụ phải mất quyền ở phiên đang đăng nhập.
+Database đã có 01–06: chạy `tools/Update-DepartmentReview.ps1`, tiếp tục nâng cấp 08 và 09 trước khi rebuild ứng dụng hiện tại. Script PowerShell sao lưu rồi thêm hai bảng; không nạp lại mẫu. Sau nâng cấp, Admin bổ nhiệm Trưởng bộ môn. Kiểm tra đề tài nháp phải được duyệt đúng bộ môn trước khi Trưởng khoa công bố; thu hồi chức vụ phải mất quyền ở phiên đang đăng nhập.
 
 ## Email công bố kết quả
 
 Chạy `tools/Start-Local.ps1 -Docker -LocalEmail` để bật SMTP vào Mailpit trên máy; hộp thư http://localhost:8025. Biến chỉ được ghi đè trong tiến trình, không đổi `.env`. Bản native dùng `tools/Start-Local.ps1 -EnvFile .env.native -LocalEmail`; Docker chỉ chạy hộp thư. Với PORT khác 8080, đặt PUBLIC_BASE_URL đúng trong file cấu hình trước khi công bố. Xem [kịch bản email](EMAIL_LOCAL_TEST.md).
 
-## Nâng cấp 19/10/2026
+## Nâng cấp thời hạn duyệt và phân công GVHD (SQL 08–09)
 
-Database có 01–07 cần chạy `tools/Update-TopicReviewDeadline.ps1` (backup và áp dụng 08), rồi rebuild. Không cần chạy lại 06/07 nếu đã có. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) cho sửa hội đồng, sửa bộ môn/GVHD của nháp, gia hạn và quy tắc duyệt trước Begin_SV. Thử cả trước, đúng và sau Begin_SV: chỉ thời điểm trước mốc mới được duyệt/công bố đề tài.
+Database có 01–07 cần chạy `tools/Update-TopicReviewDeadline.ps1` (backup và áp dụng 08), sau đó sao lưu và chạy `09_department_supervisor_assignment.sql` theo [hướng dẫn phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi rebuild. Database đã có 01–08 chỉ cần bước 09. Không chạy lại migration đã có hoặc nhập lại mẫu để nâng cấp. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) cho sửa hội đồng, gia hạn và quy tắc duyệt trước Begin_SV. Thử cả trước, đúng và sau Begin_SV: chỉ thời điểm trước mốc mới được duyệt/công bố đề tài.

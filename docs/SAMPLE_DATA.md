@@ -12,7 +12,7 @@ Tên người, mã sinh viên và email trong bộ thực hành đều giả l�
 
 ## Nhập dữ liệu thực hành bằng công cụ riêng
 
-Web không có bộ nạp dữ liệu mẫu trong JAR. `SAMPLE_DATA_ENABLED` cũ không còn tác dụng khi chạy web. Để nhập có chủ đích vào **database local** đã có schema 01–08, đặt `SAMPLE_DATA_PASSWORD` trong file `.env` (12–64 ký tự, tối đa 72 byte UTF-8), rồi chạy từ root repository với JDK 21:
+Web không có bộ nạp dữ liệu mẫu trong JAR. `SAMPLE_DATA_ENABLED` cũ không còn tác dụng khi chạy web. Để nhập có chủ đích vào **database local** đã có schema 01–09, đặt `SAMPLE_DATA_PASSWORD` trong file `.env` (12–64 ký tự, tối đa 72 byte UTF-8), rồi chạy từ root repository với JDK 21:
 
 ```powershell
 # MySQL Docker đang chạy, cổng MYSQL_PORT trong .env:
@@ -65,11 +65,10 @@ Importer và DTO của file JSON ở `src/test/java/com/example/quanlydetai/tool
 
 Các fixture kiểm thử bảo vệ phân quyền, thời gian, giới hạn nhóm, tính điểm và bảo toàn dữ liệu; chúng không được đóng gói vào JAR. Xem ARCHITECTURE.md để phân biệt controller HTML, REST, service, repository và entity.
 
-Từ SQL 08, chỉ công bố đề tài trước Begin_SV. Khi nhập mới, công cụ giữ đề tài Nhap nếu đợt mẫu đã bắt đầu SV đăng ký, dù mẫu có published=true; không nới lịch cũ để vượt kiểm tra. Không áp dụng nhập lại hoặc đổi trạng thái đề tài đã có. Tạo đợt kiểm thử mới để chạy trọn hai giai đoạn.
-
-## Sau SQL 09
+## Trạng thái đề tài sau khi nhập (SQL 09)
 
 Đề tài mới nhập từ bộ mẫu luôn ở Nhap, chưa có GVHD và chưa có quyết định duyệt giả lập.
 Trường supervisors trong JSON chỉ giúp xác định GV đề xuất từ mục đầu tiên; không tạo phân công.
 Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để chọn GVHD, sau đó Trưởng khoa xác nhận.
 Refresh không thay quyết định, GVHD hoặc trạng thái của đề tài đã tồn tại.
+Trường `published` trong JSON không tự công bố đề tài mới. Chỉ công bố trước Begin_SV; nếu đợt mẫu đã qua hạn, tạo đợt kiểm thử mới để chạy trọn hai giai đoạn, không nới lịch cũ để vượt kiểm tra.

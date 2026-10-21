@@ -22,7 +22,7 @@ Chỉ nhận điểm 0–10, tối đa hai chữ số thập phân và nhận x�
 
 ## Schema sau nâng cấp
 
-Giữ 19 bảng gốc, thêm `DANG_KY_DE_TAI`, `LOI_MOI_NHOM`, `EMAIL_KET_QUA`, `TRUONG_BO_MON`, `DUYET_BO_MON`: tổng cộng **24 bảng**, 4 view và 36 trigger. DB mới chạy script 01–08 theo thứ tự. Script 06 bổ sung hàng đợi email và thay hai trigger sĩ số; không sửa thành viên/điểm đã có. Nhóm dưới 3 SV đã được duyệt trước migration giữ nguyên lịch sử; đăng ký mới áp dụng 3–5. Nhóm cũ đang chờ duyệt nhưng thiếu người phải rút để bổ sung thành viên trong thời gian SV đăng ký, rồi nộp lại.
+Giữ 19 bảng gốc, thêm `DANG_KY_DE_TAI`, `LOI_MOI_NHOM`, `EMAIL_KET_QUA`, `TRUONG_BO_MON`, `DUYET_BO_MON`: tổng cộng **24 bảng**, 4 view và 38 trigger. DB mới chạy script 01–09 theo thứ tự. Script 06 bổ sung hàng đợi email và thay hai trigger sĩ số; không sửa thành viên/điểm đã có. Nhóm dưới 3 SV đã được duyệt trước migration giữ nguyên lịch sử; đăng ký mới áp dụng 3–5. Nhóm cũ đang chờ duyệt nhưng thiếu người phải rút để bổ sung thành viên trong thời gian SV đăng ký, rồi nộp lại.
 
 Script 05 bổ sung danh mục bốn bộ môn theo lựa chọn của nhóm và hợp nhất các liên kết từ danh mục mẫu cũ. Dữ liệu thực hành khoa CNTT nằm ngoài source Java/JAR, mặc định tắt, chỉ được nhập ở dev; không tự cập nhật database đã có tài khoản. Thao tác refresh có chủ đích giữ ID/quan hệ, mật khẩu/trạng thái và lịch đợt cũ, xem SAMPLE_DATA.md.
 
@@ -42,7 +42,7 @@ Chủ tịch tổng hợp đủ phiếu rồi Trưởng khoa công bố. Một t
 
 Worker gửi sau commit qua SMTP hoặc HTTPS Brevo. Khi tắt gửi, thư vẫn ở hàng đợi. Mỗi thư có tên SV, đề tài, đợt, điểm và link `/student/results?period=...`. Chỉ nhóm mình và kết quả đã công bố được xem sau đăng nhập; email không cấp quyền truy cập mới.
 
-Worker thử tối đa 5 lần, giãn cách tăng dần; quá giới hạn thành FAILED để Trưởng khoa thử lại tại `/dean/result-emails`. ACCEPTED chỉ chứng minh dịch vụ nhận thư, không chứng minh Inbox. Nếu phản hồi gửi bị mất, retry có thể tạo thư trùng; không cam kết SMTP exactly-once. Có 24 entity, 24 bảng vật lý và 9 repository Spring Data sau SQL 01–08. Database đã có SQL 06 không cần đổi schema để khôi phục tính năng.
+Worker thử tối đa 5 lần, giãn cách tăng dần; quá giới hạn thành FAILED để Trưởng khoa thử lại tại `/dean/result-emails`. ACCEPTED chỉ chứng minh dịch vụ nhận thư, không chứng minh Inbox. Nếu phản hồi gửi bị mất, retry có thể tạo thư trùng; không cam kết SMTP exactly-once. Có 24 entity, 24 bảng vật lý và 9 repository Spring Data sau SQL 01–09. Database đã có SQL 06 không cần đổi schema để khôi phục tính năng.
 
 ## Chức vụ Trưởng bộ môn
 

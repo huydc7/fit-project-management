@@ -17,8 +17,9 @@ Mo tung script trong MySQL Workbench va Execute All theo dung thu tu:
 6. 06_rubric_email_groups.sql
 7. 07_department_review.sql
 8. 08_topic_review_deadline.sql
+9. 09_department_supervisor_assignment.sql
 
-Docker Compose khoi tao database moi bang cung bo script 01-08.
+Docker Compose khoi tao database moi bang cung bo script 01-09.
 Xem ../../docs/LOCAL_TEST.md de chay ung dung va khoi tao Admin.
 Bo du lieu thuc hanh la tuy chon: ../../docs/SAMPLE_DATA.md.
 
@@ -29,7 +30,9 @@ Cac script PowerShell duoi day ap dung cho MySQL Docker cua du an:
 - Da co 01-05: ../../tools/Update-RubricDatabase.ps1
 - Da co 01-06: ../../tools/Update-DepartmentReview.ps1
 - Da co 01-07: ../../tools/Update-TopicReviewDeadline.ps1
-Thuc hien cac buoc con thieu theo thu tu. Cac script nang cap tu sao luu.
+- Da co 01-08: sao luu, dung web va chay 09_department_supervisor_assignment.sql
+Thuc hien cac buoc con thieu theo thu tu. Cac script PowerShell nang cap tu sao luu; SQL 09 chay thu cong sau khi sao luu.
+Huong dan SQL 09: ../../docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md.
 MySQL cai tren may: tu sao luu va chay migration con thieu trong Workbench.
 Huong dan chi tiet: ../../docs/LOCAL_TEST.md.
 
@@ -39,7 +42,7 @@ SO DO CHUAN
 - USE_CASE_FIT.drawio: tac nhan va chuc nang.
 - ../../docs/DATABASE_DICTIONARY.md: cot, khoa va rang buoc.
 
-KIEM TRA SAU SQL 01-08
+KIEM TRA SAU SQL 01-09
 ---------------------
 USE quanlydetai;
 SHOW FULL TABLES;
@@ -49,7 +52,7 @@ SELECT * FROM LOAI_DIEM;
 SELECT * FROM VW_DE_TAI_DA_CONG_BO;
 SELECT * FROM VW_KET_QUA_DA_CONG_BO;
 
-Ket qua: 24 bang nghiep vu, 4 view, 36 trigger va helper sp_validate_diem.
+Ket qua: 24 bang nghiep vu, 4 view, 38 trigger va helper sp_validate_diem.
 Dieu kien si so nhom, duyet hai buoc, tinh diem va cong bo:
 ../../docs/PRODUCT_RULES.md.
 Mat_Khau_Hash chi luu BCrypt; khong dat mat khau/API key that vao SQL.

@@ -66,7 +66,7 @@ git push -u origin feature/topic-search
 
 Sau push, mở Pull Request vào main, mô tả thay đổi và kết quả kiểm thử, chọn bạn khác review. Chỉ merge khi đã xử lý góp ý và kiểm tra phù hợp đạt. Quy ước không push main trực tiếp cần nhóm tuân thủ; chưa tự cấu hình bảo vệ nhánh trên GitHub.
 
-Workflow `.github/workflows/backend.yml` chạy khi push main hoặc mở Pull Request: kiểm thử H2, MySQL riêng nạp SQL 01–08 và build Docker Java 21. Kiểm tra kết quả thực ở tab Actions; kết quả local không bảo đảm workflow cloud đã chạy thành công.
+Workflow `.github/workflows/backend.yml` chạy khi push main hoặc mở Pull Request: kiểm thử H2, MySQL riêng nạp SQL 01–09 và build Docker Java 21. Kiểm tra kết quả thực ở tab Actions; kết quả local không bảo đảm workflow cloud đã chạy thành công.
 
 Nội dung review ưu tiên theo [USE_CASES.md](USE_CASES.md) và [PRODUCT_RULES.md](PRODUCT_RULES.md), phân quyền service, quy tắc nhóm và bảo toàn dữ liệu. Thay đổi schema phải có hướng dẫn migration và backup, không yêu cầu các thành viên xóa volume để nâng cấp.
 
@@ -78,4 +78,4 @@ Tại thư mục gốc repository, sau khi đã commit đủ thay đổi:
 git archive --format=zip --output=../fit-project-management-source.zip HEAD
 ```
 
-Lệnh xuất nội dung của commit HEAD, không gồm lịch sử `.git`, file local bị bỏ qua hoặc thay đổi chưa commit. Kiểm tra `git status` trước khi xuất để tránh gửi nhầm bản cũ. Không nén toàn bộ thư mục đang làm việc vì `.env` vẫn cần ở máy local; `.gitignore` chỉ có tác dụng với Git. SQL 01–08, bộ dữ liệu thực hành, ERD chuẩn và tài liệu kỹ thuật đi cùng source; mật khẩu/API key thật và dữ liệu học vụ riêng không nằm trong gói chia sẻ.
+Lệnh xuất nội dung của commit HEAD, không gồm lịch sử `.git`, file local bị bỏ qua hoặc thay đổi chưa commit. Kiểm tra `git status` trước khi xuất để tránh gửi nhầm bản cũ. Không nén toàn bộ thư mục đang làm việc vì `.env` vẫn cần ở máy local; `.gitignore` chỉ có tác dụng với Git. SQL 01–09, bộ dữ liệu thực hành, ERD chuẩn và tài liệu kỹ thuật đi cùng source; mật khẩu/API key thật và dữ liệu học vụ riêng không nằm trong gói chia sẻ.
