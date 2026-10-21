@@ -69,7 +69,8 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Quản lý kết quả | GET `/grades/results` | TKhoa |
 | Thông báo | GET, POST `/announcements` | GET: TK; POST: Admin/TKhoa, ThongBaoRequest |
 | Tài khoản | GET, POST `/admin/accounts` | Admin; POST: TaiKhoanRequest |
-| Khóa/mở tài khoản | PATCH `/admin/accounts/{id}/status` | Admin; `{active: true/false}` |
+| Ảnh hưởng khi khóa tài khoản | GET `/admin/accounts/{id}/lock-impact` | Admin; danh sách nhiệm vụ còn lại, không trả mật khẩu |
+| Khóa/mở tài khoản | PATCH `/admin/accounts/{id}/status` | Admin; `{active: true/false, confirmPendingTasks?: true}`; khóa GV còn nhiệm vụ cần xác nhận |
 | Reset mật khẩu | PUT `/admin/accounts/{id}/password` | Admin; `{password}` |
 | Thêm bộ môn | POST `/admin/departments` | Admin; `{id, name}` |
 | Bổ nhiệm/thu hồi trưởng khoa | PUT `/admin/dean` | Admin; `{teacher, appointed}` |
@@ -85,6 +86,10 @@ DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví 
 Token nộp báo cáo dùng đúng 24 ký tự hex viết thường `[0-9a-f]` (ví dụ UUID bỏ dấu `-`, cắt 24 ký tự), giữ cùng token khi gửi lại cùng yêu cầu để tránh tạo hai phiên bản do double-click. Khi nộp phiên bản mới, tạo token mới. Phần tải trả file riêng tư hoặc redirect URL ký ngắn hạn; không có đường dẫn file công khai.
 
 ## Phản hồi
+
+`GET /catalog/lecturers` chỉ trả GV có tài khoản GV đang `HoatDong`, phục vụ phân công. Backend kiểm tra lại trạng thái khi ghi phân công, công bố đề tài và chốt/gán hội đồng, kể cả khi client gửi mã trực tiếp.
+
+Admin dùng `GET /admin/accounts/{id}/lock-impact` để xem `{accountId, username, name, state, tasks}`; mỗi nhiệm vụ có `{role, topicId, topicTitle, councilId, guidance}`. Khi khóa GV đang hoạt động và còn nhiệm vụ, `PATCH /admin/accounts/{id}/status` với `{active:false}` trả 400 và giữ trạng thái cũ. Sau khi xem ảnh hưởng, gửi `{active:false,confirmPendingTasks:true}` để xác nhận khóa. Mở khóa dùng `{active:true}` như trước. Không tự xóa hoặc giảm số phiếu bắt buộc; danh sách nhiệm vụ được kiểm tra lại trong transaction khi khóa.
 
 - GET danh sách: `200` và mảng JSON (có thể rỗng).
 - POST tạo: `201`, body rỗng; đọc lại danh sách tương ứng để lấy bản ghi. POST tổng hợp điểm và các cập nhật thành công: `204`.

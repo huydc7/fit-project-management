@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head><title>Xác nhận khóa tài khoản</title></head>
+<body><main>
+<h1 class="page-title space-bottom">Xác nhận khóa tài khoản</h1>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+<section class="panel panel-body">
+<h2 class="section-title" th:text="${impact.username + ' — ' + impact.name}"></h2>
+<p>Khóa tài khoản sẽ ngăn đăng nhập và làm mất quyền truy cập của phiên đang dùng. Phân công, báo cáo và phiếu điểm đã có vẫn được giữ.</p>
+<div th:if="${not #lists.isEmpty(impact.tasks)}" class="notice notice-error" role="alert">
+<strong>Giảng viên còn nhiệm vụ chưa hoàn thành.</strong>
+<p>Kiểm tra các nhiệm vụ dưới đây và thống nhất phương án với Trưởng bộ môn/Trưởng khoa trước khi khóa. Khi cần khóa ngay vì lý do bảo mật, hãy xác nhận đã nắm ảnh hưởng và theo dõi xử lý các nhiệm vụ này.</p>
+</div>
+<p th:if="${#lists.isEmpty(impact.tasks)}" class="muted">Không có nhiệm vụ hướng dẫn hoặc chấm/tổng hợp điểm chưa hoàn thành được ghi nhận.</p>
+<div class="table-scroll" th:if="${not #lists.isEmpty(impact.tasks)}">
+<table class="data-table"><thead><tr><th>Nhiệm vụ</th><th>Đề tài / Hội đồng</th><th>Hướng xử lý</th></tr></thead>
+<tbody><tr th:each="task : ${impact.tasks}">
+<td th:text="${task.role}"></td>
+<td><strong th:text="${task.topicTitle}"></strong><div th:if="${task.topicId}" th:text="${task.topicId}"></div><div th:if="${task.councilId}" th:text="${task.councilId}"></div></td>
+<td th:text="${task.guidance}"></td>
+</tr></tbody></table></div>
+<form th:if="${impact.state == 'HoatDong'}" method="post" th:action="@{/admin/accounts/{id}/status(id=${impact.accountId})}" class="space-top">
+<input type="hidden" name="active" value="false">
+<label th:if="${not #lists.isEmpty(impact.tasks)}" class="space-bottom"><input type="checkbox" name="confirmPendingTasks" value="true" required> Tôi đã xem các nhiệm vụ còn lại và đã có phương án xử lý sau khi khóa.</label>
+<div class="space-top"><button class="button button-danger">Xác nhận khóa tài khoản</button> <a class="button button-outline" href="/admin/accounts">Quay lại</a></div>
+</form>
+<p th:unless="${impact.state == 'HoatDong'}">Tài khoản đã bị khóa. Có thể mở khóa tại <a href="/admin/accounts">Quản lý tài khoản</a>.</p>
+</section></main></body></html>

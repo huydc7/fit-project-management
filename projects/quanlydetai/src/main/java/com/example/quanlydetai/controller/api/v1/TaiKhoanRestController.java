@@ -40,7 +40,12 @@ public class TaiKhoanRestController {
     @PatchMapping("/{id}/status")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void active(@PathVariable String id, @Valid @RequestBody TrangThaiTaiKhoanRequest body) {
-        service.setActive(id, body.active());
+        service.setActive(id, body.active(), Boolean.TRUE.equals(body.confirmPendingTasks()));
+    }
+
+    @GetMapping("/{id}/lock-impact")
+    public com.example.quanlydetai.dto.KhoaTaiKhoanResponse lockImpact(@PathVariable String id) {
+        return service.lockImpact(id);
     }
 
     @PutMapping("/{id}/password")

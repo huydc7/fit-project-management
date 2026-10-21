@@ -31,12 +31,17 @@ public class HoiDongService {
     private final CurrentUserService currentUser;
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
+    private final GiangVienService teachers;
 
     public HoiDongService(
-            CurrentUserService currentUser, JpaEntityRepository entities, AcademicRules rules) {
+            CurrentUserService currentUser,
+            JpaEntityRepository entities,
+            AcademicRules rules,
+            GiangVienService teachers) {
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
+        this.teachers = teachers;
     }
 
     @Transactional
@@ -50,7 +55,7 @@ public class HoiDongService {
         rules.check(
                 new HashSet<>(all).size() == all.size(),
                 "Chủ tịch, thư ký và các thành viên phải là những người khác nhau.");
-        all.forEach(id -> entities.require(GiangVien.class, id));
+        teachers.requireActiveAccounts(all);
         HoiDong h = new HoiDong();
         h.setMaHd(rules.id("HD"));
         h.setMaDot(f.period());
@@ -82,6 +87,7 @@ public class HoiDongService {
                                 == 1
                         && members.stream().filter(m -> "ThuKy".equals(m.getVaiTro())).count() == 1,
                 "Hội đồng cần 3–5 người, đúng một chủ tịch và một thư ký.");
+        teachers.requireActiveAccounts(members.stream().map(ThanhVienHoiDong::getMaGV).toList());
         h.setTrangThai("DaChot");
         entities.flush();
     }
@@ -123,7 +129,7 @@ public class HoiDongService {
         rules.check(
                 new HashSet<>(all).size() == all.size(),
                 "Chủ tịch, thư ký và các thành viên phải là những người khác nhau.");
-        all.forEach(gv -> entities.require(GiangVien.class, gv));
+        teachers.requireActiveAccounts(all);
         members(id).forEach(entities::remove);
         entities.flush();
         for (String gv : all) {
@@ -179,7 +185,7 @@ public class HoiDongService {
         currentUser.dean();
         DeTai t = lockTopic(topic);
         ungraded(t);
-        entities.require(GiangVien.class, teacher);
+        teachers.requireActiveAccounts(List.of(teacher));
         rules.check(
                 entities.find(GvhdDeTai.class, new GvhdDeTaiId(teacher, topic)) == null,
                 "GVHD không được phản biện đề tài đang hướng dẫn.");
@@ -214,7 +220,10 @@ public class HoiDongService {
                 "DaChot".equals(h.getTrangThai()),
                 "Hãy chốt thành viên hội đồng trước khi gán đề tài.");
         rules.check(t.getMaDot().equals(h.getMaDot()), "Hội đồng và đề tài phải cùng đợt.");
-        for (var m : members(council)) {
+        var councilMembers = members(council);
+        teachers.requireActiveAccounts(
+                councilMembers.stream().map(ThanhVienHoiDong::getMaGV).toList());
+        for (var m : councilMembers) {
             rules.check(
                     entities.find(GvhdDeTai.class, new GvhdDeTaiId(m.getMaGV(), topic)) == null,
                     "Hội đồng có thành viên là GVHD của đề tài.");

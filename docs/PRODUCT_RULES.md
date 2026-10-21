@@ -50,6 +50,14 @@ Admin bổ nhiệm GV thuộc đúng bộ môn, một người đương nhiệm 
 
 Bản đầu cho phép Trưởng bộ môn duyệt đề xuất do chính mình tạo; bước Trưởng khoa vẫn bắt buộc. Người kiêm cả hai chức vụ chưa bị ràng buộc phải có người duyệt khác. Nếu khoa yêu cầu người duyệt độc lập, cần bổ sung quy trình ủy quyền. Admin chỉ sửa thông tin hồ sơ, không đổi mã, username hoặc vai trò qua API sửa hồ sơ; phải thu hồi chức Trưởng bộ môn trước khi chuyển bộ môn. Tài khoản/hồ sơ đã có liên kết lịch sử chỉ được khóa, không xóa.
 
+## Tài khoản giảng viên và phân công
+
+GVHD, GVPB, chủ tịch, thư ký và thành viên hội đồng phải có tài khoản vai trò GV đang HoatDong. Danh mục lựa chọn phân công chỉ trả GV thỏa điều kiện này; danh mục quản trị vẫn giữ mọi hồ sơ để thu hồi chức vụ khi cần. Backend kiểm tra lại khi duyệt GVHD, công bố đề tài, tạo/sửa/chốt hội đồng và gán GVPB/hội đồng vào đề tài. Khóa hàng tài khoản trong transaction để phân công không đồng thời vượt qua thao tác khóa của Admin. Không cần migration SQL mới.
+
+Admin xem ảnh hưởng tại `/admin/accounts/{id}/lock` trước khi khóa GV. Danh sách gồm hướng dẫn đề tài chưa hoàn thành, GVPB/thành viên hội đồng thiếu phiếu, chủ tịch chưa tổng hợp và hội đồng chưa gán đề tài. Phiếu đã nộp không còn là nhiệm vụ chấm thiếu; chủ tịch đã nộp phiếu vẫn cần tổng hợp. Kết quả đã tổng hợp không bị báo thiếu phiếu lại.
+
+Khóa GV còn nhiệm vụ yêu cầu xác nhận rõ `confirmPendingTasks=true` ở backend; không chỉ xác nhận bằng JavaScript. Admin vẫn có thể khóa khẩn cấp sau khi xem ảnh hưởng. Trưởng khoa có thể phân công lại GVPB/hội đồng trước khi đề tài bắt đầu có điểm; hội đồng đang lập và chưa dùng có thể sửa thành viên. Sau khi có điểm, phân công đã khóa; cần mở khóa tài khoản để hoàn tất theo quy trình hiện tại. Không tự xóa phân công, phiếu điểm, mở lại kết quả hoặc giảm số phiếu bắt buộc khi khóa GV. Đổi GVHD của đề tài đã công bố chưa nằm trong luồng hiện tại.
+
 ## Sửa đề tài, hội đồng và gia hạn đợt
 
 Đề xuất nháp sửa được bộ môn và nội dung, không sửa GVHD; hủy duyệt cũ và danh sách GVHD; hội đồng DangLap chưa dùng được sửa/xóa. Đợt có dữ liệu được gia hạn End_SV/hạn GVPB, không rút ngắn hoặc đổi các mốc bắt đầu, loại/ngày hội đồng; sau có kết quả tổng hợp chỉ đổi tên. SQL 08 bổ sung kiểm tra hạn duyệt/công bố, không đổi dữ liệu cũ. Chi tiết endpoint xem [REST_API.md](REST_API.md).

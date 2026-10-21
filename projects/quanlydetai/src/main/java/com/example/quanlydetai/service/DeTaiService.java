@@ -6,7 +6,6 @@ import com.example.quanlydetai.dto.LuaChonResponse;
 import com.example.quanlydetai.entity.BoMon;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
-import com.example.quanlydetai.entity.GiangVien;
 import com.example.quanlydetai.entity.GvhdDeTai;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
@@ -26,16 +25,19 @@ public class DeTaiService {
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
     private final ReferenceDataService referenceData;
+    private final GiangVienService teachers;
 
     public DeTaiService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
-            ReferenceDataService referenceData) {
+            ReferenceDataService referenceData,
+            GiangVienService teachers) {
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
         this.referenceData = referenceData;
+        this.teachers = teachers;
     }
 
     public List<LuaChonResponse> periods() {
@@ -83,7 +85,6 @@ public class DeTaiService {
         t.setTrangThai("Nhap");
         t.setNgayDangKy(rules.now());
         entities.insert(t);
-
     }
 
     @Transactional
@@ -108,9 +109,16 @@ public class DeTaiService {
         rules.check("Nhap".equals(t.getTrangThai()), "Chỉ duyệt đề tài đang chờ công bố.");
         rules.topicReviewWindow(dot);
         if (approve) {
-            int count = entities.query(
-                    "select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id).size();
+            int count =
+                    entities.query(
+                                    "select h from GvhdDeTai h where h.maDeTai=?1",
+                                    GvhdDeTai.class,
+                                    id)
+                            .size();
             rules.check(count >= 1 && count <= 2, "Bộ môn phải chọn 1–2 GVHD trước khi công bố.");
+            teachers.requireActiveAccounts(
+                    entities.query(
+                            "select h.maGV from GvhdDeTai h where h.maDeTai=?1", String.class, id));
             t.setMaGvXacNhan(currentUser.teacher());
             t.setNgayXacNhan(rules.now());
         }
@@ -225,7 +233,9 @@ public class DeTaiService {
                                     supervisorIds.getOrDefault(id, List.of()),
                                     d.getLoai(),
                                     rules.now().isBefore(d.getBeginSV()),
-                                    t.getMaGvDangKy(), t.getMaGvXacNhan(), t.getNgayXacNhan());
+                                    t.getMaGvDangKy(),
+                                    t.getMaGvXacNhan(),
+                                    t.getNgayXacNhan());
                         })
                 .toList();
     }
@@ -362,14 +372,18 @@ public class DeTaiService {
         var review = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approve) {
             rules.check(review == null, "Đề tài đã được bộ môn duyệt.");
-            rules.check(supervisors != null && supervisors.size() >= 1 && supervisors.size() <= 2,
+            rules.check(
+                    supervisors != null && supervisors.size() >= 1 && supervisors.size() <= 2,
                     "Chọn từ 1 đến 2 giảng viên hướng dẫn.");
             var distinct = new LinkedHashSet<>(supervisors);
-            rules.check(distinct.size() == supervisors.size(), "Giảng viên hướng dẫn không được trùng nhau.");
+            rules.check(
+                    distinct.size() == supervisors.size(),
+                    "Giảng viên hướng dẫn không được trùng nhau.");
             for (String gv : distinct) {
-                rules.check(gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
-                entities.require(GiangVien.class, gv);
+                rules.check(
+                        gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
             }
+            teachers.requireActiveAccounts(distinct);
             entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
                     .forEach(entities::remove);
             entities.flush();

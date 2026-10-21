@@ -54,8 +54,24 @@ public class TaiKhoanController {
 
     @PostMapping("/admin/accounts/{id}/status")
     public String accountActive(
-            @PathVariable String id, @RequestParam boolean active, RedirectAttributes flash) {
-        return perform("/admin/accounts", flash, () -> accounts.setActive(id, active));
+            @PathVariable String id,
+            @RequestParam boolean active,
+            @RequestParam(defaultValue = "false") boolean confirmPendingTasks,
+            RedirectAttributes flash) {
+        String result =
+                perform(
+                        "/admin/accounts",
+                        flash,
+                        () -> accounts.setActive(id, active, confirmPendingTasks));
+        return !active && flash.getFlashAttributes().containsKey("loi")
+                ? "redirect:/admin/accounts/" + id + "/lock"
+                : result;
+    }
+
+    @GetMapping("/admin/accounts/{id}/lock")
+    public String lockPage(@PathVariable String id, Model model) {
+        model.addAttribute("impact", accounts.lockImpact(id));
+        return "admin/account-lock";
     }
 
     @PostMapping("/admin/accounts/{id}/password")
@@ -114,7 +130,7 @@ public class TaiKhoanController {
         m.addAttribute(
                 "managedDepartments",
                 referenceData.searchDepartments((String) m.getAttribute("departmentQuery")));
-        m.addAttribute("teachers", referenceData.teachers());
+        m.addAttribute("teachers", referenceData.allTeachers());
         m.addAttribute("heads", accounts.departmentHeads());
     }
 

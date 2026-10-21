@@ -47,6 +47,19 @@ public class ReferenceDataService {
 
     public List<LuaChonResponse> teachers() {
         return entities
+                .query(
+                        "select g from GiangVien g where exists (select a.maTk from TaiKhoan a"
+                            + " where a.maGV=g.maGV and a.vaiTro='GV' and a.trangThai='HoatDong')"
+                            + " order by g.hoTen",
+                        GiangVien.class)
+                .stream()
+                .map(g -> new LuaChonResponse(g.getMaGV(), g.getHoTen() + " — " + g.getMaGV()))
+                .toList();
+    }
+
+    // Administration must still be able to revoke appointments of a locked lecturer.
+    public List<LuaChonResponse> allTeachers() {
+        return entities
                 .query("select g from GiangVien g order by g.hoTen", GiangVien.class)
                 .stream()
                 .map(g -> new LuaChonResponse(g.getMaGV(), g.getHoTen() + " — " + g.getMaGV()))

@@ -75,6 +75,8 @@ Mỗi lần đổi vai trò, đăng xuất hoặc dùng trình duyệt/profile k
 
 ## Nghiệm thu trước cloud
 
+Kiểm tra phân công GV: khóa một tài khoản hoặc tạo hồ sơ GV chưa có tài khoản trong database kiểm thử. GV đó không xuất hiện trong danh mục phân công; gửi mã trực tiếp qua API vẫn bị từ chối, phân công cũ giữ nguyên. Thử khóa sau khi bộ môn đã duyệt GVHD và sau khi hội đồng đã lập/chốt: công bố hoặc gán hội đồng phải kiểm tra lại tài khoản. Tại Admin → Khóa / Xem ảnh hưởng, kiểm tra nhiệm vụ còn lại và yêu cầu xác nhận trước khi khóa. GV đã nộp phiếu không còn báo thiếu phiếu; chủ tịch vẫn được cảnh báo đến khi tổng hợp. Mở khóa và kiểm tra GV nhận phân công/đăng nhập lại được.
+
 - Luồng trên chạy trên MySQL của nhóm; kiểm tra quyền, ngoài hạn, nhóm dưới 3 người khi đăng ký, thành viên thứ sáu, đăng ký trùng, thiếu phiếu, GVHD tự chấm và điểm trước công bố.
 - File/database còn sau restart; kiểm tra upload/download và định dạng/dung lượng sai.
 - Chạy clean verify; dùng DB kiểm thử riêng cho test MySQL theo README, không dùng DB vận hành.

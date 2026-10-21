@@ -107,7 +107,8 @@
 <label th:if="${a.role == 'GV'}" class="field-label">Bộ môn<select class="select-field space-bottom" name="department" required><option th:each="d:${departments}" th:value="${d.id}" th:text="${d.label}" th:selected="${d.id == a.department}"></option></select></label>
 <button class="button button-primary button-small">Lưu hồ sơ</button></form></details>
 <form method="post" th:action="@{/admin/accounts/{id}/delete(id=${a.id})}" class="space-top-sm" data-confirm="Xóa tài khoản và hồ sơ chưa có liên kết? Nếu đã có lịch sử, hãy dùng Khóa."><button class="button button-danger button-small">Xóa khi chưa sử dụng</button></form>
-<form method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
+<a th:if="${a.role == 'GV' and a.state == 'HoatDong'}" th:href="@{/admin/accounts/{id}/lock(id=${a.id})}" class="button button-small button-neutral">Khóa / Xem ảnh hưởng</a>
+<form th:unless="${a.role == 'GV' and a.state == 'HoatDong'}" method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
 <input type="hidden" name="active" th:value="${a.state != 'HoatDong'}">
 <button class="button button-small button-neutral" th:text="${a.state == 'HoatDong' ? 'Khóa' : 'Mở khóa'}">
 </button>

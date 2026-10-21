@@ -31,16 +31,19 @@ public class TaiKhoanService {
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
     private final PasswordEncoder encoder;
+    private final GiangVienService teachers;
 
     public TaiKhoanService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
-            PasswordEncoder encoder) {
+            PasswordEncoder encoder,
+            GiangVienService teachers) {
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
         this.encoder = encoder;
+        this.teachers = teachers;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -165,14 +168,42 @@ public class TaiKhoanService {
         entities.insert(a);
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('ADMIN')")
     public void setActive(String id, boolean active) {
+        setActive(id, active, false);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public com.example.quanlydetai.dto.KhoaTaiKhoanResponse lockImpact(String id) {
+        currentUser.admin();
+        var account = entities.require(TaiKhoan.class, id);
+        var teacher = entities.find(GiangVien.class, account.getMaGV());
+        return new com.example.quanlydetai.dto.KhoaTaiKhoanResponse(
+                id,
+                account.getTenDangNhap(),
+                teacher == null ? "" : teacher.getHoTen(),
+                account.getTrangThai(),
+                teacher == null ? List.of() : teachers.pendingTasks(teacher.getMaGV()));
+    }
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void setActive(String id, boolean active, boolean confirmPendingTasks) {
         currentUser.admin();
         TaiKhoan a = entities.lock(TaiKhoan.class, id);
         rules.check(
                 !id.equals(currentUser.actor().getAccountId()),
                 "Không được khóa tài khoản đang sử dụng.");
+        if (!active && "HoatDong".equals(a.getTrangThai()) && a.getMaGV() != null) {
+            var tasks = teachers.pendingTasks(a.getMaGV());
+            rules.check(
+                    tasks.isEmpty() || confirmPendingTasks,
+                    "Giảng viên còn "
+                            + tasks.size()
+                            + " nhiệm vụ chưa hoàn thành. Xem cảnh báo khóa tài khoản và xác nhận"
+                            + " đã có phương án xử lý trước khi khóa.");
+        }
         a.setTrangThai(active ? "HoatDong" : "Khoa");
         entities.flush();
     }

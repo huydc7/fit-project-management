@@ -1058,6 +1058,110 @@ class WorkflowIntegrationTest {
                 .isEqualTo("WF_GV0");
     }
 
+    @Test
+    void reviewerAssignmentRejectsLockedAndAccountlessTeachersWithoutReplacingPrevious()
+            throws Exception {
+        registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='Khoa' WHERE Ma_TK='wf.gv6'");
+        jdbc.update(
+                "INSERT INTO GV(Ma_GV,Ho_Ten,Email,Ma_Bo_Mon) VALUES ('WF_ORPHAN','No"
+                        + " account','orphan@example.test','WF_BM')");
+        em.clear();
+        for (String teacher : List.of("WF_GV6", "WF_ORPHAN")) {
+            mvc.perform(
+                            put("/api/v1/councils/topics/WF_DT/reviewer")
+                                    .session(session("wf.gv0"))
+                                    .with(csrf())
+                                    .contentType("application/json")
+                                    .content("{\"teacher\":\"" + teacher + "\"}"))
+                    .andExpect(status().isBadRequest());
+            assertThat(
+                            jdbc.queryForList(
+                                    "SELECT Ma_GV FROM GVPB_DETAI WHERE Ma_De_Tai='WF_DT'",
+                                    String.class))
+                    .containsExactly("WF_GV2");
+        }
+        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='HoatDong' WHERE Ma_TK='wf.gv6'");
+        em.clear();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV6");
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVPB_DETAI WHERE Ma_De_Tai='WF_DT'",
+                                String.class))
+                .containsExactly("WF_GV6");
+    }
+
+    @Test
+    void councilAssignmentRechecksAccountsEvenAfterFinalization() throws Exception {
+        registered();
+        String id = council();
+        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='Khoa' WHERE Ma_TK='wf.gv4'");
+        em.clear();
+        mvc.perform(
+                        put("/api/v1/councils/topics/WF_DT")
+                                .session(session("wf.gv0"))
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content("{\"council\":\"" + id + "\"}"))
+                .andExpect(status().isBadRequest());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'",
+                                Integer.class))
+                .isZero();
+        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='HoatDong' WHERE Ma_TK='wf.gv4'");
+        em.clear();
+        ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", id);
+    }
+
+    @Test
+    void lockImpactTracksMissingBallotsAndChairAggregationButNotCompletedTasks() throws Exception {
+        String group = registered();
+        String id = council();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", id);
+        upload("wf.sv1", group, "cccccccccccccccccccccccc")
+                .andExpect(flash().attributeExists("thanhCong"));
+        for (int teacher = 2; teacher <= 5; teacher++) {
+            mvc.perform(
+                            get("/api/v1/admin/accounts/wf.gv" + teacher + "/lock-impact")
+                                    .session(session("wf.admin")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tasks.length()").value(1));
+            ok(
+                    "wf.gv" + teacher,
+                    "/lecturer/grading",
+                    "topic",
+                    "WF_DT",
+                    "type",
+                    teacher == 2 ? "GVPB" : "HD",
+                    "value",
+                    "8",
+                    "comment",
+                    "Đã chấm");
+        }
+        for (int teacher : List.of(2, 4, 5)) {
+            mvc.perform(
+                            get("/api/v1/admin/accounts/wf.gv" + teacher + "/lock-impact")
+                                    .session(session("wf.admin")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tasks.length()").value(0));
+        }
+        // A chair who has submitted their ballot still has to aggregate the result.
+        mvc.perform(get("/api/v1/admin/accounts/wf.gv3/lock-impact").session(session("wf.admin")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tasks.length()").value(1));
+        ok("wf.gv3", "/lecturer/topics/WF_DT/aggregate", "comment", "Hoàn tất đánh giá");
+        for (int teacher : List.of(1, 2, 3, 4, 5)) {
+            mvc.perform(
+                            get("/api/v1/admin/accounts/wf.gv" + teacher + "/lock-impact")
+                                    .session(session("wf.admin")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.tasks.length()").value(0));
+        }
+    }
+
     private void okPages(String user, String... paths) throws Exception {
         for (String path : paths)
             mvc.perform(get(path).session(session(user))).andExpect(status().isOk());
