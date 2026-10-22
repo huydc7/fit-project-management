@@ -3,6 +3,7 @@ package com.example.quanlydetai.service;
 import com.example.quanlydetai.dto.DangKyDeTaiResponse;
 import com.example.quanlydetai.dto.LoiMoiResponse;
 import com.example.quanlydetai.dto.LuaChonResponse;
+import com.example.quanlydetai.dto.NhomOption;
 import com.example.quanlydetai.dto.NhomRequest;
 import com.example.quanlydetai.dto.NhomResponse;
 import com.example.quanlydetai.dto.ThanhVienResponse;
@@ -15,8 +16,10 @@ import com.example.quanlydetai.entity.SinhVien;
 import com.example.quanlydetai.entity.ThanhVienNhom;
 import com.example.quanlydetai.entity.ThanhVienNhomId;
 import com.example.quanlydetai.repository.JpaEntityRepository;
+import com.example.quanlydetai.repository.NhomQueryRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -33,12 +36,15 @@ public class NhomService {
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
     private final ReferenceDataService referenceData;
+    private final NhomQueryRepository queries;
 
     public NhomService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
-            ReferenceDataService referenceData) {
+            ReferenceDataService referenceData,
+            NhomQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -227,53 +233,83 @@ public class NhomService {
     }
 
     @PreAuthorize("hasRole('SV')")
+    public List<NhomOption> registrationOptions(List<String> periods) {
+        return queries.registrationOptions(currentUser.student(), periods);
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public List<NhomOption> reportOptions() {
+        return queries.reportOptions(currentUser.student());
+    }
+
+    @PreAuthorize("hasRole('SV')")
     public List<NhomResponse> mine() {
-        String sv = currentUser.student();
-        return entities
-                .query(
-                        "select n from Nhom n where n.maNhom in (select m.maNhom from ThanhVienNhom"
-                                + " m where m.maSV=?1) order by n.maNhom",
-                        Nhom.class,
-                        sv)
-                .stream()
-                .map(n -> view(n, sv))
-                .toList();
+        return mine(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public Page<NhomResponse> mine(Pageable page) {
+        Paging.check(page);
+        String student = currentUser.student();
+        var rows = queries.mine(student, page);
+        var ids = rows.stream().map(row -> ((Nhom) row[0]).getMaNhom()).toList();
+        var members = new HashMap<String, List<ThanhVienResponse>>();
+        var registrations = new HashMap<String, List<DangKyDeTaiResponse>>();
+        var reserved = new HashSet<String>();
+        if (!ids.isEmpty()) {
+            for (var row : queries.members(ids))
+                members.computeIfAbsent((String) row[0], ignored -> new ArrayList<>())
+                        .add(
+                                new ThanhVienResponse(
+                                        (String) row[1], (String) row[2], (String) row[3]));
+            for (var row : queries.registrations(ids))
+                registrations.computeIfAbsent(row.group(), ignored -> new ArrayList<>()).add(row);
+            reserved.addAll(queries.activeGroups(ids));
+        }
+        return rows.map(
+                row -> {
+                    Nhom n = (Nhom) row[0];
+                    var team = members.getOrDefault(n.getMaNhom(), List.of());
+                    boolean leader =
+                            team.stream()
+                                    .anyMatch(
+                                            m ->
+                                                    student.equals(m.id())
+                                                            && "Truong_Nhom".equals(m.role()));
+                    return new NhomResponse(
+                            n.getMaNhom(),
+                            n.getTenNhom(),
+                            (String) row[1],
+                            n.getMaDeTai(),
+                            (String) row[2],
+                            leader,
+                            n.getMaDeTai() == null && !reserved.contains(n.getMaNhom()),
+                            team,
+                            registrations.getOrDefault(n.getMaNhom(), List.of()));
+                });
     }
 
     @PreAuthorize("hasRole('SV')")
     public List<LoiMoiResponse> invitations() {
-        String sv = currentUser.student();
-        return entities
-                .query(
-                        "select m from LoiMoiNhom m where m.maSV=?1 or m.maNhom in (select t.maNhom"
-                            + " from ThanhVienNhom t where t.maSV=?1 and t.vaiTro='Truong_Nhom')"
-                            + " order by m.ngayMoi desc",
-                        LoiMoiNhom.class,
-                        sv)
-                .stream()
-                .map(
-                        m ->
-                                new LoiMoiResponse(
-                                        m.getId(),
-                                        m.getMaNhom(),
-                                        entities.require(Nhom.class, m.getMaNhom()).getTenNhom(),
-                                        m.getMaSV(),
-                                        entities.require(SinhVien.class, m.getMaSV()).getHoTen(),
-                                        m.getTrangThai()))
-                .toList();
+        return invitations(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public Page<LoiMoiResponse> invitations(Pageable page) {
+        Paging.check(page);
+        return queries.invitations(currentUser.student(), page);
     }
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<DangKyDeTaiResponse> pending() {
+        return pending(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<DangKyDeTaiResponse> pending(Pageable page) {
+        Paging.check(page);
         currentUser.dean();
-        return entities
-                .query(
-                        "select r from DangKyDeTai r where r.trangThai='ChoDuyet' order by"
-                                + " r.ngayDangKy",
-                        DangKyDeTai.class)
-                .stream()
-                .map(this::registrationView)
-                .toList();
+        return queries.pending(page);
     }
 
     private Nhom lockPeriodGroup(String id) {
@@ -325,52 +361,5 @@ public class NhomService {
         m.setMaSV(sv);
         m.setVaiTro(role);
         entities.insert(m);
-    }
-
-    private DangKyDeTaiResponse registrationView(DangKyDeTai r) {
-        return new DangKyDeTaiResponse(
-                r.getId(),
-                r.getMaNhom(),
-                entities.require(Nhom.class, r.getMaNhom()).getTenNhom(),
-                r.getMaDeTai(),
-                entities.require(DeTai.class, r.getMaDeTai()).getTenDeTai(),
-                r.getTrangThai(),
-                r.getNgayDangKy(),
-                r.getLyDo());
-    }
-
-    private NhomResponse view(Nhom n, String sv) {
-        var members =
-                members(n.getMaNhom()).stream()
-                        .map(
-                                m ->
-                                        new ThanhVienResponse(
-                                                m.getMaSV(),
-                                                entities.require(SinhVien.class, m.getMaSV())
-                                                        .getHoTen(),
-                                                m.getVaiTro()))
-                        .toList();
-        var registrations =
-                entities
-                        .query(
-                                "select r from DangKyDeTai r where r.maNhom=?1 order by"
-                                        + " r.ngayDangKy desc",
-                                DangKyDeTai.class,
-                                n.getMaNhom())
-                        .stream()
-                        .map(this::registrationView)
-                        .toList();
-        return new NhomResponse(
-                n.getMaNhom(),
-                n.getTenNhom(),
-                entities.require(DotDangKy.class, n.getMaDot()).getTenDotDangKy(),
-                n.getMaDeTai(),
-                n.getMaDeTai() == null
-                        ? null
-                        : entities.require(DeTai.class, n.getMaDeTai()).getTenDeTai(),
-                isLeader(n, sv),
-                isEditable(n),
-                members,
-                registrations);
     }
 }

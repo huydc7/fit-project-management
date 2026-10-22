@@ -3,13 +3,16 @@ package com.example.quanlydetai.service;
 import com.example.quanlydetai.dto.DeTaiRequest;
 import com.example.quanlydetai.dto.DeTaiResponse;
 import com.example.quanlydetai.dto.LuaChonResponse;
+import com.example.quanlydetai.dto.TopicSearch;
 import com.example.quanlydetai.entity.BoMon;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
 import com.example.quanlydetai.entity.GvhdDeTai;
+import com.example.quanlydetai.repository.DeTaiQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +30,16 @@ public class DeTaiService {
     private final ReferenceDataService referenceData;
     private final GiangVienService teachers;
 
+    private final DeTaiQueryRepository queries;
+
     public DeTaiService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
             ReferenceDataService referenceData,
-            GiangVienService teachers) {
+            GiangVienService teachers,
+            DeTaiQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -66,6 +73,11 @@ public class DeTaiService {
 
     public List<LuaChonResponse> teachers() {
         return referenceData.teachers();
+    }
+
+    @PreAuthorize("hasRole('TRUONGBOMON')")
+    public List<LuaChonResponse> departmentTeachers() {
+        return referenceData.teachersInDepartment(currentUser.departmentHead());
     }
 
     @Transactional
@@ -109,16 +121,13 @@ public class DeTaiService {
         rules.check("Nhap".equals(t.getTrangThai()), "Chỉ duyệt đề tài đang chờ công bố.");
         rules.topicReviewWindow(dot);
         if (approve) {
-            int count =
+            var supervisors =
                     entities.query(
-                                    "select h from GvhdDeTai h where h.maDeTai=?1",
-                                    GvhdDeTai.class,
-                                    id)
-                            .size();
-            rules.check(count >= 1 && count <= 2, "Bộ môn phải chọn 1–2 GVHD trước khi công bố.");
-            teachers.requireActiveAccounts(
-                    entities.query(
-                            "select h.maGV from GvhdDeTai h where h.maDeTai=?1", String.class, id));
+                            "select h.maGV from GvhdDeTai h where h.maDeTai=?1", String.class, id);
+            rules.check(
+                    supervisors.size() >= 1 && supervisors.size() <= 2,
+                    "Bộ môn phải chọn 1–2 GVHD trước khi công bố.");
+            teachers.requireActiveAccounts(supervisors);
             t.setMaGvXacNhan(currentUser.teacher());
             t.setNgayXacNhan(rules.now());
         }
@@ -128,33 +137,49 @@ public class DeTaiService {
 
     @PreAuthorize("hasRole('GV')")
     public List<DeTaiResponse> mine() {
-        String gv = currentUser.teacher();
-        return views(
-                entities.query(
-                        "select t from DeTai t join fetch t.dot join fetch t.boMon where"
-                            + " t.maGvDangKy=?1 or t.maDeTai in (select h.maDeTai from GvhdDeTai h"
-                            + " where h.maGV=?1) order by t.ngayDangKy desc, t.maDeTai",
-                        DeTai.class,
-                        gv));
+        return mine(TopicSearch.empty(), Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('GV')")
+    public Page<DeTaiResponse> mine(TopicSearch filter, Pageable page) {
+        Paging.check(page);
+        var rows =
+                queries.search(
+                        filter == null ? TopicSearch.empty() : filter,
+                        currentUser.teacher(),
+                        null,
+                        false,
+                        page);
+        return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
     }
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<DeTaiResponse> all() {
+        return all(TopicSearch.empty(), Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<DeTaiResponse> all(TopicSearch filter, Pageable page) {
+        Paging.check(page);
         currentUser.dean();
-        return views(
-                entities.query(
-                        "select t from DeTai t join fetch t.dot join fetch t.boMon order by"
-                                + " t.ngayDangKy desc, t.maDeTai",
-                        DeTai.class));
+        var rows =
+                queries.search(
+                        filter == null ? TopicSearch.empty() : filter, null, null, false, page);
+        return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
     }
 
     @PreAuthorize("hasRole('SV')")
     public List<DeTaiResponse> available() {
-        return views(
-                entities.query(
-                        "select t from DeTai t join fetch t.dot join fetch t.boMon where"
-                                + " t.trangThai='DaCongBo' order by t.ngayDangKy desc, t.maDeTai",
-                        DeTai.class));
+        return available(TopicSearch.empty(), Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public Page<DeTaiResponse> available(TopicSearch filter, Pageable page) {
+        Paging.check(page);
+        var rows =
+                queries.search(
+                        filter == null ? TopicSearch.empty() : filter, null, null, true, page);
+        return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
     }
 
     // Load related lists once per result set, rather than issuing queries for each topic.
@@ -253,31 +278,6 @@ public class DeTaiService {
         return rows == null || rows.isEmpty() ? null : rows.getFirst();
     }
 
-    public static List<DeTaiResponse> filter(
-            List<DeTaiResponse> rows, String q, String department, String period) {
-        return filter(rows, q, department, period, "", "");
-    }
-
-    public static List<DeTaiResponse> filter(
-            List<DeTaiResponse> rows,
-            String q,
-            String department,
-            String period,
-            String type,
-            String state) {
-        return rows.stream()
-                .filter(t -> SearchText.matches(q, t.id(), t.title(), t.content()))
-                .filter(
-                        t ->
-                                department == null
-                                        || department.isBlank()
-                                        || department.equals(t.departmentId()))
-                .filter(t -> period == null || period.isBlank() || period.equals(t.periodId()))
-                .filter(t -> type == null || type.isBlank() || type.equals(t.periodType()))
-                .filter(t -> state == null || state.isBlank() || state.equals(t.state()))
-                .toList();
-    }
-
     @Transactional
     @PreAuthorize("hasRole('GV')")
     public void updateContent(
@@ -340,13 +340,20 @@ public class DeTaiService {
 
     @PreAuthorize("hasRole('TRUONGBOMON')")
     public List<DeTaiResponse> departmentTopics() {
-        String department = currentUser.departmentHead();
-        return views(
-                entities.query(
-                        "select t from DeTai t join fetch t.dot join fetch t.boMon where"
-                                + " t.maBoMon=?1 order by t.ngayDangKy desc, t.maDeTai",
-                        DeTai.class,
-                        department));
+        return departmentTopics(TopicSearch.empty(), Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('TRUONGBOMON')")
+    public Page<DeTaiResponse> departmentTopics(TopicSearch filter, Pageable page) {
+        Paging.check(page);
+        var rows =
+                queries.search(
+                        filter == null ? TopicSearch.empty() : filter,
+                        null,
+                        currentUser.departmentHead(),
+                        false,
+                        page);
+        return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
     }
 
     @Transactional
@@ -383,7 +390,7 @@ public class DeTaiService {
                 rules.check(
                         gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
             }
-            teachers.requireActiveAccounts(distinct);
+            teachers.requireDepartmentSupervisors(distinct, department);
             entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
                     .forEach(entities::remove);
             entities.flush();

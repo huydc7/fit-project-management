@@ -1,14 +1,18 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.DatLaiMatKhauRequest;
 import com.example.quanlydetai.dto.TaiKhoanRequest;
 import com.example.quanlydetai.dto.TaiKhoanResponse;
 import com.example.quanlydetai.dto.TrangThaiTaiKhoanRequest;
+import com.example.quanlydetai.service.Paging;
 import com.example.quanlydetai.service.TaiKhoanService;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,10 +29,12 @@ public class TaiKhoanRestController {
     }
 
     @GetMapping
-    public List<TaiKhoanResponse> list(
+    public ResponseEntity<List<TaiKhoanResponse>> list(
             @RequestParam(defaultValue = "") String q,
-            @RequestParam(defaultValue = "") String role) {
-        return service.search(q, role);
+            @RequestParam(defaultValue = "") String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.search(q, role, Paging.request(page, size)));
     }
 
     @PostMapping

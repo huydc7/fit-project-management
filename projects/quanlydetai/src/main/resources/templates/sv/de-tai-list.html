@@ -29,12 +29,13 @@
 <input type="hidden" name="topic" th:value="${t.id}">
 <select name="group" required class="select-field" aria-label="Chọn nhóm">
 <option value="">Chọn nhóm của bạn…</option>
-<option th:each="g : ${groups}" th:if="${g.leader and g.editable}" th:value="${g.id}" th:text="${g.name + ' — ' + g.period}">
+<option th:each="g : ${groups}" th:if="${g.periodId == t.periodId}" th:value="${g.id}" th:text="${g.name + ' — ' + g.period}">
 </option>
 </select>
 <button class="button button-primary no-wrap">Đăng ký chờ duyệt</button>
 </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/student/topics', 'page')}"></div>
 </main>
 </body>
 </html>

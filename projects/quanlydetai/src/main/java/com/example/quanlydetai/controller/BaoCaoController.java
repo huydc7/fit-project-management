@@ -1,10 +1,12 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.service.BaoCaoService;
 import com.example.quanlydetai.service.NhomService;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,8 +28,8 @@ public class BaoCaoController {
 
     @GetMapping("/student/reports")
     public String studentReports(Model m) {
-        m.addAttribute("groups", groups.mine());
-        m.addAttribute("reports", reports.mine());
+        m.addAttribute("groups", groups.reportOptions());
+        add(m, "reports", reports.mine((Pageable) m.getAttribute("pageRequest")));
         m.addAttribute("token", UUID.randomUUID().toString().replace("-", "").substring(0, 24));
         return "sv/reports";
     }
@@ -49,7 +51,7 @@ public class BaoCaoController {
 
     @GetMapping("/lecturer/reports")
     public String assignedReports(Model m) {
-        m.addAttribute("reports", reports.assigned());
+        add(m, "reports", reports.assigned((Pageable) m.getAttribute("pageRequest")));
         return "gv/reports";
     }
 }

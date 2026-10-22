@@ -1,6 +1,6 @@
 # Từ điển CSDL bản đầu
 
-Đối chiếu các script 01–09: 24 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
+Đối chiếu các script 01–10: 24 bảng. Ràng buộc đầy đủ nằm trong SQL; quy tắc ứng dụng ở PRODUCT_RULES.md. FK gồm nhiều cột được ghi riêng dưới bảng. Bảng EMAIL_KET_QUA được bổ sung theo rubric ngày 06/10/2026.
 
 ## BO_MON
 
@@ -310,7 +310,7 @@ Mỗi bộ môn tối đa một bản ghi chức vụ; ứng dụng kiểm tra G
 | Ma_GV | VARCHAR(20) | Không | FK → GV.Ma_GV, người duyệt |
 | Ngay_Duyet | DATETIME | Không | Thời điểm duyệt |
 
-Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–09 có 38 trigger, 4 view.
+Mỗi đề tài tối đa một xác nhận hiện tại; sửa nháp hủy xác nhận. FK của cả hai bảng dùng RESTRICT, không xóa dây chuyền lịch sử. SQL 07 chỉ thêm bảng/FK; sau toàn bộ SQL 01–10 có 38 trigger, 4 view.
 
 ## Bổ sung SQL 09: xác nhận danh sách GVHD
 
@@ -318,3 +318,8 @@ DE_TAI thêm Ma_GV_Xac_Nhan VARCHAR(20) NULL, FK tới GV(Ma_GV), và Ngay_Xac_N
 Dữ liệu cũ giữ NULL, không suy đoán người xác nhận. GVHD_DETAI giữ danh sách do bộ môn chọn;
 DUYET_BO_MON ghi người/ngày quyết định. Khi còn xác nhận bộ môn, trigger khóa thêm/xóa GVHD.
 Sửa đề tài nháp phải hủy xác nhận trước rồi xóa danh sách. Duyệt bộ môn mới yêu cầu đủ 1–2 GVHD.
+
+
+## Index phục vụ danh sách (migration 10)
+
+`10_read_query_indexes.sql` bổ sung bảy index, không đổi bảng/cột/dữ liệu nghiệp vụ: đề tài theo trạng thái, đợt–trạng thái, bộ môn–trạng thái; tài khoản theo vai trò–tên đăng nhập; báo cáo/thông báo theo ngày; đăng ký theo trạng thái–ngày. Các cột mã cuối index là khóa sắp xếp phụ, giúp chuyển trang có thứ tự xác định khi nhiều dòng trùng ngày. UNIQUE hiện hữu trên báo cáo `(Ma_Nhom,Lan_Nop)` đã hỗ trợ MAX phiên bản, không tạo index trùng cho cặp đó. Cần xem EXPLAIN với dữ liệu thực; tìm chuỗi con không dấu không được bảo đảm dùng B-tree.

@@ -55,6 +55,20 @@ public class GiangVienService {
         }
     }
 
+    @Transactional
+    public void requireDepartmentSupervisors(Collection<String> supervisors, String department) {
+        requireActiveAccounts(supervisors);
+        // Admin profile changes lock the account before the lecturer too. Refresh under
+        // the same lock order so a concurrent department transfer cannot bypass this rule.
+        for (String id : supervisors.stream().distinct().sorted().toList()) {
+            GiangVien teacher = entities.lock(GiangVien.class, id);
+            em.refresh(teacher, LockModeType.PESSIMISTIC_WRITE);
+            rules.check(
+                    department.equals(teacher.getMaBoMon()),
+                    "GVHD " + id + " phải thuộc bộ môn Trưởng bộ môn đang quản lý.");
+        }
+    }
+
     public List<Task> pendingTasks(String teacher) {
         List<Task> tasks = new ArrayList<>();
         for (var t :

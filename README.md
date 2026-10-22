@@ -8,7 +8,7 @@ Bắt đầu tại [hướng dẫn local và kiểm thử](docs/LOCAL_TEST.md). 
 
 Email có tìm/lọc/phân trang và REST; danh sách đề tài tải dữ liệu liên quan theo tập mã để tránh truy vấn lặp theo từng dòng. Xem [thiết kế xử lý và giới hạn](docs/ARCHITECTURE.md).
 
-Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn đợt được mô tả trong [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md). Database mới chạy SQL 01–09; database đã có dữ liệu nâng cấp theo [hướng dẫn local](docs/LOCAL_TEST.md).
+Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn đợt được mô tả trong [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md). Database mới chạy SQL 01–10; database đã có dữ liệu nâng cấp theo [hướng dẫn local](docs/LOCAL_TEST.md).
 
 ## Chạy Docker
 
@@ -21,11 +21,11 @@ Copy-Item .env.example .env
 .\tools\Start-Local.ps1 -Docker
 ```
 
-Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–09 tự nạp ở lần tạo volume đầu tiên; volume cũ đã có 01–05 cần `tools/Update-RubricDatabase.ps1` để sao lưu và nâng cấp 06, sau đó `tools/Update-DepartmentReview.ps1` nâng cấp 07, rồi `tools/Update-TopicReviewDeadline.ps1` nâng cấp 08. Tiếp theo sao lưu và chạy SQL 09 theo [hướng dẫn phân công GVHD](docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md) trước khi chạy bản mới. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
+Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–10 tự nạp khi tạo volume mới lần đầu. Với volume cũ, sao lưu trước rồi chạy lần lượt các migration còn thiếu: `tools/Update-RubricDatabase.ps1` nâng cấp 06, `tools/Update-DepartmentReview.ps1` nâng cấp 07, `tools/Update-TopicReviewDeadline.ps1` nâng cấp 08, SQL 09 theo [hướng dẫn phân công GVHD](docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi `projects/Database/10_read_query_indexes.sql`. Database đã có 01–09 chỉ cần sao lưu và chạy SQL 10. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
 
 ## Chạy Java và MySQL đã cài
 
-Nạp `projects/Database/01_schema_mysql.sql` → `02_logic_mysql.sql` → `03_views_seed_mysql.sql` → `04_workflow_mysql.sql` → `05_department_catalog_mysql.sql` → `06_rubric_email_groups.sql` → `07_department_review.sql` → `08_topic_review_deadline.sql` → `09_department_supervisor_assignment.sql`. CSDL có 24 bảng, 38 trigger, 4 view. Bản gốc đủ 01–03 cần 04/05/06/07/08/09; sao lưu trước khi nâng cấp. Hibernate dùng validate.
+Nạp `projects/Database/01_schema_mysql.sql` → `02_logic_mysql.sql` → `03_views_seed_mysql.sql` → `04_workflow_mysql.sql` → `05_department_catalog_mysql.sql` → `06_rubric_email_groups.sql` → `07_department_review.sql` → `08_topic_review_deadline.sql` → `09_department_supervisor_assignment.sql` → `10_read_query_indexes.sql`. CSDL có 24 bảng, 38 trigger, 4 view. Bản gốc đủ 01–03 cần 04/05/06/07/08/09/10; sao lưu trước khi nâng cấp. Hibernate dùng validate.
 
 Tạo `.env.native` riêng với DB_URL trỏ localhost:3306/quanlydetai, DB_USERNAME/DB_PASSWORD của MySQL trên máy, PORT=8081 nếu Docker đang dùng 8080, STORAGE_BACKEND=local. Có thể bật dữ liệu thực hành theo SAMPLE_DATA.md. Chạy:
 
@@ -48,7 +48,7 @@ cd projects/quanlydetai
 .\mvnw.cmd clean verify
 ```
 
-H2 và HTTP giả lập không cần cloud. Test MySQL dùng DB riêng đã nạp 01–09; có thể tạo bằng `docker compose -f compose.test.yaml up -d --wait` (cổng 3308, mật khẩu chỉ dành cho test nằm trong file này). Đặt TEST_DB_URL, TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver, TEST_DB_USERNAME, TEST_DB_PASSWORD, TEST_DDL_MODE=validate, TEST_DB_INIT_SQL="SET time_zone='+07:00'" rồi chạy `mvnw.cmd '-Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,CatalogIntegrationTest,MySqlTriggerIntegrationTest' test`. Không chạy trên DB vận hành. JAR nằm trong target/quanlydetai-0.0.1-SNAPSHOT.jar.
+H2 và HTTP giả lập không cần cloud. Test MySQL dùng DB riêng đã nạp 01–10; có thể tạo bằng `docker compose -f compose.test.yaml up -d --wait` (cổng 3308, mật khẩu chỉ dành cho test nằm trong file này). Đặt TEST_DB_URL, TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver, TEST_DB_USERNAME, TEST_DB_PASSWORD, TEST_DDL_MODE=validate, TEST_DB_INIT_SQL="SET time_zone='+07:00'" rồi chạy `mvnw.cmd '-Dtest=FoundationIntegrationTest,WorkflowIntegrationTest,CatalogIntegrationTest,MySqlTriggerIntegrationTest,MySqlConcurrencyIntegrationTest' test`. Không chạy trên DB vận hành. JAR nằm trong target/quanlydetai-0.0.1-SNAPSHOT.jar.
 
 ## Admin đầu tiên khi không dùng bộ thực hành
 
@@ -87,9 +87,12 @@ Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio),
 ## Luồng đề tài và GVHD (SQL 09)
 
 GV chỉ đề xuất nội dung → Trưởng bộ môn duyệt và chọn 1–2 GVHD → Trưởng khoa xác nhận và công bố.
-Database mới cần chạy SQL 01–09. Database đã có 01–08: dừng web, sao lưu, chạy
-`projects/Database/09_department_supervisor_assignment.sql` trong Workbench rồi khởi động lại.
+Database mới cần chạy SQL 01–10. Database đã có 01–08: dừng web, sao lưu, chạy
+`projects/Database/09_department_supervisor_assignment.sql`, sau đó chạy
+`projects/Database/10_read_query_indexes.sql` trong Workbench rồi khởi động lại. Database đã có 01–09 chỉ cần SQL 10.
 Migration giữ dữ liệu và quyết định cũ, không tự điền người/ngày xác nhận lịch sử.
 Nếu cần thay danh sách của đề tài nháp đã được duyệt ở bản cũ, người đề xuất sửa lại nháp để
 hủy xác nhận và danh sách cũ, sau đó bộ môn duyệt và chọn lại. Không nhập lại dữ liệu mẫu để nâng cấp.
 Hướng dẫn chi tiết: `docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md`.
+
+Danh sách chính có phân trang 25 dòng/trang (tối đa 100) và lọc tại DB. Xem [kiến trúc truy vấn](docs/ARCHITECTURE.md#truy-vấn-danh-sách-và-phân-trang) và [nghiệm thu SQL 10](docs/LOCAL_TEST.md#nghiệm-thu-truy-vấn-danh-sách-sql-10) trước khi kiểm tra bản mới. SQL 10 chỉ thêm index, giữ nguyên dữ liệu đã nhập.

@@ -1,5 +1,7 @@
 package com.example.quanlydetai.controller;
 
+import static com.example.quanlydetai.controller.support.PageResponses.add;
+
 import com.example.quanlydetai.dto.DotDangKyForm;
 import com.example.quanlydetai.exception.BusinessException;
 import com.example.quanlydetai.exception.DatabaseErrorMessages;
@@ -9,6 +11,7 @@ import com.example.quanlydetai.service.DotDangKyService;
 import jakarta.validation.Valid;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,7 +32,12 @@ public class DotDangKyController {
 
     @GetMapping
     public String danhSach(Model model) {
-        model.addAttribute("dsDot", service.search((String) model.getAttribute("q")));
+        add(
+                model,
+                "dsDot",
+                service.search(
+                        (String) model.getAttribute("q"),
+                        (Pageable) model.getAttribute("pageRequest")));
         if (!model.containsAttribute("form")) model.addAttribute("form", new DotDangKyForm());
         return "truongkhoa/dot-list";
     }

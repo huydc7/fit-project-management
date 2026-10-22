@@ -60,6 +60,140 @@ class CatalogIntegrationTest {
     }
 
     @Test
+    void departmentOptionsOnlyIncludeActiveLecturersFromManagedDepartment() throws Exception {
+        var page =
+                mvc.perform(get("/department/topics").session(session("ct.g2")))
+                        .andExpect(status().isOk())
+                        .andReturn();
+        @SuppressWarnings("unchecked")
+        var options =
+                (List<com.example.quanlydetai.dto.LuaChonResponse>)
+                        page.getModelAndView().getModel().get("teachers");
+        assertThat(options)
+                .extracting(com.example.quanlydetai.dto.LuaChonResponse::id)
+                .containsExactlyInAnyOrder("CT_G0", "CT_G1", "CT_G2");
+        // The common catalogue remains faculty-wide for the Dean's assignments.
+        mvc.perform(get("/api/v1/catalog/lecturers").session(session("ct.g0")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == 'CT_G3')]").isNotEmpty());
+    }
+
+    @Test
+    void departmentRejectsCrossDepartmentSupervisorsBeforeChangingAssignments() throws Exception {
+        for (String supervisors : List.of("[\"CT_G3\"]", "[\"CT_G2\",\"CT_G3\"]")) {
+            api(
+                            "ct.g2",
+                            "PATCH",
+                            "/api/v1/topics/CT_TOPIC/department-review",
+                            "{\"accept\":true,\"supervisors\":" + supervisors + "}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(
+                            jsonPath("$.detail")
+                                    .value(
+                                            org.hamcrest.Matchers.containsString(
+                                                    "phải thuộc bộ môn")));
+            assertThat(
+                            jdbc.queryForList(
+                                    "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                    String.class))
+                    .containsExactly("CT_G1");
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
+                                    Integer.class))
+                    .isZero();
+        }
+        mvc.perform(
+                        post("/department/topics/CT_TOPIC/review")
+                                .session(session("ct.g2"))
+                                .with(csrf())
+                                .param("accept", "true")
+                                .param("supervisors", "CT_G3"))
+                .andExpect(redirectedUrl("/department/topics"))
+                .andExpect(flash().attributeExists("loi"));
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .containsExactly("CT_G1");
+    }
+
+    @Test
+    void deanCanStillAssignReviewerFromAnotherDepartment() throws Exception {
+        api(
+                        "ct.g2",
+                        "PATCH",
+                        "/api/v1/topics/CT_TOPIC/department-review",
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
+        // Advance the fixture into student registration only after publication. MySQL also
+        // requires an approved group before the topic can enter DangThucHien.
+        jdbc.update(
+                "UPDATE DOT_DANG_KY SET End_GV=?, Begin_SV=? WHERE Ma_Dot='CT_PERIOD'",
+                now.minusHours(2),
+                now.minusHours(1));
+        em.clear();
+        api(
+                        "ct.student",
+                        "POST",
+                        "/api/v1/groups",
+                        "{\"period\":\"CT_PERIOD\",\"name\":\"Cross-department reviewer group\"}")
+                .andExpect(status().isCreated());
+        String group =
+                jdbc.queryForObject(
+                        "SELECT Ma_Nhom FROM THANH_VIEN_NHOM WHERE Ma_SV='CT_S1'", String.class);
+        for (int i = 2; i <= 3; i++) {
+            String student = "CT_S" + i;
+            String username = "ct.student" + i;
+            jdbc.update(
+                    "INSERT INTO SV(Ma_SV,Ho_Ten,Email) VALUES (?,?,?)",
+                    student,
+                    "Student " + i,
+                    student + "@example.test");
+            account(username, "SV", null, student);
+            api(
+                            "ct.student",
+                            "POST",
+                            "/api/v1/groups/" + group + "/invitations",
+                            "{\"student\":\"" + student + "\"}")
+                    .andExpect(status().isCreated());
+            String invitation =
+                    jdbc.queryForObject(
+                            "SELECT Ma_Loi_Moi FROM LOI_MOI_NHOM WHERE Ma_Nhom=? AND Ma_SV=?",
+                            String.class,
+                            group,
+                            student);
+            api(username, "PATCH", "/api/v1/invitations/" + invitation, "{\"accept\":true}")
+                    .andExpect(status().isNoContent());
+        }
+        api(
+                        "ct.student",
+                        "POST",
+                        "/api/v1/registrations",
+                        "{\"group\":\"" + group + "\",\"topic\":\"CT_TOPIC\"}")
+                .andExpect(status().isCreated());
+        String registration =
+                jdbc.queryForObject(
+                        "SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Ma_Nhom=?", String.class, group);
+        api("ct.g0", "PATCH", "/api/v1/registrations/" + registration + "/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT Trang_Thai FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .isEqualTo("DangThucHien");
+        api("ct.g0", "PUT", "/api/v1/councils/topics/CT_TOPIC/reviewer", "{\"teacher\":\"CT_G3\"}")
+                .andExpect(status().isNoContent());
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVPB_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .containsExactly("CT_G3");
+    }
+
+    @Test
     void departmentCannotAssignLockedOrAccountlessSupervisorAndWritesNothing() throws Exception {
         unavailableLecturers();
         for (String teacher : List.of("CT_G3", "CT_ORPHAN")) {
@@ -262,7 +396,7 @@ class CatalogIntegrationTest {
                         "ct.g3",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G3\"]}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G3\"]}")
                 .andExpect(status().isNoContent());
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());
@@ -349,7 +483,7 @@ class CatalogIntegrationTest {
                                 .session(session("ct.g2"))
                                 .with(csrf())
                                 .param("accept", "true")
-                                .param("supervisors", "CT_G2", "CT_G3"))
+                                .param("supervisors", "CT_G2", "CT_G1"))
                 .andExpect(status().is3xxRedirection());
         em.flush();
         em.clear();
@@ -357,7 +491,7 @@ class CatalogIntegrationTest {
                         jdbc.queryForList(
                                 "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
                                 String.class))
-                .containsExactlyInAnyOrder("CT_G2", "CT_G3");
+                .containsExactlyInAnyOrder("CT_G2", "CT_G1");
     }
 
     @Test
@@ -489,6 +623,238 @@ class CatalogIntegrationTest {
             stats.setStatisticsEnabled(enabledBefore);
             org.springframework.security.core.context.SecurityContextHolder.clearContext();
         }
+    }
+
+    @Test
+    void databaseSearchAppliesAllTopicFiltersBeforePagingAndLimitsEntityLoads() throws Exception {
+        for (int i = 0; i < 42; i++) {
+            String id = "CT_Q" + String.format("%02d", i);
+            jdbc.update(
+                    "INSERT INTO"
+                        + " DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                        + " VALUES (?,?,?,'CT_B1','CT_PERIOD','CT_G1','Nhap',?)",
+                    id,
+                    "Đồ án dữ liệu " + i,
+                    "Phân tích dữ liệu khoa FIT",
+                    now);
+        }
+        var context =
+                (org.springframework.security.core.context.SecurityContext)
+                        session("ct.g0").getAttribute("SPRING_SECURITY_CONTEXT");
+        var stats =
+                em.getEntityManagerFactory()
+                        .unwrap(org.hibernate.SessionFactory.class)
+                        .getStatistics();
+        boolean enabled = stats.isStatisticsEnabled();
+        try {
+            stats.setStatisticsEnabled(true);
+            org.springframework.security.core.context.SecurityContextHolder.setContext(context);
+            em.clear();
+            stats.clear();
+            var page =
+                    topics.all(
+                            new com.example.quanlydetai.dto.TopicSearch(
+                                    "DO AN DU LIEU", "CT_B1", "CT_PERIOD", "MonHoc", "Nhap"),
+                            org.springframework.data.domain.PageRequest.of(1, 7));
+            assertThatThrownBy(
+                            () ->
+                                    topics.all(
+                                            com.example.quanlydetai.dto.TopicSearch.empty(),
+                                            org.springframework.data.domain.Pageable.unpaged()))
+                    .isInstanceOf(com.example.quanlydetai.exception.BusinessException.class);
+            assertThat(page.getTotalElements()).isEqualTo(42);
+            assertThat(page.getContent())
+                    .extracting(com.example.quanlydetai.dto.DeTaiResponse::id)
+                    .containsExactly(
+                            "CT_Q07", "CT_Q08", "CT_Q09", "CT_Q10", "CT_Q11", "CT_Q12", "CT_Q13");
+            assertThat(stats.getEntityLoadCount()).isLessThan(20);
+            assertThat(stats.getPrepareStatementCount()).isLessThanOrEqualTo(10);
+            System.out.println(
+                    "Topic search: total="
+                            + page.getTotalElements()
+                            + ", page="
+                            + page.getNumberOfElements()
+                            + ", loaded entities="
+                            + stats.getEntityLoadCount()
+                            + ", SQL="
+                            + stats.getPrepareStatementCount());
+            assertThat(
+                            topics.all(
+                                    new com.example.quanlydetai.dto.TopicSearch(
+                                            "du lieu", "CT_B2", "CT_PERIOD", "MonHoc", "Nhap"),
+                                    org.springframework.data.domain.PageRequest.of(0, 7)))
+                    .isEmpty();
+            assertThat(
+                            topics.all(
+                                    new com.example.quanlydetai.dto.TopicSearch(
+                                            "du lieu", "CT_B1", "CT_EMPTY", "MonHoc", "Nhap"),
+                                    org.springframework.data.domain.PageRequest.of(0, 7)))
+                    .isEmpty();
+            assertThat(
+                            topics.all(
+                                    new com.example.quanlydetai.dto.TopicSearch(
+                                            "du lieu", "CT_B1", "CT_PERIOD", "TLCN", "Nhap"),
+                                    org.springframework.data.domain.PageRequest.of(0, 7)))
+                    .isEmpty();
+            assertThat(
+                            topics.all(
+                                    new com.example.quanlydetai.dto.TopicSearch(
+                                            "du lieu", "CT_B1", "CT_PERIOD", "MonHoc", "Huy"),
+                                    org.springframework.data.domain.PageRequest.of(0, 7)))
+                    .isEmpty();
+        } finally {
+            stats.setStatisticsEnabled(enabled);
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    void accountSearchJoinsProfilesAndReturnsOnePageWithTotals() throws Exception {
+        for (int i = 0; i < 42; i++) {
+            String id = "CT_QS" + String.format("%02d", i);
+            jdbc.update(
+                    "INSERT INTO SV(Ma_SV,Ho_Ten,Email) VALUES (?,?,?)",
+                    id,
+                    "Nguyễn Đăng Khoa " + i,
+                    id + "@example.test");
+            account("ct.query" + String.format("%02d", i), "SV", null, id);
+        }
+        var login = session("ct.admin");
+        var stats =
+                em.getEntityManagerFactory()
+                        .unwrap(org.hibernate.SessionFactory.class)
+                        .getStatistics();
+        boolean enabled = stats.isStatisticsEnabled();
+        try {
+            stats.setStatisticsEnabled(true);
+            em.clear();
+            stats.clear();
+            mvc.perform(
+                            get("/api/v1/admin/accounts")
+                                    .session(login)
+                                    .param("q", "nguyen dang")
+                                    .param("role", "SV")
+                                    .param("page", "1")
+                                    .param("size", "7"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("X-Total-Count", "42"))
+                    .andExpect(header().string("X-Page", "1"))
+                    .andExpect(jsonPath("$.length()").value(7))
+                    .andExpect(jsonPath("$[0].profile").value("CT_QS07"))
+                    .andExpect(jsonPath("$[0].name").value("Nguyễn Đăng Khoa 7"))
+                    .andExpect(jsonPath("$[0].matKhauHash").doesNotExist());
+            assertThat(stats.getPrepareStatementCount()).isLessThan(20);
+            assertThat(stats.getEntityLoadCount()).isLessThan(30);
+            System.out.println(
+                    "Account page SQL="
+                            + stats.getPrepareStatementCount()
+                            + ", loaded entities="
+                            + stats.getEntityLoadCount());
+        } finally {
+            stats.setStatisticsEnabled(enabled);
+        }
+        mvc.perform(
+                        get("/api/v1/admin/accounts")
+                                .session(login)
+                                .param("q", "nguyen dang")
+                                .param("role", "GV"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "0"))
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void keywordSearchEscapesWildcardsAndPagingRejectsInvalidBounds() throws Exception {
+        jdbc.update(
+                "INSERT INTO THONG_BAO(Ma_TB,Ma_TK,Tieu_De,Noi_Dung,Pham_Vi,Ngay_Dang) VALUES"
+                    + " ('CT_QNOTICE','ct.admin','Học bổng 100%_!','Thông tin khoa FIT','Khoa',?)",
+                now);
+        jdbc.update(
+                "INSERT INTO THONG_BAO(Ma_TB,Ma_TK,Tieu_De,Noi_Dung,Pham_Vi,Ngay_Dang) VALUES"
+                        + " ('CT_QOTHER','ct.admin','Học bổng 100XYZ','Thông tin khác','Khoa',?)",
+                now);
+        mvc.perform(
+                        get("/api/v1/announcements")
+                                .session(session("ct.student"))
+                                .param("q", "100%_!"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value("CT_QNOTICE"));
+        mvc.perform(
+                        get("/api/v1/announcements")
+                                .session(session("ct.student"))
+                                .param("q", "' or 1=1 --"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        for (String[] bounds :
+                List.of(
+                        new String[] {"-1", "25"},
+                        new String[] {"0", "0"},
+                        new String[] {"0", "101"},
+                        new String[] {"2147483647", "100"}))
+            mvc.perform(
+                            get("/api/v1/admin/accounts")
+                                    .session(session("ct.admin"))
+                                    .param("page", bounds[0])
+                                    .param("size", bounds[1]))
+                    .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void pagingLinksPreserveTopicFiltersAndIndependentApprovalSections() throws Exception {
+        var response =
+                mvc.perform(
+                                get("/dean/approvals")
+                                        .session(session("ct.g0"))
+                                        .param("size", "1")
+                                        .param("q", "")
+                                        .param("department", "CT_B1")
+                                        .param("period", "CT_PERIOD")
+                                        .param("type", "MonHoc")
+                                        .param("state", "Nhap")
+                                        .param("registrationsPage", "2")
+                                        .param("resultsPage", "3"))
+                        .andExpect(status().isOk())
+                        .andReturn();
+        // Add another matching topic so a real next-page link must be rendered.
+        jdbc.update(
+                "INSERT INTO"
+                    + " DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                    + " VALUES ('CT_QNEXT','Trang tiếp theo','Nội"
+                    + " dung','CT_B1','CT_PERIOD','CT_G1','Nhap',?)",
+                now);
+        response =
+                mvc.perform(
+                                get("/dean/approvals")
+                                        .session(session("ct.g0"))
+                                        .param("size", "1")
+                                        .param("department", "CT_B1")
+                                        .param("period", "CT_PERIOD")
+                                        .param("type", "MonHoc")
+                                        .param("state", "Nhap")
+                                        .param("registrationsPage", "2")
+                                        .param("resultsPage", "3"))
+                        .andExpect(status().isOk())
+                        .andReturn();
+        String html =
+                response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        var matcher =
+                java.util.regex.Pattern.compile("href=\"([^\"]+)\">Trang sau</a>").matcher(html);
+        assertThat(matcher.find()).isTrue();
+        String next = matcher.group(1).replace("&amp;", "&");
+        assertThat(next)
+                .contains(
+                        "page=1",
+                        "size=1",
+                        "department=CT_B1",
+                        "period=CT_PERIOD",
+                        "type=MonHoc",
+                        "state=Nhap",
+                        "registrationsPage=2",
+                        "resultsPage=3");
+        mvc.perform(get(java.net.URI.create(next)).session(session("ct.g0")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT_TOPIC")));
     }
 
     @BeforeEach

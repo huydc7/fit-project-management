@@ -1,12 +1,14 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.NhomRequest;
 import com.example.quanlydetai.service.NhomService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,8 +30,11 @@ public class NhomController {
     public String studentGroups(Model m) {
         if (!m.containsAttribute("form")) m.addAttribute("form", new NhomRequest(null, null));
         m.addAttribute("periods", groups.periods());
-        m.addAttribute("groups", groups.mine());
-        m.addAttribute("invitations", groups.invitations());
+        add(m, "groups", groups.mine((Pageable) m.getAttribute("pageRequest")));
+        add(
+                m,
+                "invitations",
+                groups.invitations((Pageable) m.getAttribute("invitationPageRequest")));
         return "sv/groups";
     }
 

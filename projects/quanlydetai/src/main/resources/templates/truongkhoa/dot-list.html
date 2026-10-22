@@ -132,6 +132,7 @@
     select.addEventListener('change', capNhatHienThi);
     capNhatHienThi();
   </script>
-  </main>
+  <div th:replace="~{layout/pagination :: pager(${dsDotPage}, '/dean/periods', 'page')}"></div>
+</main>
 </body>
 </html>

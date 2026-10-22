@@ -1,12 +1,14 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.ThongBaoRequest;
 import com.example.quanlydetai.service.ThongBaoService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,7 +30,11 @@ public class ThongBaoController {
     public String noticePage(Model m) {
         if (!m.containsAttribute("form"))
             m.addAttribute("form", new ThongBaoRequest(null, null, "Khoa"));
-        m.addAttribute("notices", notices.search((String) m.getAttribute("q")));
+        add(
+                m,
+                "notices",
+                notices.search(
+                        (String) m.getAttribute("q"), (Pageable) m.getAttribute("pageRequest")));
         return "notices";
     }
 

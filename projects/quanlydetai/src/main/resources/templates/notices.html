@@ -50,6 +50,7 @@
 <button class="button button-primary">Lưu thay đổi</button></form></details>
 <form th:if="${n.manageable}" method="post" th:action="@{/announcements/{id}/delete(id=${n.id})}" data-confirm="Xóa thông báo này?" class="space-top"><button class="button button-danger">Xóa thông báo</button></form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${noticesPage}, '/announcements', 'page')}"></div>
 </main>
 </body>
 </html>

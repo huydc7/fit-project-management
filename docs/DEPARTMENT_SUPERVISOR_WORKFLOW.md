@@ -3,13 +3,13 @@
 ## Hành vi sau thay đổi
 
 1. GV tạo đề tài tại /lecturer/topics, chỉ nhập đợt, tên, nội dung và bộ môn.
-2. Trưởng bộ môn tại /department/topics chọn 1–2 GVHD khác nhau rồi duyệt.
+2. Trưởng bộ môn tại /department/topics chọn 1–2 GVHD khác nhau, có tài khoản hoạt động và thuộc bộ môn mình quản lý rồi duyệt. Danh sách lựa chọn được lọc tại database; HTML và REST đều kiểm tra lại phạm vi khi lưu.
 3. Trưởng khoa tại /dean/approvals xem danh sách, bấm Xác nhận GVHD và công bố đề tài.
 4. Khi từ chối, không cần chọn GVHD. Từ chối chuyển Huy, không phải trả về sửa.
 5. Nếu người đề xuất sửa nháp còn hạn GV, xác nhận bộ môn và danh sách GVHD bị hủy; bộ môn phải chọn lại.
 6. Sau công bố không sửa GVHD theo luồng này. Quyền phân công GVPB/hội đồng vẫn thuộc Trưởng khoa.
 
-GV đề xuất không tự động là GVHD. Bộ môn có thể chọn GV khác; không áp đặt GVHD cùng bộ môn nếu đề bài chưa yêu cầu.
+GV đề xuất không tự động là GVHD. Trưởng bộ môn chỉ được chọn GVHD thuộc cùng bộ môn với đề tài và bộ môn mình quản lý. Quy tắc này áp dụng cho phân công mới; các quyết định cũ được giữ. Trưởng khoa vẫn phân công GVPB và hội đồng trong phạm vi toàn khoa theo quy tắc tránh xung đột hiện có.
 
 ## Nâng cấp database đang dùng trên máy
 
@@ -53,7 +53,7 @@ Không thay đổi GVHD của đề tài đã công bố/đang thực hiện/ho�
 ## Kiểm thử thủ công
 
 - GV tạo mới không có GVHD; gửi supervisors qua request tạo/sửa bị từ chối.
-- Bộ môn chọn 1 hoặc 2 GVHD hợp lệ: thành công; rỗng, trùng, >2, mã không tồn tại: thất bại và không lưu một phần.
+- Bộ môn chọn 1 hoặc 2 GVHD hợp lệ cùng bộ môn: thành công; rỗng, trùng, >2, mã không tồn tại, khác bộ môn hoặc tài khoản không hoạt động: thất bại và không lưu một phần.
 - Bộ môn khác không được duyệt; Trưởng khoa không công bố trước duyệt bộ môn.
 - Nội dung sửa sau duyệt: không còn DUYET_BO_MON/GVHD_DETAI; phải duyệt lại.
 - Trưởng khoa công bố: GVHD không đổi, DE_TAI có Ma_GV_Xac_Nhan và Ngay_Xac_Nhan.

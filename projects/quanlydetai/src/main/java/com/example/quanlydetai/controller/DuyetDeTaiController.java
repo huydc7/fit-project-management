@@ -1,12 +1,15 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
+import com.example.quanlydetai.dto.TopicSearch;
 import com.example.quanlydetai.service.DeTaiService;
 import com.example.quanlydetai.service.DiemService;
 import com.example.quanlydetai.service.HoiDongService;
 import com.example.quanlydetai.service.NhomService;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,18 +35,20 @@ public class DuyetDeTaiController {
     @GetMapping("/dean/approvals")
     public String approvals(Model m) {
         options(m);
+        var topicPage =
+                topics.all(
+                        (TopicSearch) m.getAttribute("topicSearch"),
+                        (Pageable) m.getAttribute("pageRequest"));
+        add(m, "topics", topicPage);
+        add(
+                m,
+                "registrations",
+                groups.pending((Pageable) m.getAttribute("registrationPageRequest")));
+        add(m, "results", scores.allResults((Pageable) m.getAttribute("resultPageRequest")));
         m.addAttribute(
-                "topics",
-                DeTaiService.filter(
-                        topics.all(),
-                        (String) m.getAttribute("q"),
-                        (String) m.getAttribute("departmentFilter"),
-                        (String) m.getAttribute("periodFilter"),
-                        (String) m.getAttribute("typeFilter"),
-                        (String) m.getAttribute("stateFilter")));
-        m.addAttribute("registrations", groups.pending());
-        m.addAttribute("results", scores.allResults());
-        m.addAttribute("councils", councils.all());
+                "councils",
+                councils.optionsForPeriods(
+                        topicPage.stream().map(t -> t.periodId()).distinct().toList()));
         return "truongkhoa/approvals";
     }
 
@@ -62,6 +67,7 @@ public class DuyetDeTaiController {
             @RequestParam(defaultValue = "") String type,
             @RequestParam(defaultValue = "") String state,
             Model m) {
+        m.addAttribute("topicSearch", new TopicSearch(q, department, period, type, state));
         m.addAttribute("q", q);
         m.addAttribute("departmentFilter", department);
         m.addAttribute("periodFilter", period);

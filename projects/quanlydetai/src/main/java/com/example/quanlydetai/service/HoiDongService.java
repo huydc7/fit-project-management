@@ -5,7 +5,6 @@ import com.example.quanlydetai.dto.HoiDongResponse;
 import com.example.quanlydetai.dto.ThanhVienResponse;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
-import com.example.quanlydetai.entity.GiangVien;
 import com.example.quanlydetai.entity.GvhdDeTai;
 import com.example.quanlydetai.entity.GvhdDeTaiId;
 import com.example.quanlydetai.entity.GvpbDeTai;
@@ -14,9 +13,11 @@ import com.example.quanlydetai.entity.HoiDong;
 import com.example.quanlydetai.entity.HoiDongDeTai;
 import com.example.quanlydetai.entity.KetQuaDeTai;
 import com.example.quanlydetai.entity.ThanhVienHoiDong;
+import com.example.quanlydetai.repository.HoiDongQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +33,15 @@ public class HoiDongService {
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
     private final GiangVienService teachers;
+    private final HoiDongQueryRepository queries;
 
     public HoiDongService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
-            GiangVienService teachers) {
+            GiangVienService teachers,
+            HoiDongQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -247,33 +251,54 @@ public class HoiDongService {
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<HoiDongResponse> all() {
+        return all(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<HoiDongResponse> all(Pageable page) {
+        Paging.check(page);
         currentUser.dean();
-        return entities.query("select h from HoiDong h order by h.maHd", HoiDong.class).stream()
+        var rows = queries.all(page);
+        if (rows.isEmpty())
+            return rows.map(
+                    h ->
+                            new HoiDongResponse(
+                                    h.getMaHd(),
+                                    h.getDot().getTenDotDangKy(),
+                                    h.getTrangThai(),
+                                    List.of(),
+                                    List.of()));
+        var ids = rows.stream().map(HoiDong::getMaHd).toList();
+        var members = new HashMap<String, List<ThanhVienResponse>>();
+        for (var row : queries.members(ids))
+            members.computeIfAbsent((String) row[0], ignored -> new ArrayList<>())
+                    .add(new ThanhVienResponse((String) row[1], (String) row[2], (String) row[3]));
+        var topics = new HashMap<String, List<String>>();
+        for (var row : queries.topics(ids))
+            topics.computeIfAbsent((String) row[0], ignored -> new ArrayList<>())
+                    .add((String) row[1]);
+        return rows.map(
+                h ->
+                        new HoiDongResponse(
+                                h.getMaHd(),
+                                h.getDot().getTenDotDangKy(),
+                                h.getTrangThai(),
+                                members.getOrDefault(h.getMaHd(), List.of()),
+                                topics.getOrDefault(h.getMaHd(), List.of())));
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public List<HoiDongResponse> optionsForPeriods(List<String> periods) {
+        currentUser.dean();
+        return queries.options(periods).stream()
                 .map(
                         h ->
                                 new HoiDongResponse(
                                         h.getMaHd(),
-                                        entities.require(DotDangKy.class, h.getMaDot())
-                                                .getTenDotDangKy(),
+                                        h.getDot().getTenDotDangKy(),
                                         h.getTrangThai(),
-                                        members(h.getMaHd()).stream()
-                                                .map(
-                                                        m ->
-                                                                new ThanhVienResponse(
-                                                                        m.getMaGV(),
-                                                                        entities.require(
-                                                                                        GiangVien
-                                                                                                .class,
-                                                                                        m.getMaGV())
-                                                                                .getHoTen(),
-                                                                        m.getVaiTro()))
-                                                .toList(),
-                                        entities.query(
-                                                "select t.tenDeTai from DeTai t where t.maDeTai in"
-                                                    + " (select r.maDeTai from HoiDongDeTai r where"
-                                                    + " r.maHd=?1)",
-                                                String.class,
-                                                h.getMaHd())))
+                                        List.of(),
+                                        List.of()))
                 .toList();
     }
 

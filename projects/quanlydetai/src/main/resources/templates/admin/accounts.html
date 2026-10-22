@@ -143,6 +143,7 @@
 <label class="field-label">Giảng viên thuộc bộ môn<select class="select-field space-bottom" name="teacher" required><option th:each="g:${teachers}" th:value="${g.id}" th:text="${g.label}"></option></select></label>
 <button class="button button-primary" name="appointed" value="true">Bổ nhiệm / Thay thế</button>
 <button class="button button-danger" name="appointed" value="false">Thu hồi chức vụ</button></form></section>
+<div th:replace="~{layout/pagination :: pager(${accountsPage}, '/admin/accounts', 'page')}"></div>
 </main>
 </body>
 </html>

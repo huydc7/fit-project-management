@@ -82,6 +82,7 @@
 <form th:if="${t.editable}" method="post" th:action="@{/lecturer/topics/{id}/delete(id=${t.id})}" data-confirm="Xóa đề tài nháp này?" class="space-top">
 <button class="button button-danger">Xóa đề tài nháp</button></form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/lecturer/topics', 'page')}"></div>
 </main>
 </body>
 </html>

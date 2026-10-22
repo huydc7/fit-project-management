@@ -1,14 +1,18 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.HoiDongRequest;
 import com.example.quanlydetai.dto.HoiDongResponse;
 import com.example.quanlydetai.dto.PhanCongHoiDongRequest;
 import com.example.quanlydetai.dto.PhanCongPhanBienRequest;
 import com.example.quanlydetai.service.HoiDongService;
+import com.example.quanlydetai.service.Paging;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +29,10 @@ public class HoiDongRestController {
     }
 
     @GetMapping
-    public List<HoiDongResponse> all() {
-        return service.all();
+    public ResponseEntity<List<HoiDongResponse>> all(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.all(Paging.request(page, size)));
     }
 
     @PostMapping

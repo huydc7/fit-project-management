@@ -4,9 +4,11 @@ import com.example.quanlydetai.dto.ThongBaoRequest;
 import com.example.quanlydetai.dto.ThongBaoResponse;
 import com.example.quanlydetai.entity.TaiKhoan;
 import com.example.quanlydetai.entity.ThongBao;
+import com.example.quanlydetai.repository.CatalogQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -23,27 +25,30 @@ public class ThongBaoService {
     private final JpaEntityRepository entities;
     private final AcademicRules rules;
 
+    private final CatalogQueryRepository queries;
+
     public ThongBaoService(
-            CurrentUserService currentUser, JpaEntityRepository entities, AcademicRules rules) {
+            CurrentUserService currentUser,
+            JpaEntityRepository entities,
+            AcademicRules rules,
+            CatalogQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
     }
 
     public List<ThongBaoResponse> list() {
+        return search("", Paging.defaults()).getContent();
+    }
+
+    public List<ThongBaoResponse> recent() {
         currentUser.actor();
-        return entities
-                .query("select t from ThongBao t order by t.ngayDang desc", ThongBao.class)
-                .stream()
-                .map(
-                        t ->
-                                new ThongBaoResponse(
-                                        t.getMaTb(),
-                                        t.getTieuDe(),
-                                        t.getNoiDung(),
-                                        t.getPhamVi(),
-                                        t.getNgayDang(),
-                                        canManage(t)))
+        var account = entities.require(TaiKhoan.class, currentUser.actor().getAccountId());
+        boolean admin = "Admin".equals(account.getVaiTro());
+        boolean dean = account.getMaGV() != null && currentUser.isDean(account.getMaGV());
+        return queries.recentNotices().stream()
+                .map(t -> view(t, account.getMaTk(), admin, dean))
                 .toList();
     }
 
@@ -67,7 +72,25 @@ public class ThongBaoService {
     }
 
     public List<ThongBaoResponse> search(String q) {
-        return list().stream().filter(t -> SearchText.matches(q, t.title(), t.content())).toList();
+        return search(q, Paging.defaults()).getContent();
+    }
+
+    public Page<ThongBaoResponse> search(String q, Pageable page) {
+        Paging.check(page);
+        var account = entities.require(TaiKhoan.class, currentUser.actor().getAccountId());
+        boolean admin = "Admin".equals(account.getVaiTro());
+        boolean dean = account.getMaGV() != null && currentUser.isDean(account.getMaGV());
+        return queries.notices(q, page).map(t -> view(t, account.getMaTk(), admin, dean));
+    }
+
+    private ThongBaoResponse view(ThongBao t, String account, boolean admin, boolean dean) {
+        return new ThongBaoResponse(
+                t.getMaTb(),
+                t.getTieuDe(),
+                t.getNoiDung(),
+                t.getPhamVi(),
+                t.getNgayDang(),
+                admin || (dean && "Khoa".equals(t.getPhamVi()) && account.equals(t.getMaTk())));
     }
 
     private boolean canManage(ThongBao t) {

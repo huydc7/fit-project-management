@@ -29,7 +29,7 @@ docker compose logs --tail 100 mysql
 
 Kiểm tra http://localhost:8080/actuator/health trả UP và đăng nhập thực tế. Web không tự nhập dữ liệu mẫu. Thay đổi SAMPLE_DATA_PASSWORD không đổi mật khẩu của tài khoản đã tồn tại; dùng chức năng đặt lại mật khẩu của Admin khi cần. Khi thay cấu hình .env, tạo lại container bằng `docker compose --profile app up -d app`; restart không nạp biến mới.
 
-Dừng bằng `docker compose --profile app down`, dữ liệu còn trong volume. Chạy lại bằng `docker compose --profile app up -d`. Khi sửa source, thêm --build. Không dùng down -v để nâng cấp. SQL 01–09 tự nạp chỉ khi tạo volume lần đầu; volume cũ cần nạp migration thích hợp bằng Workbench/CLI. Xem [nâng cấp phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md#nâng-cấp-database-đang-dùng-trên-máy) cho SQL 09.
+Dừng bằng `docker compose --profile app down`, dữ liệu còn trong volume. Chạy lại bằng `docker compose --profile app up -d`. Khi sửa source, thêm --build. Không dùng down -v để nâng cấp. SQL 01–10 tự nạp chỉ khi tạo volume lần đầu; volume cũ cần nạp migration thích hợp bằng Workbench/CLI. Xem [nâng cấp phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md#nâng-cấp-database-đang-dùng-trên-máy) cho SQL 09.
 
 ## Xem MySQL Docker bằng Workbench
 
@@ -37,7 +37,7 @@ Tạo connection Standard TCP/IP: hostname 127.0.0.1, port 3307, username từ D
 
 ## MySQL đã cài + Java
 
-Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–09 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ cần sao lưu rồi chạy các script còn thiếu theo thứ tự đến 09; DB đủ 01–08 chỉ chạy `09_department_supervisor_assignment.sql`, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
+Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–10 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ cần sao lưu rồi chạy các script còn thiếu theo thứ tự đến 09; DB đủ 01–08 chỉ chạy `09_department_supervisor_assignment.sql`, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
 
 Dùng .env.native riêng để giữ cấu hình Docker:
 
@@ -96,3 +96,31 @@ Chạy `tools/Start-Local.ps1 -Docker -LocalEmail` để bật SMTP vào Mailpit
 ## Nâng cấp thời hạn duyệt và phân công GVHD (SQL 08–09)
 
 Database có 01–07 cần chạy `tools/Update-TopicReviewDeadline.ps1` (backup và áp dụng 08), sau đó sao lưu và chạy `09_department_supervisor_assignment.sql` theo [hướng dẫn phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi rebuild. Database đã có 01–08 chỉ cần bước 09. Không chạy lại migration đã có hoặc nhập lại mẫu để nâng cấp. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) cho sửa hội đồng, gia hạn và quy tắc duyệt trước Begin_SV. Thử cả trước, đúng và sau Begin_SV: chỉ thời điểm trước mốc mới được duyệt/công bố đề tài.
+
+
+## Nghiệm thu truy vấn danh sách (SQL 10)
+
+Với DB đã đủ 01–09, sao lưu rồi chạy `projects/Database/10_read_query_indexes.sql` bằng Workbench trên schema `quanlydetai`. Script chỉ thêm index, có thể chạy lại; không nạp lại mẫu, không xóa volume. Code vẫn chạy trên schema 09; index 10 hỗ trợ hiệu năng và không thêm cột bắt buộc. Volume mới sẽ tự chạy 01–10 qua Compose. Dừng web lúc chạy migration để giảm tranh chấp DDL.
+
+Kiểm tra bộ lọc đề tài theo từ khóa không dấu, bộ môn, đợt, loại và trạng thái cùng lúc; chuyển trang phải giữ bộ lọc. Trang duyệt phải chuyển riêng danh sách đề tài/đăng ký/kết quả. Thử SV, GVHD, GVPB, thành viên hội đồng, GV không liên quan và Trưởng bộ môn để xác nhận tổng số và dữ liệu không vượt quyền. Danh sách tài khoản giữ chức vụ; báo cáo giữ lịch sử và chấm trên phiên bản mới nhất.
+
+`CatalogIntegrationTest` đo số entity/SQL trên trang 7 dòng giữa 42 bản ghi; `WorkflowIntegrationTest` kiểm tra trang 5 báo cáo giữa 40 phiên bản, cùng kiểm tra quyền và phiên bản báo cáo mới nhất. Các fixture nằm trong DB kiểm thử và rollback. Test đồng thời MySQL dùng schema/container test riêng theo cấu hình dưới đây, không chạy trên DB vận hành.
+
+
+Chạy các test MySQL trong PowerShell tại `projects/quanlydetai`, sau khi container `mysql-test` đã khởi tạo đủ 01–10 (root repository: `docker compose -f compose.test.yaml up -d --wait mysql-test`):
+
+```powershell
+$env:TEST_DB_URL='jdbc:mysql://127.0.0.1:3308/quanlydetai?serverTimezone=Asia/Ho_Chi_Minh&sslMode=DISABLED'
+$env:TEST_DB_DRIVER='com.mysql.cj.jdbc.Driver'
+$env:TEST_DB_USERNAME='root'
+$env:TEST_DB_PASSWORD='isolated-test-only'
+$env:TEST_DDL_MODE='validate'
+$env:TEST_DB_INIT_SQL="SET time_zone='+07:00'"
+.\mvnw.cmd '-Dtest=FoundationIntegrationTest,CatalogIntegrationTest,WorkflowIntegrationTest,MySqlTriggerIntegrationTest,MySqlConcurrencyIntegrationTest' test
+```
+
+Mật khẩu trên chỉ thuộc container test trong `compose.test.yaml`. Test đồng thời chỉ cho chạy khi URL trỏ localhost/127.0.0.1 cổng 3308, mở hai thread với hai transaction thật. Hai tình huống: hai nhóm cùng giữ một đề tài; một nhóm cùng giữ hai đề tài. Mỗi tình huống chỉ được có một đăng ký thành công; fixture được dọn theo mã riêng sau test. Xóa các biến `TEST_DB_*`/`TEST_DDL_MODE` ở phiên PowerShell hoặc mở phiên mới trước khi chạy lại bộ H2. Trong GitHub Actions, MySQL test cũng dùng cổng 3308 và khởi tạo 01–10.
+
+Teardown của test đồng thời phải dọn lịch sử công bố bất biến: chỉ tại connection/schema test cổng 3308, nó tạm tắt kiểm tra FK để xóa đúng các mã `QC_*` rồi bật lại trong `finally`. Không đổi định nghĩa trigger/constraint. Khi hai transaction nghiệp vụ chạy, toàn bộ FK/UNIQUE/trigger vẫn được bật. Không sao chép đoạn teardown này vào code ứng dụng hoặc chạy trên DB vận hành.
+
+Nếu container test đã tồn tại từ bản code cũ, `up -d` không tự chạy lại script khởi tạo. Kết nối Workbench vào 127.0.0.1:3308 với thông tin test ở trên và chạy các migration còn thiếu, nhất là 09 (hai cột xác nhận đề tài) và 10, rồi chạy test. Không dùng connection cổng 3307/3306 của database ứng dụng cho thao tác này.

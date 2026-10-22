@@ -41,7 +41,9 @@ public class JpaEntityRepository {
     }
 
     public boolean exists(String jpql, Object... parameters) {
-        return !query(jpql, Object.class, parameters).isEmpty();
+        var query = em.createQuery(jpql, Object.class);
+        for (int i = 0; i < parameters.length; i++) query.setParameter(i + 1, parameters[i]);
+        return !query.setMaxResults(1).getResultList().isEmpty();
     }
 
     public void insert(Object entity) {

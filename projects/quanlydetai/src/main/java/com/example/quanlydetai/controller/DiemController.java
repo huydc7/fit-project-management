@@ -1,12 +1,14 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.DiemRequest;
 import com.example.quanlydetai.service.DiemService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,7 +28,7 @@ public class DiemController {
 
     @GetMapping("/student/results")
     public String results(@RequestParam(required = false) String period, Model m) {
-        m.addAttribute("results", scores.mine(period));
+        add(m, "results", scores.mine(period, (Pageable) m.getAttribute("pageRequest")));
         m.addAttribute("periods", scores.myResultPeriods());
         m.addAttribute("selectedPeriod", period == null ? "" : period.strip());
         return "sv/results";
@@ -34,7 +36,7 @@ public class DiemController {
 
     @GetMapping("/lecturer/grading")
     public String grading(Model m) {
-        m.addAttribute("tasks", scores.tasks());
+        add(m, "tasks", scores.tasks((Pageable) m.getAttribute("pageRequest")));
         return "gv/scores";
     }
 

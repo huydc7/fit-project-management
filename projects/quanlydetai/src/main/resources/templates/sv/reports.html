@@ -16,7 +16,7 @@
 <label class="field-label" for="reportGroup">Nhóm đã được duyệt</label>
 <select id="reportGroup" class="select-field space-bottom" name="group" required>
 <option value="">Chọn nhóm…</option>
-<option th:each="g : ${groups}" th:if="${g.leader and g.topic != null}" th:value="${g.id}" th:text="${g.name + ' — ' + g.topicTitle}">
+<option th:each="g : ${groups}" th:value="${g.id}" th:text="${g.name + ' — ' + g.topicTitle}">
 </option>
 </select>
 <label class="field-label" for="reportFile">File báo cáo</label>
@@ -55,6 +55,7 @@
 </tbody>
 </table>
 </div>
+<div th:replace="~{layout/pagination :: pager(${reportsPage}, '/student/reports', 'page')}"></div>
 </main>
 </body>
 </html>

@@ -42,16 +42,30 @@
 <div class="error-text caption" th:errors="*{secretary}">
 </div>
 </div>
-<div class="space-bottom">
-<label class="field-label" for="members">Thêm 1–3 thành viên khác (giữ Ctrl để chọn nhiều)</label>
-<select class="select-field" id="members" th:field="*{members}" required multiple size="5">
-<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
-</option>
-</select>
+<fieldset class="teacher-picker space-bottom" data-teacher-picker data-kind="council" data-max="3" aria-describedby="council-member-help">
+<legend class="field-label">Thành viên hội đồng</legend>
+<div class="teacher-picker-heading">
+<span>Chọn thêm 1–3 giảng viên ngoài Chủ tịch và Thư ký</span>
+<span class="teacher-count" data-teacher-count role="status" aria-live="polite"></span>
+</div>
+<label class="teacher-search" data-teacher-search-control hidden>
+<span class="field-label">Tìm giảng viên</span>
+<input class="field" type="search" placeholder="Nhập họ tên hoặc mã giảng viên" data-teacher-search autocomplete="off">
+</label>
+<div class="teacher-options">
+<label class="teacher-option" th:each="o : ${teachers}">
+<input type="checkbox" th:field="*{members}" th:value="${o.id}">
+<span th:text="${o.label}"></span>
+<span class="teacher-role" data-teacher-role hidden></span>
+</label>
+</div>
+<p class="teacher-help" th:if="${#lists.isEmpty(teachers)}">Chưa có giảng viên có tài khoản đang hoạt động để lựa chọn.</p>
+<p class="teacher-help" data-teacher-no-results hidden>Không tìm thấy giảng viên phù hợp.</p>
+<p class="teacher-help" id="council-member-help" data-teacher-feedback>Đánh dấu vào từng thành viên. Hội đồng cần 3–5 giảng viên khác nhau.</p>
 <div class="error-text caption" th:errors="*{members}">
 </div>
-</div>
-<button class="button button-primary self-start" type="submit" th:text="${editingId != null ? 'Lưu thay đổi' : 'Lưu'}">Lưu</button><a th:if="${editingId != null}" class="button button-outline" th:href="@{/dean/councils}">Hủy sửa</a>
+</fieldset>
+<button class="button button-primary self-start" type="submit" data-teacher-submit th:text="${editingId != null ? 'Lưu thay đổi' : 'Lưu'}">Lưu</button><a th:if="${editingId != null}" class="button button-outline" th:href="@{/dean/councils}">Hủy sửa</a>
 </form>
 <p class="muted" th:if="${#lists.isEmpty(councils)}">Chưa có hội đồng.</p>
 <article th:each="h : ${councils}" class="panel panel-body space-bottom">
@@ -72,6 +86,7 @@
 </li>
 </ul>
 </article>
+<div th:replace="~{layout/pagination :: pager(${councilsPage}, '/dean/councils', 'page')}"></div>
 </main>
 </body>
 </html>

@@ -188,8 +188,10 @@
 <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>
 </svg>
 </span>
-<span sec:authentication="name">Tài khoản</span>
-<span aria-hidden="true">⌄</span>
+<span class="account-name" sec:authentication="name">Tài khoản</span>
+<svg class="icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="m6 9 6 6 6-6"/>
+</svg>
 </summary>
 <div class="account-dropdown">
 <a sec:authorize="hasAnyRole('SV', 'GV')" th:href="@{/accounts/profile}">Thông tin cá nhân</a>

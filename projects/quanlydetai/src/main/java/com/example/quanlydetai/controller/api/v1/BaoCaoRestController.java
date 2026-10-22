@@ -1,9 +1,13 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.BaoCaoResponse;
 import com.example.quanlydetai.service.BaoCaoService;
+import com.example.quanlydetai.service.Paging;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,13 +22,17 @@ public class BaoCaoRestController {
     }
 
     @GetMapping("/mine")
-    public List<BaoCaoResponse> mine() {
-        return service.mine();
+    public ResponseEntity<List<BaoCaoResponse>> mine(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.mine(Paging.request(page, size)));
     }
 
     @GetMapping("/assigned")
-    public List<BaoCaoResponse> assigned() {
-        return service.assigned();
+    public ResponseEntity<List<BaoCaoResponse>> assigned(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.assigned(Paging.request(page, size)));
     }
 
     @PostMapping(consumes = "multipart/form-data")

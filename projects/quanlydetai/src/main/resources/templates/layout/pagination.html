@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<nav th:fragment="pager(data, path, parameter)" class="pagination" aria-label="Phân trang" th:if="${data != null and data.totalElements > 0}">
+<span class="muted" th:text="${'Trang ' + (data.number + 1) + ' / ' + data.totalPages + ' · ' + data.totalElements + ' kết quả'}"></span>
+<a class="button button-outline" th:if="${data.hasPrevious()}" th:with="target=${data.number - 1}" th:href="@{${path}(page=${parameter == 'page' ? target : pageIndex},registrationsPage=${parameter == 'registrationsPage' ? target : registrationPageIndex},resultsPage=${parameter == 'resultsPage' ? target : resultPageIndex},invitationsPage=${parameter == 'invitationsPage' ? target : invitationPageIndex},size=${pageSize},q=${q},department=${departmentFilter},period=${periodFilter != null ? periodFilter : selectedPeriod},role=${roleFilter},type=${typeFilter},state=${stateFilter})}">Trang trước</a>
+<a class="button button-outline" th:if="${data.hasNext()}" th:with="target=${data.number + 1}" th:href="@{${path}(page=${parameter == 'page' ? target : pageIndex},registrationsPage=${parameter == 'registrationsPage' ? target : registrationPageIndex},resultsPage=${parameter == 'resultsPage' ? target : resultPageIndex},invitationsPage=${parameter == 'invitationsPage' ? target : invitationPageIndex},size=${pageSize},q=${q},department=${departmentFilter},period=${periodFilter != null ? periodFilter : selectedPeriod},role=${roleFilter},type=${typeFilter},state=${stateFilter})}">Trang sau</a>
+</nav>
+</body></html>

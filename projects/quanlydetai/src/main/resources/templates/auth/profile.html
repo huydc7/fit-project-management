@@ -22,7 +22,7 @@
 <div><dt>Email</dt><dd th:text="${#strings.isEmpty(profile.email) ? 'Chưa cập nhật' : profile.email}"></dd></div>
 <div><dt>Tên đăng nhập</dt><dd th:text="${profile.username}"></dd></div>
 <div th:if="${profile.role == 'GV'}"><dt>Bộ môn</dt><dd th:text="${profile.departmentName}"></dd></div>
-<div><dt>Khoa</dt><dd>Khoa Công nghệ thông tin (FIT)</dd></div>
+<div><dt>Khoa</dt><dd>Công nghệ thông tin</dd></div>
 <div th:if="${profile.role == 'GV'}" class="profile-positions">
 <dt>Chức vụ hiện tại</dt>
 <dd>

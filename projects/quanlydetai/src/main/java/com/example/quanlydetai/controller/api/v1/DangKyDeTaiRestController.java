@@ -1,13 +1,17 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.DangKyDeTaiRequest;
 import com.example.quanlydetai.dto.DangKyDeTaiResponse;
 import com.example.quanlydetai.dto.DuyetRequest;
 import com.example.quanlydetai.service.NhomService;
+import com.example.quanlydetai.service.Paging;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,8 +26,10 @@ public class DangKyDeTaiRestController {
     }
 
     @GetMapping("/pending")
-    public List<DangKyDeTaiResponse> pending() {
-        return service.pending();
+    public ResponseEntity<List<DangKyDeTaiResponse>> pending(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.pending(Paging.request(page, size)));
     }
 
     @PostMapping

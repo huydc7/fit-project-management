@@ -24,6 +24,7 @@ services:
       - ./projects/Database/07_department_review.sql:/docker-entrypoint-initdb.d/07_department_review.sql:ro
       - ./projects/Database/08_topic_review_deadline.sql:/docker-entrypoint-initdb.d/08_topic_review_deadline.sql:ro
       - ./projects/Database/09_department_supervisor_assignment.sql:/docker-entrypoint-initdb.d/09_department_supervisor_assignment.sql:ro
+      - ./projects/Database/10_read_query_indexes.sql:/docker-entrypoint-initdb.d/10_read_query_indexes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql -h127.0.0.1 -uroot quanlydetai -e 'SELECT 1 FROM DUYET_BO_MON LIMIT 1'"]
       interval: 5s

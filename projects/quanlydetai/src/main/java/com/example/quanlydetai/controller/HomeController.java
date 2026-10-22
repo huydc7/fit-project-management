@@ -17,7 +17,7 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("tieuDe", "Hệ thống quản lý đề tài sinh viên");
-        model.addAttribute("recentNotices", notices.list().stream().limit(3).toList());
+        model.addAttribute("recentNotices", notices.recent());
         return "home";
     }
 

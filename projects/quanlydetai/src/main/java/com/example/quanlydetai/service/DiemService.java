@@ -12,14 +12,15 @@ import com.example.quanlydetai.entity.GvpbDeTai;
 import com.example.quanlydetai.entity.GvpbDeTaiId;
 import com.example.quanlydetai.entity.HoiDong;
 import com.example.quanlydetai.entity.KetQuaDeTai;
-import com.example.quanlydetai.entity.Nhom;
 import com.example.quanlydetai.entity.ThanhVienHoiDong;
 import com.example.quanlydetai.entity.ThanhVienHoiDongId;
 import com.example.quanlydetai.exception.BusinessException;
 import com.example.quanlydetai.notification.ResultEmailService;
+import com.example.quanlydetai.repository.DiemQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -38,13 +39,16 @@ public class DiemService {
     private final AcademicRules rules;
     private final BaoCaoService reports;
     private final ResultEmailService emails;
+    private final DiemQueryRepository queries;
 
     public DiemService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
             BaoCaoService reports,
-            ResultEmailService emails) {
+            ResultEmailService emails,
+            DiemQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -91,7 +95,7 @@ public class DiemService {
                 entities.find(GvhdDeTai.class, new GvhdDeTaiId(gv, f.topic())) == null,
                 "GVHD không được chấm đề tài đang hướng dẫn.");
         authorize(gv, t, f.type());
-        rules.check(!reports.forTopic(f.topic()).isEmpty(), "Nhóm chưa nộp báo cáo để chấm.");
+        rules.check(reports.hasForTopic(f.topic()), "Nhóm chưa nộp báo cáo để chấm.");
         var previous =
                 entities.query(
                         "select d from DiemThanhPhan d where d.maGV=?1 and d.maDeTai=?2 and"
@@ -157,7 +161,7 @@ public class DiemService {
         rules.check(
                 expected.equals(actual) && ballots.size() == expected.size(),
                 "Chưa đủ điểm của GVPB và mọi thành viên hội đồng.");
-        rules.check(!reports.forTopic(topic).isEmpty(), "Thiếu báo cáo được dùng để chấm.");
+        rules.check(reports.hasForTopic(topic), "Thiếu báo cáo được dùng để chấm.");
         KetQuaDeTai k = new KetQuaDeTai();
         k.setMaDeTai(topic);
         k.setDiemCuoi(average(ballots.stream().map(DiemThanhPhan::getDiem).toList()));
@@ -185,73 +189,36 @@ public class DiemService {
 
     @PreAuthorize("hasRole('GV')")
     public List<PhieuChamDiemResponse> tasks() {
-        String gv = currentUser.teacher();
-        List<PhieuChamDiemResponse> tasks = new ArrayList<>();
-        var topics =
-                entities.query(
-                        "select t from DeTai t where t.maDeTai in (select p.maDeTai from GvpbDeTai"
-                            + " p where p.maGV=?1) or t.maDeTai in (select h.maDeTai from"
-                            + " HoiDongDeTai h where h.maHd in (select m.maHd from ThanhVienHoiDong"
-                            + " m where m.maGV=?1)) order by t.ngayDangKy desc",
-                        DeTai.class,
-                        gv);
-        for (DeTai t : topics) {
-            String topic = t.getMaDeTai(), council = council(topic);
-            boolean reviewer = entities.find(GvpbDeTai.class, new GvpbDeTaiId(gv, topic)) != null;
-            var member =
-                    council == null
-                            ? null
-                            : entities.find(
-                                    ThanhVienHoiDong.class, new ThanhVienHoiDongId(council, gv));
-            String type = reviewer ? "GVPB" : "HD";
-            var score =
-                    entities.query(
-                            "select d from DiemThanhPhan d where d.maGV=?1 and d.maDeTai=?2 and"
-                                    + " d.maLoaiDiem=?3",
-                            DiemThanhPhan.class,
-                            gv,
-                            topic,
-                            type);
-            DiemThanhPhan own = score.isEmpty() ? null : score.getFirst();
-            int submitted =
-                    entities.query(
-                                    "select d from DiemThanhPhan d where d.maDeTai=?1",
-                                    DiemThanhPhan.class,
-                                    topic)
-                            .size();
-            int required =
-                    council == null
-                            ? 0
-                            : 1
-                                    + entities.query(
-                                                    "select m from ThanhVienHoiDong m where"
-                                                            + " m.maHd=?1",
-                                                    ThanhVienHoiDong.class,
-                                                    council)
-                                            .size();
-            DotDangKy dot = entities.require(DotDangKy.class, t.getMaDot());
-            boolean expired =
-                    reviewer
-                            && dot.getDeadlineGvpbNopDiem() != null
-                            && rules.now().isAfter(dot.getDeadlineGvpbNopDiem());
-            boolean locked =
-                    entities.find(KetQuaDeTai.class, topic) != null
-                            || expired
-                            || !"DangThucHien".equals(t.getTrangThai());
-            tasks.add(
-                    new PhieuChamDiemResponse(
-                            topic,
-                            t.getTenDeTai(),
-                            type,
-                            own == null ? null : own.getDiem(),
-                            own == null ? "" : own.getNhanXet(),
+        return tasks(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('GV')")
+    public Page<PhieuChamDiemResponse> tasks(Pageable page) {
+        Paging.check(page);
+        var rows = queries.tasks(currentUser.teacher(), page);
+        var ids = rows.stream().map(r -> (String) r[0]).toList();
+        var latestReports = reports.latestForTopics(ids);
+        var now = rules.now();
+        return rows.map(
+                r -> {
+                    boolean reviewer = r[3] != null;
+                    var deadline = (java.time.LocalDateTime) r[8];
+                    boolean locked =
+                            r[7] != null
+                                    || (reviewer && deadline != null && now.isAfter(deadline))
+                                    || !"DangThucHien".equals(r[2]);
+                    return new PhieuChamDiemResponse(
+                            (String) r[0],
+                            (String) r[1],
+                            reviewer ? "GVPB" : "HD",
+                            (BigDecimal) r[5],
+                            r[6] == null ? "" : (String) r[6],
                             locked,
-                            member != null && "ChuTich".equals(member.getVaiTro()),
-                            submitted,
-                            required,
-                            reports.forTopic(topic)));
-        }
-        return tasks;
+                            "ChuTich".equals(r[4]),
+                            ((Number) r[9]).intValue(),
+                            ((Number) r[10]).intValue(),
+                            latestReports.getOrDefault((String) r[0], List.of()));
+                });
     }
 
     @PreAuthorize("hasRole('SV')")
@@ -261,24 +228,17 @@ public class DiemService {
 
     @PreAuthorize("hasRole('SV')")
     public List<KetQuaResponse> mine(String period) {
-        String sv = currentUser.student();
+        return mine(period, Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public Page<KetQuaResponse> mine(String period, Pageable page) {
+        Paging.check(page);
+        String student = currentUser.student();
         String selected = period == null ? "" : period.strip();
-        if (!selected.isEmpty()
-                && myResultPeriods().stream().noneMatch(p -> p.id().equals(selected))) {
+        if (!selected.isEmpty() && !queries.registeredInPeriod(student, selected))
             throw new AccessDeniedException("Bạn chưa đăng ký đề tài trong đợt này.");
-        }
-        return entities
-                .query(
-                        "select k from KetQuaDeTai k where k.trangThaiCongBo='DaCongBo' and"
-                            + " k.maDeTai in (select n.maDeTai from Nhom n where (?2='' or"
-                            + " n.maDot=?2) and n.maNhom in (select m.maNhom from ThanhVienNhom m"
-                            + " where m.maSV=?1)) order by k.ngayCongBo desc",
-                        KetQuaDeTai.class,
-                        sv,
-                        selected)
-                .stream()
-                .map(this::resultView)
-                .toList();
+        return queries.results(student, selected, page);
     }
 
     public record ResultPeriod(String id, String name) {}
@@ -299,30 +259,14 @@ public class DiemService {
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<KetQuaResponse> allResults() {
-        currentUser.dean();
-        return entities
-                .query("select k from KetQuaDeTai k order by k.ngayTongHop desc", KetQuaDeTai.class)
-                .stream()
-                .map(this::resultView)
-                .toList();
+        return allResults(Paging.defaults()).getContent();
     }
 
-    private KetQuaResponse resultView(KetQuaDeTai k) {
-        var topic = entities.require(DeTai.class, k.getMaDeTai());
-        var period = entities.require(DotDangKy.class, topic.getMaDot());
-        var n =
-                entities.query(
-                        "select n from Nhom n where n.maDeTai=?1", Nhom.class, k.getMaDeTai());
-        return new KetQuaResponse(
-                k.getMaDeTai(),
-                topic.getTenDeTai(),
-                n.isEmpty() ? "" : n.getFirst().getTenNhom(),
-                k.getDiemCuoi(),
-                k.getNhanXetTongHop(),
-                k.getTrangThaiCongBo(),
-                k.getNgayCongBo(),
-                period.getMaDot(),
-                period.getTenDotDangKy());
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<KetQuaResponse> allResults(Pageable page) {
+        Paging.check(page);
+        currentUser.dean();
+        return queries.results(null, null, page);
     }
 
     private String council(String topic) {

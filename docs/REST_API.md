@@ -96,7 +96,7 @@ Admin dùng `GET /admin/accounts/{id}/lock-impact` để xem `{accountId, userna
 - Dữ liệu không hợp lệ hoặc vi phạm nghiệp vụ: `400`; chưa đăng nhập/phiên hết hạn: `401`; sai quyền/thiếu CSRF: `403`; route không tồn tại: `404`; method không hỗ trợ: `405`; loại nội dung sai: `415`; file quá lớn: `413`; xung đột database: `409`.
 - Lỗi JSON theo ProblemDetail (`application/problem+json`), gồm `status`, `title`, `detail`; lỗi validation có thêm `errors` theo tên trường, không chứa giá trị mật khẩu nhập vào. Lỗi không dự kiến trả mã tra cứu, chi tiết lưu trong server log.
 
-Các danh sách nghiệp vụ cũ chưa phân trang; riêng email kết quả có phân trang tại database như phần bổ sung dưới. Đây là API v1 phục vụ quy mô đồ án/khoa nhỏ; khi dữ liệu lớn cần mở rộng phân trang và bộ lọc cho các module còn lại. Chưa cung cấp Swagger/OpenAPI tự sinh.
+Các danh sách nghiệp vụ chính đã có bộ lọc và phân trang tại database, theo quy ước page/size và response headers ở phần dưới. Email kết quả giữ quy ước riêng đã mô tả. Chưa cung cấp Swagger/OpenAPI tự sinh.
 
 Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừa vượt 20 MiB đã được kiểm tra trả JSON 413. Khi toàn request vượt 21 MiB, Tomcat có thể đóng kết nối trước khi client nhận body lỗi; client cần xử lý cả lỗi mạng khi upload quá lớn.
 
@@ -116,7 +116,7 @@ Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừ
 | PUT, DELETE `/registration-periods/{id}` | Trưởng khoa; PUT DotDangKyForm; đợt có dữ liệu chỉ đổi tên |
 | PUT, DELETE `/announcements/{id}` | Admin hoặc Trưởng khoa với thông báo Khoa của mình; PUT ThongBaoRequest |
 
-GET `/admin/accounts` thêm q, role; `/announcements`, `/registration-periods`, `/catalog/departments` thêm q. Công bố qua `/topics/{id}/review` bắt buộc đã được bộ môn duyệt. Các ràng buộc còn lại xem [PRODUCT_RULES.md](PRODUCT_RULES.md). Tìm kiếm chưa phân trang.
+GET `/admin/accounts` thêm q, role; `/announcements`, `/registration-periods`, `/catalog/departments` thêm q. Công bố qua `/topics/{id}/review` bắt buộc đã được bộ môn duyệt. Các ràng buộc còn lại xem [PRODUCT_RULES.md](PRODUCT_RULES.md). Tìm kiếm áp dụng tại database trước khi phân trang.
 
 ## Email kết quả — bổ sung 18/10/2026
 
@@ -140,6 +140,15 @@ JSON GET: `{content, page, size, totalElements, totalPages}`. content có id/top
 - POST `/topics`: `{period,title,content,department}`. Gửi `supervisors` sẽ bị từ chối.
 - PUT `/topics/{id}`: `{title,content,department?}`. Sửa nháp xóa xác nhận bộ môn và GVHD.
 - PATCH `/topics/{id}/department-review`: `{accept:true,supervisors:["GV01","GV02"]}`.
-  Chỉ Trưởng bộ môn đúng phạm vi; bắt buộc 1–2 mã GV khác nhau. Từ chối: `{accept:false}`, không cần supervisors.
+  Chỉ Trưởng bộ môn đúng phạm vi; bắt buộc 1–2 mã GV khác nhau, tài khoản hoạt động và cùng bộ môn với đề tài/bộ môn đang quản lý. Gửi mã GV khác bộ môn trả 400 và giữ nguyên phân công/xác nhận. Từ chối: `{accept:false}`, không cần supervisors. Quyền chọn GVPB/hội đồng của Trưởng khoa vẫn áp dụng toàn khoa.
 - PATCH `/topics/{id}/review`: `{accept:true}` để Trưởng khoa xác nhận và công bố.
   Không thay đổi GVHD ở endpoint này. Trả về proposerId, confirmedBy, confirmedAt trong danh sách đề tài.
+
+
+## Phân trang danh sách
+
+Các API danh sách đề tài, tài khoản, báo cáo, thông báo, đợt đăng ký, nhóm, lời mời, đăng ký chờ duyệt, hội đồng và điểm hỗ trợ `page` (bắt đầu từ 0, mặc định 0) và `size` (1–100, mặc định 25). Nội dung trả về vẫn là mảng JSON để giữ tương thích kiểu dữ liệu; không còn trả toàn bộ danh sách trong một lần gọi. Đọc `X-Total-Count`, `X-Page` và `X-Page-Size` trong HTTP response headers để chuyển trang. Trang vượt dữ liệu trả mảng rỗng; page âm, size ngoài 1–100 hoặc offset vượt giới hạn số nguyên trả 400.
+
+Ví dụ: `GET /api/v1/topics/management?q=du%20lieu&department=CNPM&period=DOT01&type=MonHoc&state=Nhap&page=0&size=25`. Bộ lọc được áp dụng trước khi phân trang; total chỉ đếm trong phạm vi được cấp quyền. `GET /api/v1/reports/assigned?page=1&size=10` chỉ trả báo cáo được phép xem; không nhận quyền GV/Trưởng khoa từ tham số URL. API nhiệm vụ chấm trả báo cáo mới nhất; dùng API danh sách báo cáo để tra lịch sử.
+
+API danh mục đợt và GV phục vụ chọn giá trị vẫn trả danh mục lựa chọn như trước. Danh mục bộ môn có tìm kiếm hỗ trợ phân trang cùng quy ước trên.

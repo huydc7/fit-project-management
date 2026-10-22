@@ -57,6 +57,7 @@
 </form>
 </div>
 </article>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/dean/approvals', 'page')}"></div>
 <h2 class="section-title space-top-lg">Đăng ký nhóm chờ duyệt</h2>
 <p class="muted" th:if="${#lists.isEmpty(registrations)}">Không có đăng ký chờ duyệt.</p>
 <article class="panel panel-body space-bottom" th:each="r : ${registrations}">
@@ -71,6 +72,7 @@
 <button class="button button-danger" name="accept" value="false">Từ chối, mở lại đề tài</button>
 </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${registrationsPage}, '/dean/approvals', 'registrationsPage')}"></div>
 <h2 class="section-title space-top-lg">Kết quả đã tổng hợp</h2>
 <p class="muted" th:if="${#lists.isEmpty(results)}">Chưa có kết quả tổng hợp.</p>
 <article class="panel panel-body space-bottom" th:each="r : ${results}">
@@ -87,6 +89,7 @@
 <button class="button button-primary">Công bố kết quả cho sinh viên</button>
 </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${resultsPage}, '/dean/approvals', 'resultsPage')}"></div>
 </main>
 </body>
 </html>

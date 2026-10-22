@@ -1,13 +1,18 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.DeTaiRequest;
 import com.example.quanlydetai.dto.DeTaiResponse;
 import com.example.quanlydetai.dto.DuyetRequest;
+import com.example.quanlydetai.dto.TopicSearch;
 import com.example.quanlydetai.service.DeTaiService;
+import com.example.quanlydetai.service.Paging;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,33 +27,48 @@ public class DeTaiRestController {
     }
 
     @GetMapping
-    public List<DeTaiResponse> available(
+    public ResponseEntity<List<DeTaiResponse>> available(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "") String department,
             @RequestParam(defaultValue = "") String period,
             @RequestParam(defaultValue = "") String type,
-            @RequestParam(defaultValue = "") String state) {
-        return DeTaiService.filter(service.available(), q, department, period, type, state);
+            @RequestParam(defaultValue = "") String state,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(
+                service.available(
+                        new TopicSearch(q, department, period, type, state),
+                        Paging.request(page, size)));
     }
 
     @GetMapping("/mine")
-    public List<DeTaiResponse> mine(
+    public ResponseEntity<List<DeTaiResponse>> mine(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "") String department,
             @RequestParam(defaultValue = "") String period,
             @RequestParam(defaultValue = "") String type,
-            @RequestParam(defaultValue = "") String state) {
-        return DeTaiService.filter(service.mine(), q, department, period, type, state);
+            @RequestParam(defaultValue = "") String state,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(
+                service.mine(
+                        new TopicSearch(q, department, period, type, state),
+                        Paging.request(page, size)));
     }
 
     @GetMapping("/management")
-    public List<DeTaiResponse> all(
+    public ResponseEntity<List<DeTaiResponse>> all(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "") String department,
             @RequestParam(defaultValue = "") String period,
             @RequestParam(defaultValue = "") String type,
-            @RequestParam(defaultValue = "") String state) {
-        return DeTaiService.filter(service.all(), q, department, period, type, state);
+            @RequestParam(defaultValue = "") String state,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(
+                service.all(
+                        new TopicSearch(q, department, period, type, state),
+                        Paging.request(page, size)));
     }
 
     @PostMapping
@@ -78,17 +98,23 @@ public class DeTaiRestController {
     }
 
     @GetMapping("/department")
-    public List<DeTaiResponse> department(
+    public ResponseEntity<List<DeTaiResponse>> department(
             @RequestParam(defaultValue = "") String q,
             @RequestParam(defaultValue = "") String period,
             @RequestParam(defaultValue = "") String type,
-            @RequestParam(defaultValue = "") String state) {
-        return DeTaiService.filter(service.departmentTopics(), q, "", period, type, state);
+            @RequestParam(defaultValue = "") String state,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(
+                service.departmentTopics(
+                        new TopicSearch(q, "", period, type, state), Paging.request(page, size)));
     }
 
     @PatchMapping("/{id}/department-review")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void departmentReview(@PathVariable String id, @Valid @RequestBody com.example.quanlydetai.dto.DepartmentReviewRequest body) {
+    public void departmentReview(
+            @PathVariable String id,
+            @Valid @RequestBody com.example.quanlydetai.dto.DepartmentReviewRequest body) {
         service.reviewDepartment(id, body.accept(), body.supervisors());
     }
 }

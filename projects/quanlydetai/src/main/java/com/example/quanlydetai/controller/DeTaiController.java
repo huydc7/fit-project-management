@@ -1,13 +1,16 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.DeTaiRequest;
+import com.example.quanlydetai.dto.TopicSearch;
 import com.example.quanlydetai.service.DeTaiService;
 import com.example.quanlydetai.service.NhomService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,15 +35,12 @@ public class DeTaiController {
         if (!m.containsAttribute("form"))
             m.addAttribute("form", new DeTaiRequest(null, null, null, null, null));
         options(m);
-        m.addAttribute(
+        add(
+                m,
                 "topics",
-                DeTaiService.filter(
-                        topics.mine(),
-                        (String) m.getAttribute("q"),
-                        (String) m.getAttribute("departmentFilter"),
-                        (String) m.getAttribute("periodFilter"),
-                        (String) m.getAttribute("typeFilter"),
-                        (String) m.getAttribute("stateFilter")));
+                topics.mine(
+                        (TopicSearch) m.getAttribute("topicSearch"),
+                        (Pageable) m.getAttribute("pageRequest")));
         return "gv/topics";
     }
 
@@ -70,16 +70,15 @@ public class DeTaiController {
     @GetMapping({"/student/topics", "/topics"})
     public String danhSach(Model model) {
         options(model);
+        var topicPage =
+                topics.available(
+                        (TopicSearch) model.getAttribute("topicSearch"),
+                        (Pageable) model.getAttribute("pageRequest"));
+        add(model, "topics", topicPage);
         model.addAttribute(
-                "topics",
-                DeTaiService.filter(
-                        topics.available(),
-                        (String) model.getAttribute("q"),
-                        (String) model.getAttribute("departmentFilter"),
-                        (String) model.getAttribute("periodFilter"),
-                        (String) model.getAttribute("typeFilter"),
-                        (String) model.getAttribute("stateFilter")));
-        model.addAttribute("groups", groups.mine());
+                "groups",
+                groups.registrationOptions(
+                        topicPage.stream().map(t -> t.periodId()).distinct().toList()));
         return "sv/de-tai-list";
     }
 
@@ -92,6 +91,7 @@ public class DeTaiController {
             @RequestParam(defaultValue = "") String type,
             @RequestParam(defaultValue = "") String state,
             Model m) {
+        m.addAttribute("topicSearch", new TopicSearch(q, department, period, type, state));
         m.addAttribute("q", q);
         m.addAttribute("departmentFilter", department);
         m.addAttribute("periodFilter", period);

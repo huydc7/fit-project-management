@@ -11,8 +11,10 @@ import com.example.quanlydetai.entity.TaiKhoan;
 import com.example.quanlydetai.entity.TruongBoMon;
 import com.example.quanlydetai.entity.TruongKhoa;
 import com.example.quanlydetai.repository.JpaEntityRepository;
+import com.example.quanlydetai.repository.TaiKhoanQueryRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,12 +35,16 @@ public class TaiKhoanService {
     private final PasswordEncoder encoder;
     private final GiangVienService teachers;
 
+    private final TaiKhoanQueryRepository queries;
+
     public TaiKhoanService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
             PasswordEncoder encoder,
-            GiangVienService teachers) {
+            GiangVienService teachers,
+            TaiKhoanQueryRepository queries) {
+        this.queries = queries;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -48,42 +54,7 @@ public class TaiKhoanService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public List<TaiKhoanResponse> list() {
-        currentUser.admin();
-        var deans =
-                entities.query(
-                        "select d.maGV from TruongKhoa d where d.dangGiuChuc=true", String.class);
-        var departmentHeads =
-                entities
-                        .query(
-                                "select h from TruongBoMon h where h.dangGiuChuc=true",
-                                TruongBoMon.class)
-                        .stream()
-                        .collect(Collectors.toMap(TruongBoMon::getMaBoMon, TruongBoMon::getMaGV));
-        return entities
-                .query("select a from TaiKhoan a order by a.tenDangNhap", TaiKhoan.class)
-                .stream()
-                .map(
-                        a -> {
-                            SinhVien s = entities.find(SinhVien.class, a.getMaSV());
-                            GiangVien g = entities.find(GiangVien.class, a.getMaGV());
-                            return new TaiKhoanResponse(
-                                    a.getMaTk(),
-                                    a.getTenDangNhap(),
-                                    a.getVaiTro(),
-                                    a.getMaSV() != null ? a.getMaSV() : a.getMaGV(),
-                                    a.getTrangThai(),
-                                    s != null ? s.getHoTen() : g != null ? g.getHoTen() : "",
-                                    s != null ? s.getEmail() : g != null ? g.getEmail() : "",
-                                    g != null ? g.getMaBoMon() : "",
-                                    "GV".equals(a.getVaiTro())
-                                            && g != null
-                                            && deans.contains(g.getMaGV()),
-                                    "GV".equals(a.getVaiTro())
-                                            && g != null
-                                            && g.getMaGV()
-                                                    .equals(departmentHeads.get(g.getMaBoMon())));
-                        })
-                .toList();
+        return search("", "", Paging.defaults()).getContent();
     }
 
     @PreAuthorize("hasAnyRole('SV', 'GV')")
@@ -278,10 +249,44 @@ public class TaiKhoanService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public List<TaiKhoanResponse> search(String q, String role) {
-        return list().stream()
-                .filter(a -> role == null || role.isBlank() || role.equals(a.role()))
-                .filter(a -> SearchText.matches(q, a.username(), a.profile(), a.name(), a.email()))
-                .toList();
+        return search(q, role, Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<TaiKhoanResponse> search(String q, String role, Pageable page) {
+        Paging.check(page);
+        currentUser.admin();
+        var accounts = queries.search(q, role, page);
+        var teacherIds = accounts.stream().map(TaiKhoan::getMaGV).filter(Objects::nonNull).toList();
+        var deans = queries.deans(teacherIds);
+        var departmentHeads =
+                queries.heads(teacherIds).stream()
+                        .collect(Collectors.toMap(TruongBoMon::getMaBoMon, TruongBoMon::getMaGV));
+        return accounts.map(
+                a -> {
+                    SinhVien student = a.getSinhVien();
+                    GiangVien teacher = a.getGiangVien();
+                    return new TaiKhoanResponse(
+                            a.getMaTk(),
+                            a.getTenDangNhap(),
+                            a.getVaiTro(),
+                            a.getMaSV() != null ? a.getMaSV() : a.getMaGV(),
+                            a.getTrangThai(),
+                            student != null
+                                    ? student.getHoTen()
+                                    : teacher != null ? teacher.getHoTen() : "",
+                            student != null
+                                    ? student.getEmail()
+                                    : teacher != null ? teacher.getEmail() : "",
+                            teacher != null ? teacher.getMaBoMon() : "",
+                            "GV".equals(a.getVaiTro())
+                                    && teacher != null
+                                    && deans.contains(teacher.getMaGV()),
+                            "GV".equals(a.getVaiTro())
+                                    && teacher != null
+                                    && teacher.getMaGV()
+                                            .equals(departmentHeads.get(teacher.getMaBoMon())));
+                });
     }
 
     @Transactional

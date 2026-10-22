@@ -4,10 +4,12 @@ import com.example.quanlydetai.dto.DotDangKyForm;
 import com.example.quanlydetai.dto.DotDangKyView;
 import com.example.quanlydetai.entity.DotDangKy;
 import com.example.quanlydetai.exception.BusinessException;
+import com.example.quanlydetai.repository.CatalogQueryRepository;
 import com.example.quanlydetai.repository.DotDangKyRepository;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +25,14 @@ public class DotDangKyService {
     private final BusinessSecurityService security;
     private final EntityManager entityManager;
 
+    private final CatalogQueryRepository queries;
+
     public DotDangKyService(
             DotDangKyRepository repository,
             BusinessSecurityService security,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            CatalogQueryRepository queries) {
+        this.queries = queries;
         this.repository = repository;
         this.security = security;
         this.entityManager = entityManager;
@@ -34,18 +40,7 @@ public class DotDangKyService {
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<DotDangKyView> list() {
-        return repository.findAllByOrderByBeginGVDesc().stream()
-                .map(
-                        d ->
-                                new DotDangKyView(
-                                        d.getMaDot(),
-                                        d.getTenDotDangKy(),
-                                        d.getLoai(),
-                                        d.getBeginGV(),
-                                        d.getEndGV(),
-                                        d.getBeginSV(),
-                                        d.getEndSV()))
-                .toList();
+        return search("", Paging.defaults()).getContent();
     }
 
     @Transactional
@@ -120,9 +115,23 @@ public class DotDangKyService {
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<DotDangKyView> search(String q) {
-        return list().stream()
-                .filter(d -> SearchText.matches(q, d.maDot(), d.tenDotDangKy(), d.loai()))
-                .toList();
+        return search(q, Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<DotDangKyView> search(String q, Pageable page) {
+        Paging.check(page);
+        return queries.periods(q, page)
+                .map(
+                        d ->
+                                new DotDangKyView(
+                                        d.getMaDot(),
+                                        d.getTenDotDangKy(),
+                                        d.getLoai(),
+                                        d.getBeginGV(),
+                                        d.getEndGV(),
+                                        d.getBeginSV(),
+                                        d.getEndSV()));
     }
 
     @PreAuthorize("hasRole('TRUONGKHOA')")

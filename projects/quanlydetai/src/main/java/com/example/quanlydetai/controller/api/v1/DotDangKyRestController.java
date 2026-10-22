@@ -1,13 +1,17 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.DotDangKyForm;
 import com.example.quanlydetai.dto.DotDangKyView;
 import com.example.quanlydetai.security.AccountPrincipal;
 import com.example.quanlydetai.service.DotDangKyService;
+import com.example.quanlydetai.service.Paging;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +29,11 @@ public class DotDangKyRestController {
     }
 
     @GetMapping
-    public List<DotDangKyView> list(@RequestParam(defaultValue = "") String q) {
-        return service.search(q);
+    public ResponseEntity<List<DotDangKyView>> list(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.search(q, Paging.request(page, size)));
     }
 
     @PostMapping

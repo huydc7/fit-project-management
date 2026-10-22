@@ -1,14 +1,18 @@
 package com.example.quanlydetai.controller.api.v1;
 
+import static com.example.quanlydetai.controller.support.PageResponses.from;
+
 import com.example.quanlydetai.dto.DiemRequest;
 import com.example.quanlydetai.dto.KetQuaResponse;
 import com.example.quanlydetai.dto.PhieuChamDiemResponse;
 import com.example.quanlydetai.dto.TongHopDiemRequest;
 import com.example.quanlydetai.service.DiemService;
+import com.example.quanlydetai.service.Paging;
 
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,18 +27,25 @@ public class DiemRestController {
     }
 
     @GetMapping("/ballots")
-    public List<PhieuChamDiemResponse> tasks() {
-        return service.tasks();
+    public ResponseEntity<List<PhieuChamDiemResponse>> tasks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.tasks(Paging.request(page, size)));
     }
 
     @GetMapping("/results/mine")
-    public List<KetQuaResponse> mine(@RequestParam(required = false) String period) {
-        return service.mine(period);
+    public ResponseEntity<List<KetQuaResponse>> mine(
+            @RequestParam(required = false) String period,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.mine(period, Paging.request(page, size)));
     }
 
     @GetMapping("/results")
-    public List<KetQuaResponse> all() {
-        return service.allResults();
+    public ResponseEntity<List<KetQuaResponse>> all(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        return from(service.allResults(Paging.request(page, size)));
     }
 
     @PutMapping("/ballots")

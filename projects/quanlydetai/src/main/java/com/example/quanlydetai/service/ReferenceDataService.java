@@ -4,10 +4,12 @@ import com.example.quanlydetai.dto.LuaChonResponse;
 import com.example.quanlydetai.entity.BoMon;
 import com.example.quanlydetai.entity.DotDangKy;
 import com.example.quanlydetai.entity.GiangVien;
+import com.example.quanlydetai.repository.CatalogQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 
 import jakarta.persistence.*;
 
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -17,7 +19,10 @@ import java.util.*;
 public class ReferenceDataService {
     private final JpaEntityRepository entities;
 
-    public ReferenceDataService(JpaEntityRepository entities) {
+    private final CatalogQueryRepository queries;
+
+    public ReferenceDataService(JpaEntityRepository entities, CatalogQueryRepository queries) {
+        this.queries = queries;
         this.entities = entities;
     }
 
@@ -40,18 +45,33 @@ public class ReferenceDataService {
     }
 
     public List<LuaChonResponse> searchDepartments(String q) {
-        return departments().stream()
-                .filter(d -> SearchText.matches(q, d.id(), d.label()))
-                .toList();
+        return searchDepartments(q, Paging.defaults()).getContent();
+    }
+
+    public Page<LuaChonResponse> searchDepartments(String q, Pageable page) {
+        Paging.check(page);
+        return queries.departments(q, page)
+                .map(d -> new LuaChonResponse(d.getMaBoMon(), d.getTenBoMon()));
     }
 
     public List<LuaChonResponse> teachers() {
+        return activeTeachers(null);
+    }
+
+    public List<LuaChonResponse> teachersInDepartment(String department) {
+        return activeTeachers(department);
+    }
+
+    private List<LuaChonResponse> activeTeachers(String department) {
+        String query =
+                "select g from GiangVien g where exists (select a.maTk from TaiKhoan a"
+                        + " where a.maGV=g.maGV and a.vaiTro='GV' and a.trangThai='HoatDong')";
+        if (department != null) query += " and g.maBoMon=?1";
         return entities
                 .query(
-                        "select g from GiangVien g where exists (select a.maTk from TaiKhoan a"
-                            + " where a.maGV=g.maGV and a.vaiTro='GV' and a.trangThai='HoatDong')"
-                            + " order by g.hoTen",
-                        GiangVien.class)
+                        query + " order by g.hoTen",
+                        GiangVien.class,
+                        department == null ? new Object[0] : new Object[] {department})
                 .stream()
                 .map(g -> new LuaChonResponse(g.getMaGV(), g.getHoTen() + " — " + g.getMaGV()))
                 .toList();

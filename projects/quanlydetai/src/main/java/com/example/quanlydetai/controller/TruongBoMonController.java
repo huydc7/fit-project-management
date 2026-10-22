@@ -1,9 +1,12 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.perform;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
+import com.example.quanlydetai.dto.TopicSearch;
 import com.example.quanlydetai.service.DeTaiService;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +29,16 @@ public class TruongBoMonController {
             @RequestParam(defaultValue = "") String type,
             @RequestParam(defaultValue = "") String state,
             Model m) {
-        m.addAttribute(
+        add(
+                m,
                 "topics",
-                DeTaiService.filter(topics.departmentTopics(), q, department, period, type, state));
+                topics.departmentTopics(
+                        new TopicSearch(q, department, period, type, state),
+                        (Pageable) m.getAttribute("pageRequest")));
         m.addAttribute("q", q);
         m.addAttribute("departments", topics.departments());
         m.addAttribute("periods", topics.periods());
-        m.addAttribute("teachers", topics.teachers());
+        m.addAttribute("teachers", topics.departmentTeachers());
         m.addAttribute("departmentFilter", department);
         m.addAttribute("periodFilter", period);
         m.addAttribute("typeFilter", type);
@@ -42,8 +48,13 @@ public class TruongBoMonController {
 
     @PostMapping("/{id}/review")
     public String review(
-            @PathVariable String id, @RequestParam boolean accept,
-            @RequestParam(required = false) java.util.List<String> supervisors, RedirectAttributes flash) {
-        return perform("/department/topics", flash, () -> topics.reviewDepartment(id, accept, supervisors));
+            @PathVariable String id,
+            @RequestParam boolean accept,
+            @RequestParam(required = false) java.util.List<String> supervisors,
+            RedirectAttributes flash) {
+        return perform(
+                "/department/topics",
+                flash,
+                () -> topics.reviewDepartment(id, accept, supervisors));
     }
 }

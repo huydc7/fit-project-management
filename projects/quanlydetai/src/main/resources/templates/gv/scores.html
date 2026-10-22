@@ -43,6 +43,7 @@
 <button class="button button-success" th:disabled="${t.required == 0 or t.submitted != t.required}">Tổng hợp và khóa điểm</button>
 </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${tasksPage}, '/lecturer/grading', 'page')}"></div>
 </main>
 </body>
 </html>

@@ -387,6 +387,151 @@ class WorkflowIntegrationTest {
     }
 
     @Test
+    void operationGroupChoicesAreNotCutOffByHistoryPagination() throws Exception {
+        String target = group("wf.sv1");
+        var now = LocalDateTime.now();
+        for (int i = 0; i < 26; i++) {
+            String period = "WP_OPT" + i, group = "AA_OPT" + String.format("%02d", i);
+            period(period, now.minusDays(10), now.minusDays(5), now.minusDays(4), now.plusDays(5));
+            jdbc.update(
+                    "INSERT INTO NHOM(Ma_Nhom,Ten_Nhom,Ma_Dot) VALUES (?,?,?)",
+                    group,
+                    "Other group " + i,
+                    period);
+            jdbc.update(
+                    "INSERT INTO THANH_VIEN_NHOM(Ma_Nhom,Ma_SV,Vai_Tro) VALUES"
+                            + " (?,'WF_SV1','Truong_Nhom')",
+                    group);
+        }
+        mvc.perform(get("/student/groups").session(session("wf.sv1")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("groups", org.hamcrest.Matchers.hasSize(25)));
+        mvc.perform(get("/student/topics").session(session("wf.sv1")))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "value=\"" + target + "\"")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.not(
+                                                org.hamcrest.Matchers.containsString(
+                                                        "value=\"AA_OPT00\""))));
+        join(target, "wf.sv1", 7, 8);
+        ok("wf.sv1", "/student/registrations", "group", target, "topic", "WF_DT");
+        String registration =
+                jdbc.queryForObject(
+                        "SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?",
+                        String.class,
+                        target);
+        ok(
+                "wf.gv0",
+                "/dean/registrations/" + registration + "/review",
+                "accept",
+                "true",
+                "reason",
+                "");
+        mvc.perform(get("/student/reports").session(session("wf.sv1")))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "value=\"" + target + "\"")));
+    }
+
+    @Test
+    void reportPagingDoesNotMaterializeTheEntireHistory() throws Exception {
+        String group = registered();
+        for (int i = 1; i <= 40; i++) {
+            String token = String.format("%024d", i);
+            jdbc.update(
+                    "INSERT INTO"
+                        + " BAO_CAO(Ma_BC,Ma_Nhom,Ma_SV_Nguoi_Nop,File_Dinh_Kem,Lan_Nop,Ngay_Nop)"
+                        + " VALUES (?,?,'WF_SV1',?,?,?)",
+                    token,
+                    group,
+                    "fixtures/" + token + ".pdf",
+                    i,
+                    LocalDateTime.now());
+        }
+        var login = session("wf.gv1");
+        var stats =
+                em.getEntityManagerFactory()
+                        .unwrap(org.hibernate.SessionFactory.class)
+                        .getStatistics();
+        boolean enabled = stats.isStatisticsEnabled();
+        try {
+            stats.setStatisticsEnabled(true);
+            em.clear();
+            stats.clear();
+            mvc.perform(
+                            get("/api/v1/reports/assigned")
+                                    .session(login)
+                                    .param("size", "5")
+                                    .param("page", "1"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("X-Total-Count", "40"))
+                    .andExpect(jsonPath("$.length()").value(5));
+            assertThat(stats.getEntityLoadCount()).isLessThan(20);
+            assertThat(stats.getPrepareStatementCount()).isLessThan(20);
+            System.out.println(
+                    "Report page SQL="
+                            + stats.getPrepareStatementCount()
+                            + ", loaded entities="
+                            + stats.getEntityLoadCount());
+        } finally {
+            stats.setStatisticsEnabled(enabled);
+        }
+    }
+
+    @Test
+    void reportPagesRespectAssignmentsAndGradingUsesOnlyLatestVersion() throws Exception {
+        String group = registered();
+        String council = council();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", council);
+        upload("wf.sv1", group, "111111111111111111111111")
+                .andExpect(flash().attributeExists("thanhCong"));
+        upload("wf.sv1", group, "222222222222222222222222")
+                .andExpect(flash().attributeExists("thanhCong"));
+        for (String user : List.of("wf.gv0", "wf.gv1", "wf.gv2", "wf.gv3"))
+            mvc.perform(get("/api/v1/reports/assigned").session(session(user)).param("size", "1"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("X-Total-Count", "2"))
+                    .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(
+                        get("/api/v1/reports/assigned")
+                                .session(session("wf.gv6"))
+                                .param("teacher", "WF_GV1")
+                                .param("dean", "true"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "0"))
+                .andExpect(jsonPath("$").isEmpty());
+        mvc.perform(get("/api/v1/reports/mine").session(session("wf.sv2")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "0"));
+        mvc.perform(
+                        get("/api/v1/reports/mine")
+                                .session(session("wf.sv7"))
+                                .param("page", "1")
+                                .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "2"))
+                .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/v1/grades/ballots").session(session("wf.gv2")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].reports.length()").value(1))
+                .andExpect(jsonPath("$[0].reports[0].version").value(2))
+                .andExpect(jsonPath("$[0].required").value(4));
+        mvc.perform(get("/lecturer/reports").session(session("wf.gv1")).param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Trang sau")));
+    }
+
+    @Test
     void completeWorkflowLocksScoresAndKeepsResultsPrivate() throws Exception {
         String group = registered();
         String council = council();

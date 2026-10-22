@@ -1,6 +1,7 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.DoiMatKhauRequest;
 import com.example.quanlydetai.dto.TaiKhoanRequest;
@@ -10,6 +11,7 @@ import com.example.quanlydetai.service.TaiKhoanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,10 +36,13 @@ public class TaiKhoanController {
         if (!m.containsAttribute("form"))
             m.addAttribute("form", new TaiKhoanRequest(null, null, "SV", null, null, null, null));
         options(m);
-        m.addAttribute(
+        add(
+                m,
                 "accounts",
                 accounts.search(
-                        (String) m.getAttribute("q"), (String) m.getAttribute("roleFilter")));
+                        (String) m.getAttribute("q"),
+                        (String) m.getAttribute("roleFilter"),
+                        (Pageable) m.getAttribute("pageRequest")));
         return "admin/accounts";
     }
 

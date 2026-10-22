@@ -1,6 +1,7 @@
 package com.example.quanlydetai.controller;
 
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
+import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.HoiDongRequest;
 import com.example.quanlydetai.service.HoiDongService;
@@ -8,6 +9,7 @@ import com.example.quanlydetai.service.ReferenceDataService;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,7 +46,7 @@ public class HoiDongController {
         if (!m.containsAttribute("form"))
             m.addAttribute("form", new HoiDongRequest(null, null, null, List.of()));
         options(m);
-        m.addAttribute("councils", councils.all());
+        add(m, "councils", councils.all((Pageable) m.getAttribute("pageRequest")));
         return "truongkhoa/councils";
     }
 

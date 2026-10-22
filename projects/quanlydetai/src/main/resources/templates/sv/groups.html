@@ -79,6 +79,8 @@
 <button name="accept" value="false" class="button button-danger">Từ chối</button>
 </form>
 </div>
+<div th:replace="~{layout/pagination :: pager(${groupsPage}, '/student/groups', 'page')}"></div>
+<div th:replace="~{layout/pagination :: pager(${invitationsPage}, '/student/groups', 'invitationsPage')}"></div>
 </main>
 </body>
 </html>

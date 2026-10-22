@@ -11,11 +11,13 @@ import com.example.quanlydetai.entity.KetQuaDeTai;
 import com.example.quanlydetai.entity.Nhom;
 import com.example.quanlydetai.entity.ThanhVienNhom;
 import com.example.quanlydetai.entity.ThanhVienNhomId;
+import com.example.quanlydetai.repository.BaoCaoRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 import com.example.quanlydetai.security.CurrentUserService;
 import com.example.quanlydetai.storage.ReportStorageService;
 
 import org.slf4j.*;
+import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -34,11 +36,15 @@ public class BaoCaoService {
     private final AcademicRules rules;
     private final ReportStorageService storage;
 
+    private final BaoCaoRepository repository;
+
     public BaoCaoService(
             CurrentUserService currentUser,
             JpaEntityRepository entities,
             AcademicRules rules,
-            ReportStorageService storage) {
+            ReportStorageService storage,
+            BaoCaoRepository repository) {
+        this.repository = repository;
         this.currentUser = currentUser;
         this.entities = entities;
         this.rules = rules;
@@ -88,17 +94,7 @@ public class BaoCaoService {
                             }
                     }
                 });
-        int version =
-                entities
-                                .query(
-                                        "select b from BaoCao b where b.maNhom=?1",
-                                        BaoCao.class,
-                                        group)
-                                .stream()
-                                .mapToInt(BaoCao::getLanNop)
-                                .max()
-                                .orElse(0)
-                        + 1;
+        int version = repository.lastVersion(group) + 1;
         BaoCao b = new BaoCao();
         b.setMaBc(token);
         b.setMaNhom(group);
@@ -111,42 +107,25 @@ public class BaoCaoService {
 
     @PreAuthorize("hasRole('SV')")
     public List<BaoCaoResponse> mine() {
-        String sv = currentUser.student();
-        return entities
-                .query(
-                        "select b from BaoCao b where b.maNhom in (select m.maNhom from"
-                                + " ThanhVienNhom m where m.maSV=?1) order by b.ngayNop desc",
-                        BaoCao.class,
-                        sv)
-                .stream()
-                .map(this::view)
-                .toList();
+        return mine(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('SV')")
+    public Page<BaoCaoResponse> mine(Pageable page) {
+        Paging.check(page);
+        return repository.mine(currentUser.student(), page);
     }
 
     @PreAuthorize("hasRole('GV')")
     public List<BaoCaoResponse> assigned() {
+        return assigned(Paging.defaults()).getContent();
+    }
+
+    @PreAuthorize("hasRole('GV')")
+    public Page<BaoCaoResponse> assigned(Pageable page) {
+        Paging.check(page);
         String gv = currentUser.teacher();
-        boolean dean = currentUser.isDean(gv);
-        var list = entities.query("select b from BaoCao b order by b.ngayNop desc", BaoCao.class);
-        return list.stream()
-                .filter(
-                        b -> {
-                            Nhom n = entities.require(Nhom.class, b.getMaNhom());
-                            String topic = n.getMaDeTai();
-                            return dean
-                                    || entities.find(GvhdDeTai.class, new GvhdDeTaiId(gv, topic))
-                                            != null
-                                    || entities.find(GvpbDeTai.class, new GvpbDeTaiId(gv, topic))
-                                            != null
-                                    || entities.exists(
-                                            "select m.maGV from ThanhVienHoiDong m where m.maGV=?1"
-                                                + " and m.maHd in (select h.maHd from HoiDongDeTai"
-                                                + " h where h.maDeTai=?2)",
-                                            gv,
-                                            topic);
-                        })
-                .map(this::view)
-                .toList();
+        return repository.assigned(gv, currentUser.isDean(gv), page);
     }
 
     public ReportStorageService.Download download(String id) {
@@ -176,31 +155,15 @@ public class BaoCaoService {
         throw new AccessDeniedException("Bạn không được xem báo cáo của nhóm này.");
     }
 
-    List<BaoCaoResponse> forTopic(String topic) {
-        return entities
-                .query(
-                        "select b from BaoCao b where b.maNhom in (select n.maNhom from Nhom n"
-                                + " where n.maDeTai=?1) order by b.lanNop desc",
-                        BaoCao.class,
-                        topic)
-                .stream()
-                .map(this::view)
-                .toList();
+    boolean hasForTopic(String topic) {
+        return repository.existsByNhom_MaDeTai(topic);
     }
 
-    private BaoCaoResponse view(BaoCao b) {
-        Nhom n = entities.require(Nhom.class, b.getMaNhom());
-        DeTai t = entities.require(DeTai.class, n.getMaDeTai());
-        String key = b.getFileDinhKem();
-        String ext = key.substring(key.lastIndexOf('.') + 1);
-        return new BaoCaoResponse(
-                b.getMaBc(),
-                b.getMaNhom(),
-                n.getTenNhom(),
-                t.getMaDeTai(),
-                t.getTenDeTai(),
-                b.getLanNop(),
-                ext,
-                b.getNgayNop());
+    Map<String, List<BaoCaoResponse>> latestForTopics(List<String> topics) {
+        var result = new HashMap<String, List<BaoCaoResponse>>();
+        if (!topics.isEmpty())
+            for (var b : repository.latestForTopics(topics))
+                result.computeIfAbsent(b.topic(), ignored -> new ArrayList<>()).add(b);
+        return result;
     }
 }
