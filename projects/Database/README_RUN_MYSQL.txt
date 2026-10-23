@@ -18,8 +18,9 @@ Mo tung script trong MySQL Workbench va Execute All theo dung thu tu:
 7. 07_department_review.sql
 8. 08_topic_review_deadline.sql
 9. 09_department_supervisor_assignment.sql
+10. 10_read_query_indexes.sql
 
-Docker Compose khoi tao database moi bang cung bo script 01-09.
+Docker Compose khoi tao database moi bang cung bo script 01-10.
 Xem ../../docs/LOCAL_TEST.md de chay ung dung va khoi tao Admin.
 Bo du lieu thuc hanh la tuy chon: ../../docs/SAMPLE_DATA.md.
 
@@ -31,7 +32,8 @@ Cac script PowerShell duoi day ap dung cho MySQL Docker cua du an:
 - Da co 01-06: ../../tools/Update-DepartmentReview.ps1
 - Da co 01-07: ../../tools/Update-TopicReviewDeadline.ps1
 - Da co 01-08: sao luu, dung web va chay 09_department_supervisor_assignment.sql
-Thuc hien cac buoc con thieu theo thu tu. Cac script PowerShell nang cap tu sao luu; SQL 09 chay thu cong sau khi sao luu.
+- Da co 01-09: sao luu va chay 10_read_query_indexes.sql (chi them index).
+Thuc hien cac buoc con thieu theo thu tu. Cac script PowerShell nang cap tu sao luu; SQL 09/10 chay thu cong sau khi sao luu.
 Huong dan SQL 09: ../../docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md.
 MySQL cai tren may: tu sao luu va chay migration con thieu trong Workbench.
 Huong dan chi tiet: ../../docs/LOCAL_TEST.md.
@@ -42,7 +44,7 @@ SO DO CHUAN
 - USE_CASE_FIT.drawio: tac nhan va chuc nang.
 - ../../docs/DATABASE_DICTIONARY.md: cot, khoa va rang buoc.
 
-KIEM TRA SAU SQL 01-09
+KIEM TRA SAU SQL 01-10
 ---------------------
 USE quanlydetai;
 SHOW FULL TABLES;
