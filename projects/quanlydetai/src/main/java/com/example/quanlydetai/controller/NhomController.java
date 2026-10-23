@@ -9,14 +9,12 @@ import com.example.quanlydetai.service.NhomService;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.*;
 
 @Controller
 public class NhomController {
@@ -83,7 +81,17 @@ public class NhomController {
             @PathVariable String id,
             @RequestParam boolean accept,
             @RequestParam(defaultValue = "") String reason,
+            @RequestParam(defaultValue = "0") int registrationsPage,
+            @RequestParam(defaultValue = "25") int size,
             RedirectAttributes flash) {
-        return perform("/dean/approvals", flash, () -> groups.review(id, accept, reason));
+        String result = perform("/dean/approvals", flash, () -> groups.review(id, accept, reason));
+        if (flash.getFlashAttributes().containsKey("loi")) {
+            flash.addFlashAttribute("registrationErrorId", id);
+            flash.addFlashAttribute("registrationReason", reason);
+            flash.addAttribute("registrationsPage", registrationsPage);
+            flash.addAttribute("size", size);
+            return result + "#registration-" + id;
+        }
+        return result;
     }
 }

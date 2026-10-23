@@ -196,15 +196,19 @@ public class NhomService {
         entities.flush();
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void review(String registration, boolean accept, String reason) {
         String dean = currentUser.dean();
-        DangKyDeTai initial = entities.require(DangKyDeTai.class, registration);
-        Nhom preliminary = entities.require(Nhom.class, initial.getMaNhom());
-        entities.lock(DotDangKy.class, preliminary.getMaDot());
-        DeTai t = entities.lock(DeTai.class, initial.getMaDeTai());
-        Nhom n = entities.lock(Nhom.class, initial.getMaNhom());
+        // Read only IDs before waiting: do not cache a stale pending decision or group.
+        var initial = entities.query(
+                "select r.maNhom,r.maDeTai,n.maDot from DangKyDeTai r, Nhom n"
+                        + " where r.maNhom=n.maNhom and r.id=?1", Object[].class, registration);
+        rules.check(!initial.isEmpty(), "Không tìm thấy dữ liệu yêu cầu.");
+        Object[] ids = initial.getFirst();
+        entities.lock(DotDangKy.class, (String) ids[2]);
+        DeTai t = entities.lock(DeTai.class, (String) ids[1]);
+        Nhom n = entities.lock(Nhom.class, (String) ids[0]);
         DangKyDeTai r = entities.lock(DangKyDeTai.class, registration);
         rules.check("ChoDuyet".equals(r.getTrangThai()), "Đăng ký đã được xử lý.");
         rules.check(

@@ -356,7 +356,7 @@ public class DeTaiService {
         return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGBOMON')")
     public void reviewDepartment(String id, boolean approve, List<String> supervisors) {
         String department = currentUser.departmentHead();
@@ -391,6 +391,20 @@ public class DeTaiService {
                         gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
             }
             teachers.requireDepartmentSupervisors(distinct, department);
+            // The period lock serializes approvals. READ_COMMITTED ensures the count
+            // sees the previous approval after waiting for that lock on MySQL.
+            for (String gv : distinct) {
+                long assigned = entities.query(
+                        "select count(h) from GvhdDeTai h, DeTai t"
+                                + " where h.maDeTai=t.maDeTai and h.maGV=?1 and t.maDot=?2"
+                                + " and t.maDeTai<>?3 and t.trangThai<>'Huy'"
+                                + " and (t.trangThai<>'Nhap' or exists"
+                                + " (select r.maDeTai from DuyetBoMon r where r.maDeTai=t.maDeTai))",
+                        Long.class, gv, period, id).getFirst();
+                rules.check(assigned < AcademicRules.MAX_SUPERVISED_TOPICS_PER_PERIOD,
+                        "Giảng viên " + gv + " đã hướng dẫn đủ 3 đề tài trong đợt này."
+                                + " Vui lòng chọn giảng viên khác.");
+            }
             entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
                     .forEach(entities::remove);
             entities.flush();

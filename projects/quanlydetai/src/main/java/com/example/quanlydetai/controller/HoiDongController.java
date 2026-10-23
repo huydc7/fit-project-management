@@ -10,7 +10,6 @@ import com.example.quanlydetai.service.ReferenceDataService;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -42,10 +41,24 @@ public class HoiDongController {
     }
 
     @GetMapping("/dean/councils")
-    public String councilPage(Model m) {
+    public String councilPage(@RequestParam(defaultValue = "") String topic, Model m) {
+        var targets = councils.topicOptions();
+        if (m.containsAttribute("editingId")) {
+            var form = (HoiDongRequest) m.getAttribute("form");
+            targets = targets.stream().filter(t -> t.period().equals(form.period())).toList();
+        }
+        m.addAttribute("topicOptions", targets);
+        m.addAttribute("selectedTopic", topic);
+        var selected = targets.stream().filter(t -> t.id().equals(topic)).findFirst();
+        m.addAttribute("selectedTopicLabel", selected.map(t -> t.label()).orElse(topic));
+        if (!topic.isBlank() && selected.isEmpty()) {
+            m.addAttribute("loi", "Đề tài không còn khả dụng để lập hội đồng: cần có nhóm được duyệt và chưa có điểm.");
+            m.addAttribute("selectedTopic", "");
+        }
         if (!m.containsAttribute("form"))
-            m.addAttribute("form", new HoiDongRequest(null, null, null, List.of()));
-        options(m);
+            m.addAttribute("form", new HoiDongRequest(selected.map(t -> t.period()).orElse(null), null, null, List.of()));
+        m.addAttribute("periods", referenceData.periods());
+        m.addAttribute("teachers", selected.isPresent() ? councils.candidates(topic) : List.of());
         add(m, "councils", councils.all((Pageable) m.getAttribute("pageRequest")));
         return "truongkhoa/councils";
     }
@@ -55,28 +68,27 @@ public class HoiDongController {
             @Valid @ModelAttribute("form") HoiDongRequest f,
             BindingResult errors,
             Model m,
+            @RequestParam(defaultValue = "") String topic,
             RedirectAttributes flash) {
-        if (errors.hasErrors()) return councilPage(m);
+        if (topic.isBlank()) {
+            m.addAttribute("loi", "Hãy chọn đề tài trước khi lập hội đồng.");
+            return councilPage(topic, m);
+        }
+        if (errors.hasErrors()) return councilPage(topic, m);
         return formAction(
-                m, flash, "/dean/councils", () -> councils.create(f), () -> councilPage(m));
+                m, flash, "/dean/councils", () -> councils.createForTopic(topic, f), () -> councilPage(topic, m));
     }
 
     @PostMapping("/dean/councils/{id}/finalize")
-    public String finalizeCouncil(@PathVariable String id, RedirectAttributes flash) {
-        return perform("/dean/councils", flash, () -> councils.finalizeCouncil(id));
-    }
-
-    private void options(Model m) {
-        m.addAttribute("periods", referenceData.periods());
-        m.addAttribute("departments", referenceData.departments());
-        m.addAttribute("teachers", referenceData.teachers());
+    public String finalizeCouncil(@PathVariable String id, @RequestParam(defaultValue = "") String topic, RedirectAttributes flash) {
+        return perform("/dean/councils", flash, () -> councils.finalizeForTopic(id, topic));
     }
 
     @GetMapping("/dean/councils/{id}/edit")
-    public String edit(@PathVariable String id, Model m) {
+    public String edit(@PathVariable String id, @RequestParam(defaultValue = "") String topic, Model m) {
         m.addAttribute("form", councils.editForm(id));
         m.addAttribute("editingId", id);
-        return councilPage(m);
+        return councilPage(topic, m);
     }
 
     @PostMapping("/dean/councils/{id}/edit")
@@ -85,11 +97,13 @@ public class HoiDongController {
             @Valid @ModelAttribute("form") HoiDongRequest f,
             BindingResult errors,
             Model m,
+            @RequestParam(defaultValue = "") String topic,
             RedirectAttributes flash) {
         m.addAttribute("editingId", id);
-        if (errors.hasErrors()) return councilPage(m);
+        String context = topic;
+        if (errors.hasErrors()) return councilPage(context, m);
         return formAction(
-                m, flash, "/dean/councils", () -> councils.update(id, f), () -> councilPage(m));
+                m, flash, "/dean/councils", () -> councils.updateForTopic(id, topic, f), () -> councilPage(context, m));
     }
 
     @PostMapping("/dean/councils/{id}/delete")

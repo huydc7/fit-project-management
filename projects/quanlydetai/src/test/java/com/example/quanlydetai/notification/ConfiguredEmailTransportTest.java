@@ -8,6 +8,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.http.*;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -18,8 +19,9 @@ class ConfiguredEmailTransportTest {
     @Test
     void smtpSendsAnIndividualMessageAndPropagatesFailure() {
         var smtp = mock(JavaMailSender.class);
-        ObjectProvider<JavaMailSender> provider = mock(ObjectProvider.class);
-        when(provider.getIfAvailable()).thenReturn(smtp);
+        var beans = new StaticListableBeanFactory();
+        beans.addBean("smtp", smtp);
+        ObjectProvider<JavaMailSender> provider = beans.getBeanProvider(JavaMailSender.class);
         var transport = new ConfiguredEmailTransport("smtp", "fit@example.test", "", provider);
         assertThat(transport.send("id", "sv@example.test", "Kết quả", "Điểm: 6.75"))
                 .isEqualTo("smtp-accepted");
@@ -43,7 +45,7 @@ class ConfiguredEmailTransportTest {
                         "brevo",
                         "fit@example.test",
                         "test-key",
-                        mock(ObjectProvider.class),
+                        new StaticListableBeanFactory().getBeanProvider(JavaMailSender.class),
                         builder);
         server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
                 .andExpect(method(HttpMethod.POST))

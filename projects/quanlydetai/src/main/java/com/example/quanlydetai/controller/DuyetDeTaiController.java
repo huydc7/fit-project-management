@@ -1,6 +1,5 @@
 package com.example.quanlydetai.controller;
 
-import static com.example.quanlydetai.controller.support.FormFeedback.*;
 import static com.example.quanlydetai.controller.support.PageResponses.add;
 
 import com.example.quanlydetai.dto.TopicSearch;
@@ -10,12 +9,10 @@ import com.example.quanlydetai.service.HoiDongService;
 import com.example.quanlydetai.service.NhomService;
 
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
 
 @Controller
 public class DuyetDeTaiController {
@@ -46,9 +43,8 @@ public class DuyetDeTaiController {
                 groups.pending((Pageable) m.getAttribute("registrationPageRequest")));
         add(m, "results", scores.allResults((Pageable) m.getAttribute("resultPageRequest")));
         m.addAttribute(
-                "councils",
-                councils.optionsForPeriods(
-                        topicPage.stream().map(t -> t.periodId()).distinct().toList()));
+                "councilsByTopic",
+                councils.optionsForTopics(topicPage.stream().map(t -> t.id()).toList()));
         return "truongkhoa/approvals";
     }
 

@@ -98,12 +98,30 @@ public class DotDangKyService {
             if (!canDeadlineGvpb && f.getDeadlineGvpbNopDiem() != null) {
                 loi.add("Đợt MonHoc/NCKH không được đặt hạn chót GVPB nộp điểm.");
             }
+            if (canDeadlineGvpb
+                    && f.getDeadlineGvpbNopDiem() != null
+                    && f.getEndSV() != null
+                    && !f.getDeadlineGvpbNopDiem().isAfter(f.getEndSV())) {
+                loi.add("Hạn chót GVPB nộp điểm phải sau thời gian kết thúc đăng ký của sinh viên.");
+            }
             boolean isKLTN = f.getLoai().equals("KLTN");
             if (isKLTN && f.getTimeBcHd() == null) {
                 loi.add("Đợt loại KLTN bắt buộc phải có ngày báo cáo hội đồng.");
             }
             if (!isKLTN && f.getTimeBcHd() != null) {
                 loi.add("Chỉ đợt loại KLTN mới được đặt ngày báo cáo hội đồng.");
+            }
+            if (isKLTN
+                    && f.getTimeBcHd() != null
+                    && f.getEndSV() != null
+                    && !f.getTimeBcHd().isAfter(f.getEndSV())) {
+                loi.add("Ngày báo cáo hội đồng phải sau thời gian kết thúc đăng ký của sinh viên.");
+            }
+            if (isKLTN
+                    && f.getDeadlineGvpbNopDiem() != null
+                    && f.getTimeBcHd() != null
+                    && !f.getDeadlineGvpbNopDiem().isBefore(f.getTimeBcHd())) {
+                loi.add("Hạn chót GVPB nộp điểm phải trước thời điểm báo cáo hội đồng.");
             }
         }
         return loi;

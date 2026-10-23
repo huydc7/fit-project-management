@@ -128,6 +128,7 @@
 
 - `(Ma_Dot)` → `DOT_DANG_KY(Ma_Dot)`
 
+
 ## HOI_DONG_DE_TAI
 
 | Cột | Kiểu SQL | Cho phép NULL | Khóa/liên kết |

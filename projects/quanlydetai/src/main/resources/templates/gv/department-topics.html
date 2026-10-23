@@ -1,5 +1,6 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}"><head><title>Duyệt đề tài bộ môn</title></head><body><main>
 <h1 class="page-title">Duyệt đề tài bộ môn</h1>
+<p class="muted">Mỗi giảng viên hướng dẫn tối đa 3 đề tài trong một đợt, kể cả đồng hướng dẫn. Đề tài đã hủy không tính vào giới hạn.</p>
 <p class="muted">Trưởng bộ môn duyệt nội dung và chọn 1–2 GVHD thuộc bộ môn mình quản lý; Trưởng khoa xác nhận danh sách rồi công bố. Nội dung sửa sau duyệt phải được duyệt lại.</p>
 <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}"></div><div th:if="${loi}" class="notice notice-error" th:text="${loi}"></div>
 <div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>

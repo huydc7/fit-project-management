@@ -114,6 +114,7 @@
           <div class="span-4 truong-kltn" style="display:none;">
             <label class="field-label" for="timeBcHd">Ngày báo cáo hội đồng</label>
 <input type="datetime-local" class="field" th:field="*{timeBcHd}">
+            <p class="muted">Hạn GVPB nộp điểm phải trước thời điểm báo cáo hội đồng.</p>
           </div>
 
           <div class="span-full">
@@ -124,10 +125,20 @@
     </div>
   <script th:inline="javascript">
     const select = document.getElementById('loai');
+    function capNhatTruong(selector, hienThi) {
+      document.querySelectorAll(selector).forEach(el => {
+        el.style.display = hienThi ? '' : 'none';
+        el.querySelectorAll('input').forEach(input => {
+          input.disabled = !hienThi;
+          input.required = hienThi;
+          if (!hienThi) input.value = '';
+        });
+      });
+    }
     function capNhatHienThi() {
       const loai = select.value;
-      document.querySelectorAll('.truong-tlcn-kltn').forEach(el => el.style.display = (loai === 'TLCN' || loai === 'KLTN') ? '' : 'none');
-      document.querySelectorAll('.truong-kltn').forEach(el => el.style.display = (loai === 'KLTN') ? '' : 'none');
+      capNhatTruong('.truong-tlcn-kltn', loai === 'TLCN' || loai === 'KLTN');
+      capNhatTruong('.truong-kltn', loai === 'KLTN');
     }
     select.addEventListener('change', capNhatHienThi);
     capNhatHienThi();

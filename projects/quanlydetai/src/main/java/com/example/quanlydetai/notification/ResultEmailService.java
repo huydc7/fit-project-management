@@ -76,7 +76,8 @@ public class ResultEmailService {
                             + "\n\nKhoa Công nghệ thông tin - Hệ thống quản lý đề tài sinh viên");
             mail.setState("PENDING");
             mail.setCreatedAt(rules.now());
-            mail.setNextAttemptAt(rules.now());
+            // SQL DATETIME has second precision; rounding up must not delay an immediate claim.
+            mail.setNextAttemptAt(rules.now().withNano(0));
             emails.save(mail);
         }
         emails.flush();
@@ -186,6 +187,6 @@ public class ResultEmailService {
         rules.check("FAILED".equals(row.getState()), "Chỉ gửi lại email đã thất bại.");
         row.setAttempts(0);
         row.setState("PENDING");
-        row.setNextAttemptAt(rules.now());
+        row.setNextAttemptAt(rules.now().withNano(0));
     }
 }

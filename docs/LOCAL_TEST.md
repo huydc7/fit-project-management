@@ -1,5 +1,11 @@
 # Chạy và kiểm thử local
 
+**Hai bản sửa mới dùng cấu trúc SQL 01–10, không cần migration mới.**
+
+Thử `/dean/councils`: chọn đề tài có nhóm, chưa chấm điểm; GVHD/GVPB không hiện trong cả ba vai trò. Bấm Tạo, chốt và gán: thành công thì hội đồng DaChot và có phân công, lỗi thì không lưu hội đồng. Nháp cũ chọn đề tài trước khi sửa và khi chốt; thử đổi GVPB thành thành viên trước khi chốt, phải báo lỗi và giữ DangLap.
+
+Kiểm tra giới hạn 3 đề tài/GV/đợt. Từ chối đăng ký với lý do trống/khoảng trắng phải báo lỗi và giữ ChoDuyet. Từ chối hợp lệ: chỉ nhóm trưởng thấy lý do trong Thông báo và trang chủ; thành viên khác, nhóm khác, GV/Admin không thấy qua HTML, API, tìm kiếm hoặc tổng phân trang. THONG_BAO không có dòng mới; lịch sử nằm trong DANG_KY_DE_TAI. Chấp thuận không bắt buộc lý do và không sinh thông báo từ chối.
+
 Ứng dụng dùng MySQL thật ở cả hai cách chạy. MySQL Docker ở cổng 3307; MySQL cài trên máy thường ở cổng 3306. Hai database độc lập. Với cấu hình mặc định, website Docker chạy ở http://localhost:8080.
 
 ## Docker
@@ -37,7 +43,7 @@ Tạo connection Standard TCP/IP: hostname 127.0.0.1, port 3307, username từ D
 
 ## MySQL đã cài + Java
 
-Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–10 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ cần sao lưu rồi chạy các script còn thiếu theo thứ tự đến 09; DB đủ 01–08 chỉ chạy `09_department_supervisor_assignment.sql`, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
+Dùng JDK 21 và MySQL 8.0.16+. Nạp toàn bộ script 01–10 từ projects/Database vào DB phát triển. Kiểm tra Output không có lỗi. Database cũ cần sao lưu rồi chạy các script còn thiếu theo thứ tự đến 10; DB đủ 01–08 chạy tiếp SQL 09, 10, không đổi Hibernate thành create/update. Docker có script `tools/Update-RubricDatabase.ps1` sao lưu trước migration. Đăng ký đề tài mới cần 3–5 SV; xem [hướng dẫn triển khai](HUONG_DAN_DEPLOY_TUNG_BUOC.md).
 
 Dùng .env.native riêng để giữ cấu hình Docker:
 
@@ -95,12 +101,12 @@ Chạy `tools/Start-Local.ps1 -Docker -LocalEmail` để bật SMTP vào Mailpit
 
 ## Nâng cấp thời hạn duyệt và phân công GVHD (SQL 08–09)
 
-Database có 01–07 cần chạy `tools/Update-TopicReviewDeadline.ps1` (backup và áp dụng 08), sau đó sao lưu và chạy `09_department_supervisor_assignment.sql` theo [hướng dẫn phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi rebuild. Database đã có 01–08 chỉ cần bước 09. Không chạy lại migration đã có hoặc nhập lại mẫu để nâng cấp. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) cho sửa hội đồng, gia hạn và quy tắc duyệt trước Begin_SV. Thử cả trước, đúng và sau Begin_SV: chỉ thời điểm trước mốc mới được duyệt/công bố đề tài.
+Database có 01–07 cần chạy `tools/Update-TopicReviewDeadline.ps1` (backup và áp dụng 08), sau đó sao lưu và chạy `09_department_supervisor_assignment.sql` theo [hướng dẫn phân công GVHD](DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi rebuild. Database đã có 01–08 cần SQL 09, 10 trước khi chạy code hiện tại. Không chạy lại migration đã có hoặc nhập lại mẫu để nâng cấp. Xem [PRODUCT_RULES.md](PRODUCT_RULES.md) cho sửa hội đồng, gia hạn và quy tắc duyệt trước Begin_SV. Thử cả trước, đúng và sau Begin_SV: chỉ thời điểm trước mốc mới được duyệt/công bố đề tài.
 
 
 ## Nghiệm thu truy vấn danh sách (SQL 10)
 
-Với DB đã đủ 01–09, sao lưu rồi chạy `projects/Database/10_read_query_indexes.sql` bằng Workbench trên schema `quanlydetai`. Script chỉ thêm index, có thể chạy lại; không nạp lại mẫu, không xóa volume. Code vẫn chạy trên schema 09; index 10 hỗ trợ hiệu năng và không thêm cột bắt buộc. Volume mới sẽ tự chạy 01–10 qua Compose. Dừng web lúc chạy migration để giảm tranh chấp DDL.
+Với DB đã đủ 01–09, sao lưu rồi chạy `projects/Database/10_read_query_indexes.sql` bằng Workbench trên schema `quanlydetai`. Script chỉ thêm index, có thể chạy lại; không nạp lại mẫu, không xóa volume. Index 10 hỗ trợ hiệu năng và không thêm cột bắt buộc; hai bản sửa mới không cần migration. Volume mới sẽ tự chạy 01–10 qua Compose. Dừng web lúc chạy migration để giảm tranh chấp DDL.
 
 Kiểm tra bộ lọc đề tài theo từ khóa không dấu, bộ môn, đợt, loại và trạng thái cùng lúc; chuyển trang phải giữ bộ lọc. Trang duyệt phải chuyển riêng danh sách đề tài/đăng ký/kết quả. Thử SV, GVHD, GVPB, thành viên hội đồng, GV không liên quan và Trưởng bộ môn để xác nhận tổng số và dữ liệu không vượt quyền. Danh sách tài khoản giữ chức vụ; báo cáo giữ lịch sử và chấm trên phiên bản mới nhất.
 

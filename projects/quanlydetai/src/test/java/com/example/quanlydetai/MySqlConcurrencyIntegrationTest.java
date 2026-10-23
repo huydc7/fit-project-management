@@ -33,6 +33,7 @@ import java.util.concurrent.*;
 class MySqlConcurrencyIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired NhomService groups;
+    @Autowired com.example.quanlydetai.service.DeTaiService topics;
     @Autowired PasswordEncoder encoder;
     private static String hash;
 
@@ -118,6 +119,12 @@ class MySqlConcurrencyIntegrationTest {
                             boolean autoCommit = connection.getAutoCommit();
                             connection.setAutoCommit(false);
                             try (var statement = connection.createStatement()) {
+                                statement.executeUpdate("DELETE FROM THONG_BAO WHERE Ma_TK='QC_GV'");
+                                statement.executeUpdate("DELETE FROM DUYET_BO_MON WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
+                                statement.executeUpdate("DELETE FROM GVHD_DETAI WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
+                                statement.executeUpdate("DELETE FROM DE_TAI WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
+                                statement.executeUpdate("DELETE FROM DOT_DANG_KY WHERE Ma_Dot='QC_QUOTA'");
+                                statement.executeUpdate("DELETE FROM TRUONG_BO_MON WHERE Ma_Bo_Mon='QC_BM'");
                                 statement.executeUpdate(
                                         "DELETE FROM DANG_KY_DE_TAI WHERE Ma_Nhom IN"
                                                 + " ('QC_N1','QC_N2')");
@@ -190,6 +197,98 @@ class MySqlConcurrencyIntegrationTest {
     }
 
     private record Request(String student, String group, String topic) {}
+
+    @Test
+    void concurrentRejectionsCommitOnlyOneDecisionWithoutPublicNotificationRows() throws Exception {
+        assertThat(attempt(new Request("QC_S1", "QC_N1", "QC_DT1"), new CountDownLatch(0), new CountDownLatch(0))).isTrue();
+        String registration = jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group='QC_N1'", String.class);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var first = pool.submit(() -> rejectRegistration(registration, ready, start));
+            var second = pool.submit(() -> rejectRegistration(registration, ready, start));
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO WHERE Ma_TK='QC_GV'", Integer.class)).isZero();
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DANG_KY_DE_TAI WHERE Ma_DK=? AND Trang_Thai='TuChoi'", Integer.class, registration)).isEqualTo(1);
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    private boolean rejectRegistration(String registration, CountDownLatch ready, CountDownLatch start) throws Exception {
+        var principal = new AccountPrincipal("QC_GV", "qc.gv", hash, true, "QC_GV", null,
+                List.of(new SimpleGrantedAuthority("ROLE_GV"), new SimpleGrantedAuthority("ROLE_TRUONGKHOA")));
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        SecurityContextHolder.setContext(context);
+        try {
+            ready.countDown();
+            if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start barrier timed out");
+            groups.review(registration, false, "QC private rejection");
+            return true;
+        } catch (BusinessException rejected) {
+            assertThat(rejected).hasMessageContaining("đã được xử lý");
+            return false;
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    void concurrentDepartmentApprovalsCannotExceedThreeSupervisedTopics() throws Exception {
+        var now = LocalDateTime.now();
+        jdbc.update("INSERT INTO TRUONG_BO_MON(Ma_Bo_Mon,Ma_GV,Dang_Giu_Chuc) VALUES ('QC_BM','QC_GV',true)");
+        jdbc.update("INSERT INTO DOT_DANG_KY(Ma_Dot,Ma_Truong_Khoa,Ten_Dot_Dang_Ky,Loai,Begin_GV,End_GV,Begin_SV,End_SV)"
+                + " VALUES ('QC_QUOTA','QC_GV','Quota concurrency test','MonHoc',?,?,?,?)",
+                now.minusDays(1), now.plusDays(1), now.plusDays(2), now.plusDays(5));
+        for (int i = 1; i <= 4; i++)
+            jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                    + " VALUES (?,?,'Quota race','QC_BM','QC_QUOTA','QC_GV','Nhap',?)", "QC_Q" + i, "QC_Q" + i, now);
+        assertThat(approveQuotaTopic("QC_Q1", new CountDownLatch(0), new CountDownLatch(0))).isTrue();
+        assertThat(approveQuotaTopic("QC_Q2", new CountDownLatch(0), new CountDownLatch(0))).isTrue();
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var first = pool.submit(() -> approveQuotaTopic("QC_Q3", ready, start));
+            var second = pool.submit(() -> approveQuotaTopic("QC_Q4", ready, start));
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI h JOIN DE_TAI t ON t.Ma_De_Tai=h.Ma_De_Tai WHERE t.Ma_Dot='QC_QUOTA'", Integer.class)).isEqualTo(3);
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON r JOIN DE_TAI t ON t.Ma_De_Tai=r.Ma_De_Tai WHERE t.Ma_Dot='QC_QUOTA'", Integer.class)).isEqualTo(3);
+        } finally {
+            start.countDown();
+            pool.shutdownNow();
+            assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        }
+    }
+
+    private boolean approveQuotaTopic(String topic, CountDownLatch ready, CountDownLatch start) throws Exception {
+        var principal = new AccountPrincipal("QC_GV", "qc.gv", hash, true, "QC_GV", null,
+                List.of(new SimpleGrantedAuthority("ROLE_GV"), new SimpleGrantedAuthority("ROLE_TRUONGBOMON")));
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        SecurityContextHolder.setContext(context);
+        try {
+            ready.countDown();
+            if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start barrier timed out");
+            topics.reviewDepartment(topic, true, List.of("QC_GV"));
+            return true;
+        } catch (BusinessException rejected) {
+            assertThat(rejected).hasMessageContaining("đủ 3 đề tài");
+            return false;
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
 
     private void assertOneWinner(Request first, Request second) throws Exception {
         var ready = new CountDownLatch(2);

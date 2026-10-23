@@ -19,3 +19,7 @@ tmp/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local-only manual testing documents.
+/Kiem_Thu_Thu_Cong_Chi_Tiet_QuanLyDeTai.txt
+/docs/KIEM_THU_THU_CONG_LOCAL_20261024.md

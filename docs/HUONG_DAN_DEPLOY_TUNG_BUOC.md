@@ -62,6 +62,7 @@ Trên **database cloud mới**, mở và chạy toàn bộ từng file theo th�
 07_department_review.sql
 08_topic_review_deadline.sql
 09_department_supervisor_assignment.sql
+10_read_query_indexes.sql
 ```
 
 Kiểm tra Action Output sau mỗi file. Script có DELIMITER nên chạy toàn bộ bằng Workbench hoặc mysql CLI hỗ trợ script, không dán từng đoạn thân trigger. Nếu gặp lỗi quyền CREATE ROUTINE/TRIGGER hoặc binary logging, kiểm tra cấu hình/quyền của Aiven trước khi tiếp tục; không bỏ các trigger để cho app chạy.

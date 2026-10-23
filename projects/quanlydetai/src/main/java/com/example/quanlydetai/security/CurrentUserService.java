@@ -4,13 +4,11 @@ import com.example.quanlydetai.entity.TaiKhoan;
 import com.example.quanlydetai.entity.TruongKhoa;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 
-import jakarta.persistence.*;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
 
 /** Actor IDs come exclusively from the authenticated session. */
 @Component

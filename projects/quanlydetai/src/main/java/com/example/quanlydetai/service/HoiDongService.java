@@ -2,6 +2,8 @@ package com.example.quanlydetai.service;
 
 import com.example.quanlydetai.dto.HoiDongRequest;
 import com.example.quanlydetai.dto.HoiDongResponse;
+import com.example.quanlydetai.dto.HoiDongTopicOption;
+import com.example.quanlydetai.dto.LuaChonResponse;
 import com.example.quanlydetai.dto.ThanhVienResponse;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
@@ -48,14 +50,29 @@ public class HoiDongService {
         this.teachers = teachers;
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void create(@jakarta.validation.Valid HoiDongRequest f) {
+        createDraft(f);
+    }
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public void createForTopic(String topic, @jakarta.validation.Valid HoiDongRequest f) {
+        currentUser.dean();
+        DeTai t = lockTopic(topic);
+        ungraded(t);
+        rules.check(t.getMaDot().equals(f.period()), "Đề tài và hội đồng phải cùng đợt.");
+        requireIndependent(topic, selectedMembers(f));
+        String id = createDraft(f);
+        finalizeCouncil(id);
+        assignCouncil(topic, id);
+    }
+
+    private String createDraft(HoiDongRequest f) {
         currentUser.dean();
         entities.lock(DotDangKy.class, f.period());
-        List<String> all = new ArrayList<>(f.members());
-        all.add(f.chair());
-        all.add(f.secretary());
+        List<String> all = selectedMembers(f);
         rules.check(
                 new HashSet<>(all).size() == all.size(),
                 "Chủ tịch, thư ký và các thành viên phải là những người khác nhau.");
@@ -75,14 +92,13 @@ public class HoiDongService {
                             : gv.equals(f.secretary()) ? "ThuKy" : "ThanhVien");
             entities.insert(m);
         }
+        return h.getMaHd();
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void finalizeCouncil(String id) {
-        currentUser.dean();
-        HoiDong h = entities.lock(HoiDong.class, id);
-        rules.check("DangLap".equals(h.getTrangThai()), "Hội đồng đã chốt.");
+        HoiDong h = editableCouncil(id);
         var members = members(id);
         rules.check(
                 members.size() >= 3
@@ -120,16 +136,27 @@ public class HoiDongService {
                         .toList());
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public void updateForTopic(String id, String topic, @jakarta.validation.Valid HoiDongRequest f) {
+        var h = editableCouncil(id);
+        rules.check(topic != null && !topic.isBlank(), "Hãy chọn đề tài trước khi sửa thành viên hội đồng.");
+        var period = entities.query("select t.maDot from DeTai t where t.maDeTai=?1", String.class, topic);
+        rules.check(!period.isEmpty() && h.getMaDot().equals(period.getFirst()), "Đề tài và hội đồng phải cùng đợt.");
+        ungraded(entities.lock(DeTai.class, topic));
+        requireIndependent(topic, selectedMembers(f));
+        update(id, f);
+    }
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void update(String id, @jakarta.validation.Valid HoiDongRequest f) {
         var h = editableCouncil(id);
         rules.check(
                 h.getMaDot().equals(f.period()),
                 "Không đổi đợt của hội đồng; hãy lập hội đồng mới nếu cần.");
-        List<String> all = new ArrayList<>(f.members());
-        all.add(f.chair());
-        all.add(f.secretary());
+        List<String> all = selectedMembers(f);
+
         rules.check(
                 new HashSet<>(all).size() == all.size(),
                 "Chủ tịch, thư ký và các thành viên phải là những người khác nhau.");
@@ -148,7 +175,7 @@ public class HoiDongService {
         }
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void deleteDraft(String id) {
         var h = editableCouncil(id);
@@ -183,7 +210,7 @@ public class HoiDongService {
                 "Chỉ sửa/xóa hội đồng đang lập và chưa phân công đề tài.");
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void assignReviewer(String topic, String teacher) {
         currentUser.dean();
@@ -213,7 +240,7 @@ public class HoiDongService {
         entities.insert(p);
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('TRUONGKHOA')")
     public void assignCouncil(String topic, String council) {
         currentUser.dean();
@@ -288,18 +315,14 @@ public class HoiDongService {
     }
 
     @PreAuthorize("hasRole('TRUONGKHOA')")
-    public List<HoiDongResponse> optionsForPeriods(List<String> periods) {
+    public Map<String, List<HoiDongResponse>> optionsForTopics(List<String> topics) {
         currentUser.dean();
-        return queries.options(periods).stream()
-                .map(
-                        h ->
-                                new HoiDongResponse(
-                                        h.getMaHd(),
-                                        h.getDot().getTenDotDangKy(),
-                                        h.getTrangThai(),
-                                        List.of(),
-                                        List.of()))
-                .toList();
+        var options = new HashMap<String, List<HoiDongResponse>>();
+        for (String topic : topics) options.put(topic, new ArrayList<>());
+        for (Object[] row : queries.eligibleForTopics(topics))
+            options.get((String) row[0]).add(new HoiDongResponse(
+                    (String) row[1], (String) row[2], "DaChot", List.of(), List.of()));
+        return options;
     }
 
     private List<ThanhVienHoiDong> members(String id) {
@@ -307,9 +330,53 @@ public class HoiDongService {
                 "select m from ThanhVienHoiDong m where m.maHd=?1", ThanhVienHoiDong.class, id);
     }
 
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public void finalizeForTopic(String id, String topic) {
+        currentUser.dean();
+        rules.check(topic != null && !topic.isBlank(), "Hãy chọn đề tài trước khi chốt hội đồng.");
+        DeTai t = lockTopic(topic);
+        ungraded(t);
+        HoiDong h = editableCouncil(id);
+        rules.check(t.getMaDot().equals(h.getMaDot()), "Đề tài và hội đồng phải cùng đợt.");
+        requireIndependent(topic, members(id).stream().map(ThanhVienHoiDong::getMaGV).toList());
+        finalizeCouncil(id);
+        assignCouncil(topic, id);
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public List<HoiDongTopicOption> topicOptions() {
+        currentUser.dean();
+        return queries.topicOptions();
+    }
+
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public List<LuaChonResponse> candidates(String topic) {
+        currentUser.dean();
+        ungraded(entities.require(DeTai.class, topic));
+        return queries.candidates(topic);
+    }
+
+    private List<String> selectedMembers(HoiDongRequest f) {
+        List<String> all = new ArrayList<>(f.members());
+        all.add(f.chair());
+        all.add(f.secretary());
+        return all;
+    }
+
+    private void requireIndependent(String topic, List<String> members) {
+        for (String teacher : members) {
+            rules.check(!entities.exists("select h.maGV from GvhdDeTai h where h.maDeTai=?1 and h.maGV=?2", topic, teacher),
+                    "GVHD không được làm Chủ tịch, Thư ký hoặc thành viên hội đồng của đề tài đang hướng dẫn.");
+            rules.check(!entities.exists("select p.maGV from GvpbDeTai p where p.maDeTai=?1 and p.maGV=?2", topic, teacher),
+                    "GVPB của đề tài phải độc lập với hội đồng.");
+        }
+    }
+
     private DeTai lockTopic(String id) {
-        DeTai t = entities.require(DeTai.class, id);
-        entities.lock(DotDangKy.class, t.getMaDot());
+        var period = entities.query("select t.maDot from DeTai t where t.maDeTai=?1", String.class, id);
+        rules.check(!period.isEmpty(), "Không tìm thấy đề tài.");
+        entities.lock(DotDangKy.class, period.getFirst());
         return entities.lock(DeTai.class, id);
     }
 

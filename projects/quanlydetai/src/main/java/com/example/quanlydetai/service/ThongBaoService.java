@@ -43,13 +43,7 @@ public class ThongBaoService {
     }
 
     public List<ThongBaoResponse> recent() {
-        currentUser.actor();
-        var account = entities.require(TaiKhoan.class, currentUser.actor().getAccountId());
-        boolean admin = "Admin".equals(account.getVaiTro());
-        boolean dean = account.getMaGV() != null && currentUser.isDean(account.getMaGV());
-        return queries.recentNotices().stream()
-                .map(t -> view(t, account.getMaTk(), admin, dean))
-                .toList();
+        return search("", PageRequest.of(0, 3)).getContent();
     }
 
     @Transactional
@@ -80,17 +74,14 @@ public class ThongBaoService {
         var account = entities.require(TaiKhoan.class, currentUser.actor().getAccountId());
         boolean admin = "Admin".equals(account.getVaiTro());
         boolean dean = account.getMaGV() != null && currentUser.isDean(account.getMaGV());
-        return queries.notices(q, page).map(t -> view(t, account.getMaTk(), admin, dean));
+        return queries.noticeFeed(q, account.getMaTk(), page).map(t -> view(t, account.getMaTk(), admin, dean));
     }
 
-    private ThongBaoResponse view(ThongBao t, String account, boolean admin, boolean dean) {
-        return new ThongBaoResponse(
-                t.getMaTb(),
-                t.getTieuDe(),
-                t.getNoiDung(),
-                t.getPhamVi(),
-                t.getNgayDang(),
-                admin || (dean && "Khoa".equals(t.getPhamVi()) && account.equals(t.getMaTk())));
+    private ThongBaoResponse view(Object[] row, String account, boolean admin, boolean dean) {
+        boolean privateNotice = (Boolean) row[6];
+        return new ThongBaoResponse((String) row[0], (String) row[1], (String) row[2], (String) row[3],
+                (java.time.LocalDateTime) row[4], !privateNotice
+                        && (admin || (dean && "Khoa".equals(row[3]) && account.equals(row[5]))));
     }
 
     private boolean canManage(ThongBao t) {
@@ -104,6 +95,7 @@ public class ThongBaoService {
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN','TRUONGKHOA')")
     public void update(String id, @jakarta.validation.Valid ThongBaoRequest f) {
+        if (id.startsWith("registration:")) throw new AccessDeniedException("Không được sửa/xóa lịch sử từ chối qua mục thông báo.");
         ThongBao t = entities.lock(ThongBao.class, id);
         if (!canManage(t)) throw new AccessDeniedException("Không được sửa thông báo này.");
         if ("NhaTruong".equals(f.scope())) currentUser.admin();
@@ -116,6 +108,7 @@ public class ThongBaoService {
     @Transactional
     @PreAuthorize("hasAnyRole('ADMIN','TRUONGKHOA')")
     public void delete(String id) {
+        if (id.startsWith("registration:")) throw new AccessDeniedException("Không được sửa/xóa lịch sử từ chối qua mục thông báo.");
         ThongBao t = entities.lock(ThongBao.class, id);
         if (!canManage(t)) throw new AccessDeniedException("Không được xóa thông báo này.");
         entities.remove(t);

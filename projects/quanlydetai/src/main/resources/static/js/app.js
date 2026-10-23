@@ -1,4 +1,20 @@
 (() => {
+  document.querySelectorAll('[data-registration-review]').forEach(form => {
+    const reason = form.elements.namedItem('reason');
+    const error = form.querySelector('[data-reason-error]');
+    reason.addEventListener('input', () => {
+      error.textContent = '';
+      reason.removeAttribute('aria-invalid');
+    });
+    form.addEventListener('submit', event => {
+      if (event.submitter?.value === 'false' && !reason.value.trim()) {
+        event.preventDefault();
+        error.textContent = 'Phải nhập lý do từ chối đăng ký của nhóm.';
+        reason.setAttribute('aria-invalid', 'true');
+        reason.focus();
+      }
+    });
+  });
   const toggle = document.querySelector('[data-menu-toggle]');
   const backdrop = document.querySelector('[data-menu-close]');
   const sidebar = document.getElementById('sidebar');

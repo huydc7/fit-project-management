@@ -231,7 +231,7 @@ class WorkflowIntegrationTest {
         var anonymous = mvc.perform(get("/api/v1/session/csrf")).andReturn();
         var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
         String token =
-                mapper.readTree(anonymous.getResponse().getContentAsString()).get("token").asText();
+                mapper.readTree(anonymous.getResponse().getContentAsString()).get("token").asString();
         var loggedIn =
                 mvc.perform(
                                 post("/login")
@@ -246,7 +246,7 @@ class WorkflowIntegrationTest {
         var session = (MockHttpSession) loggedIn.getRequest().getSession(false);
         var csrf = mvc.perform(get("/api/v1/session/csrf").session(session)).andReturn();
         String currentToken =
-                mapper.readTree(csrf.getResponse().getContentAsString()).get("token").asText();
+                mapper.readTree(csrf.getResponse().getContentAsString()).get("token").asString();
         mvc.perform(
                         post("/api/v1/groups")
                                 .session(session)
@@ -328,6 +328,120 @@ class WorkflowIntegrationTest {
                 user);
     }
 
+    private String pendingRegistration() throws Exception {
+        String group = group("wf.sv1");
+        join(group, "wf.sv1", 7, 8);
+        ok("wf.sv1", "/student/registrations", "group", group, "topic", "WF_DT");
+        return jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, group);
+    }
+
+    @Test
+    void rejectionRequiresReasonAndShowsErrorBesideTheCorrectRegistration() throws Exception {
+        String id = pendingRegistration();
+        for (String reason : List.of("", "   ", "x".repeat(1001))) {
+            var result = action("wf.gv0", "/dean/registrations/" + id + "/review",
+                    "accept", "false", "reason", reason, "registrationsPage", "0", "size", "1")
+                    .andExpect(flash().attributeExists("loi"))
+                    .andExpect(flash().attribute("registrationErrorId", id))
+                    .andExpect(redirectedUrl("/dean/approvals?registrationsPage=0&size=1#registration-" + id))
+                    .andReturn();
+            mvc.perform(get("/dean/approvals").param("size", "1").session(session("wf.gv0"))
+                            .flashAttrs(result.getFlashMap()))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.matchesRegex(
+                            "(?s).*<p[^>]*id=\"reason-error-" + id + "\"[^>]*>Từ chối phải ghi lý do \\(tối đa 1.000 ký tự\\)\\.</p>.*")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-invalid=\"true\"")));
+        }
+        mvc.perform(patch("/api/v1/registrations/" + id + "/review").session(session("wf.gv0"))
+                        .with(csrf()).contentType("application/json").content("{\"accept\":false,\"reason\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id)).isEqualTo("ChoDuyet");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
+    }
+
+    @Test
+    void rejectionNoticesArePrivateAcrossHtmlApiSearchCountsAndHome() throws Exception {
+        String id = pendingRegistration();
+        String reason = "PRIVATE_REJECTION_713: Cần bổ sung phạm vi thực hiện <script>alert(1)</script>";
+        ok("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "false", "reason", reason);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
+        for (String user : List.of("wf.sv1")) {
+            mvc.perform(get("/api/v1/announcements").param("q", "PRIVATE_REJECTION_713").param("size", "1").session(session(user)))
+                    .andExpect(header().string("X-Total-Count", "1"))
+                    .andExpect(jsonPath("$[0].content").value(org.hamcrest.Matchers.containsString(reason)))
+                    .andExpect(jsonPath("$[0].manageable").value(false));
+            mvc.perform(get("/announcements").session(session(user)))
+                        .andExpect(content().string(org.hamcrest.Matchers.containsString("PRIVATE_REJECTION_713")))
+                        .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("<script>alert(1)</script>"))));
+            mvc.perform(get("/").session(session(user)))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("Đăng ký đề tài của nhóm bị từ chối")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("Riêng cho nhóm trưởng")));
+        }
+        for (String user : List.of("wf.sv2", "wf.sv7", "wf.sv8", "wf.gv1", "wf.gv0", "wf.admin")) {
+            mvc.perform(get("/api/v1/announcements").param("q", "PRIVATE_REJECTION_713").session(session(user)))
+                    .andExpect(header().string("X-Total-Count", "0"))
+                    .andExpect(jsonPath("$.length()").value(0));
+            for (String path : List.of("/announcements", "/"))
+                mvc.perform(get(path).session(session(user)))
+                        .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("PRIVATE_REJECTION_713"))))
+                        .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Đăng ký đề tài của nhóm bị từ chối"))));
+        }
+        // A later membership change must not reveal the earlier private decision to a newcomer.
+        String group = jdbc.queryForObject("SELECT Ma_Nhom FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id);
+        ok("wf.sv7", "/student/groups/" + group + "/members/remove", "student", "WF_SV7");
+        join(group, "wf.sv1", 2);
+        mvc.perform(get("/api/v1/announcements").session(session("wf.sv2")))
+                .andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/v1/announcements").session(session("wf.sv7")))
+                .andExpect(jsonPath("$.length()").value(0));
+        String notice = "registration:" + id;
+        mvc.perform(delete("/api/v1/announcements/" + notice).session(session("wf.admin")).with(csrf()))
+                .andExpect(status().isForbidden());
+        action("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "false", "reason", reason)
+                .andExpect(flash().attributeExists("loi"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
+    }
+
+    @Test
+    void acceptingWithoutReasonDoesNotCreateRejectionNotifications() throws Exception {
+        registered();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
+    }
+
+    @Test
+    void mixedAnnouncementFeedPaginatesBothSourcesWithoutDuplicatesOrPrivateCountsForOthers() throws Exception {
+        String registration = pendingRegistration();
+        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "false", "reason", "MIXED_FEED_TEST");
+        LocalDateTime posted = jdbc.queryForObject("SELECT Ngay_Duyet FROM DANG_KY_DE_TAI WHERE Ma_DK=?",
+                LocalDateTime.class, registration);
+        for (int i = 1; i <= 3; i++) {
+            jdbc.update("INSERT INTO THONG_BAO(Ma_TB,Tieu_De,Noi_Dung,Ngay_Dang,Pham_Vi,Ma_TK) VALUES (?,?,?,?,?,?)",
+                    "WF_NOTICE" + i, "MIXED_FEED_TEST " + i, "Public notice", posted.plusMinutes(i - 2), "Khoa", "wf.gv0");
+            // MySQL's insert trigger stamps the current time; set the intended test clock afterward.
+            jdbc.update("UPDATE THONG_BAO SET Ngay_Dang=? WHERE Ma_TB=?", posted.plusMinutes(i - 2), "WF_NOTICE" + i);
+        }
+        var ids = new ArrayList<String>();
+        for (int page = 0; page < 4; page++) {
+            var result = mvc.perform(get("/api/v1/announcements").param("q", "MIXED_FEED_TEST")
+                            .param("size", "1").param("page", String.valueOf(page)).session(session("wf.sv1")))
+                    .andExpect(header().string("X-Total-Count", "4"))
+                    .andExpect(jsonPath("$.length()").value(1)).andReturn();
+            var rows = new tools.jackson.databind.json.JsonMapper().readTree(result.getResponse().getContentAsString());
+            ids.add(rows.get(0).get("id").asString());
+        }
+        assertThat(ids.getFirst()).isEqualTo("WF_NOTICE3");
+        assertThat(ids.getLast()).isEqualTo("WF_NOTICE1");
+        // Equal-time IDs follow the database collation, which differs between H2 and MySQL.
+        assertThat(ids.subList(1, 3)).containsExactlyInAnyOrder("WF_NOTICE2", "registration:" + registration);
+        mvc.perform(get("/api/v1/announcements").param("q", "MIXED_FEED_TEST").session(session("wf.sv2")))
+                .andExpect(header().string("X-Total-Count", "3"))
+                .andExpect(jsonPath("$[?(@.scope == 'Riêng cho nhóm trưởng')]").isEmpty());
+        mvc.perform(get("/api/v1/announcements").param("q", "MIXED_FEED_TEST").param("page", "4")
+                        .param("size", "1").session(session("wf.sv1")))
+                .andExpect(header().string("X-Total-Count", "4"))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
     private String registered() throws Exception {
         String group = group("wf.sv1");
         join(group, "wf.sv1", 7, 8);
@@ -353,22 +467,149 @@ class WorkflowIntegrationTest {
     }
 
     private String council() throws Exception {
-        ok(
-                "wf.gv0",
-                "/dean/councils",
-                "period",
-                "WF_SV",
-                "chair",
-                "WF_GV3",
-                "secretary",
-                "WF_GV4",
-                "members",
-                "WF_GV5");
+        // Existing general councils remain supported by the API; topic-specific UI is tested below.
+        mvc.perform(post("/api/v1/councils").session(session("wf.gv0")).with(csrf())
+                        .contentType("application/json").content(councilBody("WF_SV", "WF_GV3", "WF_GV4", "WF_GV5")))
+                .andExpect(status().isCreated());
         String id =
                 jdbc.queryForObject(
                         "SELECT Ma_HD FROM HOI_DONG WHERE Ma_Dot='WF_SV'", String.class);
-        ok("wf.gv0", "/dean/councils/" + id + "/finalize");
+        mvc.perform(patch("/api/v1/councils/" + id + "/finalize").session(session("wf.gv0")).with(csrf()))
+                .andExpect(status().isNoContent());
         return id;
+    }
+
+    private String councilBody(String period, String chair, String secretary, String member) {
+        return "{\"period\":\"" + period + "\",\"chair\":\"" + chair + "\",\"secretary\":\""
+                + secretary + "\",\"members\":[\"" + member + "\"]}";
+    }
+
+    private String topicCouncil() throws Exception {
+        ok("wf.gv0", "/dean/councils", "topic", "WF_DT", "period", "WF_SV",
+                "chair", "WF_GV3", "secretary", "WF_GV4", "members", "WF_GV5");
+        return jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'", String.class);
+    }
+
+    @Test
+    void councilFormRequiresTopicAndExcludesOnlyItsSupervisorsAndReviewerFromEveryRole() throws Exception {
+        registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                + " VALUES ('WF_OTHER','Other supervised topic','Other topic','WF_BM','WF_GV','WF_GV3','Nhap',?)", LocalDateTime.now());
+        jdbc.update("INSERT INTO GVHD_DETAI(Ma_GV,Ma_De_Tai) VALUES ('WF_GV3','WF_OTHER')");
+        jdbc.update("UPDATE DE_TAI SET Trang_Thai='DaCongBo' WHERE Ma_De_Tai='WF_OTHER'");
+        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='Khoa' WHERE Ma_TK='wf.gv6'");
+        em.clear();
+        mvc.perform(get("/dean/councils").session(session("wf.gv0")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đề tài cần lập hội đồng")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("id=\"chair\""))));
+        mvc.perform(get("/dean/councils").param("topic", "WF_DT").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"chair\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"secretary\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"WF_GV3\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("value=\"WF_GV1\""))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("value=\"WF_GV2\""))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("value=\"WF_GV6\""))));
+        mvc.perform(get("/api/v1/councils/topics/WF_DT/candidates").session(session("wf.gv0")))
+                .andExpect(jsonPath("$[?(@.id == 'WF_GV1')]").isEmpty())
+                .andExpect(jsonPath("$[?(@.id == 'WF_GV2')]").isEmpty())
+                .andExpect(jsonPath("$[?(@.id == 'WF_GV6')]").isEmpty())
+                .andExpect(jsonPath("$[?(@.id == 'WF_GV3')]").isNotEmpty());
+        mvc.perform(get("/api/v1/councils/topics/WF_DT/candidates").session(session("wf.gv1")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void forgedCouncilMembersAreRejectedForChairSecretaryAndOrdinaryMember() throws Exception {
+        registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        mvc.perform(post("/api/v1/councils/topics/WF_DT").session(session("wf.gv0")).with(csrf())
+                        .contentType("application/json").content(councilBody("WF_GV", "WF_GV3", "WF_GV4", "WF_GV5")))
+                .andExpect(status().isBadRequest());
+        for (String forbidden : List.of("WF_GV1", "WF_GV2")) {
+            for (int position = 0; position < 3; position++) {
+                String[] members = {"WF_GV3", "WF_GV4", "WF_GV5"};
+                members[position] = forbidden;
+                action("wf.gv0", "/dean/councils", "topic", "WF_DT", "period", "WF_SV",
+                        "chair", members[0], "secretary", members[1], "members", members[2])
+                        .andExpect(status().isOk()).andExpect(model().attributeExists("loi"));
+                mvc.perform(post("/api/v1/councils/topics/WF_DT").session(session("wf.gv0")).with(csrf())
+                                .contentType("application/json").content(councilBody("WF_SV", members[0], members[1], members[2])))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM HOI_DONG WHERE Ma_Dot='WF_SV'", Integer.class)).isZero();
+    }
+
+    @Test
+    void topicCouncilIsCreatedFinalizedAndAssignedTogetherWithoutSchemaExtension() throws Exception {
+        registered();
+        String id = topicCouncil();
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM HOI_DONG WHERE Ma_HD=?", String.class, id)).isEqualTo("DaChot");
+        assertThat(jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'", String.class)).isEqualTo(id);
+        mvc.perform(get("/dean/councils/" + id + "/edit").session(session("wf.gv0")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void changedReviewerPreventsFinalizationWithoutLockingUnusableCouncil() throws Exception {
+        registered();
+        mvc.perform(post("/api/v1/councils").session(session("wf.gv0")).with(csrf())
+                        .contentType("application/json").content(councilBody("WF_SV", "WF_GV3", "WF_GV4", "WF_GV5")))
+                .andExpect(status().isCreated());
+        String id = jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG WHERE Ma_Dot='WF_SV'", String.class);
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV3");
+        action("wf.gv0", "/dean/councils/" + id + "/finalize", "topic", "WF_DT")
+                .andExpect(flash().attribute("loi", org.hamcrest.Matchers.containsString("GVPB")));
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM HOI_DONG WHERE Ma_HD=?", String.class, id)).isEqualTo("DangLap");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'", Integer.class)).isZero();
+        ok("wf.gv0", "/dean/councils/" + id + "/edit", "period", "WF_SV",
+                "topic", "WF_DT", "chair", "WF_GV6", "secretary", "WF_GV4", "members", "WF_GV5");
+        ok("wf.gv0", "/dean/councils/" + id + "/finalize", "topic", "WF_DT");
+        assertThat(jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'", String.class)).isEqualTo(id);
+    }
+
+    @Test
+    void incompatibleFinalizedCouncilsAreAbsentFromTopicAssignmentOptions() throws Exception {
+        registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        var ids = new ArrayList<String>();
+        for (String chair : List.of("WF_GV1", "WF_GV2", "WF_GV3")) {
+            mvc.perform(post("/api/v1/councils").session(session("wf.gv0")).with(csrf())
+                            .contentType("application/json").content(councilBody("WF_SV", chair, "WF_GV4", "WF_GV5")))
+                    .andExpect(status().isCreated());
+            String id = jdbc.queryForObject("SELECT Ma_HD FROM THANHVIEN_HOIDONG WHERE Ma_GV=? AND Vai_Tro='ChuTich'", String.class, chair);
+            ids.add(id);
+            mvc.perform(patch("/api/v1/councils/" + id + "/finalize").session(session("wf.gv0")).with(csrf()))
+                .andExpect(status().isNoContent());
+        }
+        var result = mvc.perform(get("/dean/approvals").session(session("wf.gv0")))
+                .andExpect(status().isOk()).andReturn();
+        String html = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(html).contains("value=\"" + ids.get(2) + "\"")
+                .doesNotContain("value=\"" + ids.get(0) + "\"", "value=\"" + ids.get(1) + "\"");
+    }
+
+    @Test
+    void oldDraftRequiresTopicForEditingAndAgainForFinalAssignment() throws Exception {
+        registered();
+        mvc.perform(post("/api/v1/councils").session(session("wf.gv0")).with(csrf())
+                        .contentType("application/json").content(councilBody("WF_SV", "WF_GV3", "WF_GV4", "WF_GV5")))
+                .andExpect(status().isCreated());
+        String id = jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG WHERE Ma_Dot='WF_SV'", String.class);
+        mvc.perform(get("/dean/councils/" + id + "/edit").session(session("wf.gv0")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("lọc giảng viên trước khi sửa hội đồng nháp")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("id=\"chair\""))));
+        mvc.perform(get("/dean/councils/" + id + "/edit").param("topic", "WF_DT").session(session("wf.gv0")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"chair\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("value=\"WF_GV1\""))));
+        ok("wf.gv0", "/dean/councils/" + id + "/edit", "topic", "WF_DT", "period", "WF_SV",
+                "chair", "WF_GV3", "secretary", "WF_GV4", "members", "WF_GV5");
+        action("wf.gv0", "/dean/councils/" + id + "/finalize").andExpect(flash().attributeExists("loi"));
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM HOI_DONG WHERE Ma_HD=?", String.class, id)).isEqualTo("DangLap");
+        ok("wf.gv0", "/dean/councils/" + id + "/finalize", "topic", "WF_DT");
+        assertThat(jdbc.queryForObject("SELECT Ma_HD FROM HOI_DONG_DE_TAI WHERE Ma_De_Tai='WF_DT'", String.class)).isEqualTo(id);
     }
 
     private ResultActions upload(String user, String group, String token) throws Exception {
@@ -1138,7 +1379,7 @@ class WorkflowIntegrationTest {
 
     @Test
     void changingPasswordRequiresCurrentPasswordAndInvalidatesSession() throws Exception {
-        var old = session("wf.sv1");
+        session("wf.sv1");
         action(
                         "wf.sv1",
                         "/accounts/password",

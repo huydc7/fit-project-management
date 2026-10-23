@@ -39,8 +39,8 @@ public class GlobalExceptionHandler {
     public Object tooLarge(
             MaxUploadSizeExceededException ex, jakarta.servlet.http.HttpServletRequest request) {
         if (isApi(request))
-            return apiError(HttpStatus.PAYLOAD_TOO_LARGE, "File phải nhỏ hơn 20 MiB.");
-        return error(HttpStatus.PAYLOAD_TOO_LARGE, "File phải nhỏ hơn 20 MiB.");
+            return apiError(HttpStatus.CONTENT_TOO_LARGE, "File phải nhỏ hơn 20 MiB.");
+        return error(HttpStatus.CONTENT_TOO_LARGE, "File phải nhỏ hơn 20 MiB.");
     }
 
     @ExceptionHandler({

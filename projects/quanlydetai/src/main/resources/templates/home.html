@@ -203,7 +203,7 @@
 </small>
 </span>
 <span class="notice-copy">
-<span class="tag" th:text="${n.scope == 'Khoa' ? 'Khoa CNTT' : 'Nhà trường'}">
+<span class="tag" th:text="${n.scope == 'Khoa' ? 'Khoa CNTT' : (n.scope == 'NhaTruong' ? 'Nhà trường' : n.scope)}">
 </span>
 <h3 th:text="${n.title}">
 </h3>

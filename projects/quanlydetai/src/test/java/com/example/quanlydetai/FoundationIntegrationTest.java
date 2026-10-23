@@ -13,6 +13,8 @@ import com.example.quanlydetai.security.CustomUserDetailsService;
 import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -22,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.time.LocalDateTime;
 
@@ -246,6 +250,148 @@ class FoundationIntegrationTest {
                                 "SELECT COUNT(*) FROM DOT_DANG_KY WHERE Ma_Dot='INVALID'",
                                 Integer.class))
                 .isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2098-12-01T08:00", "2099-01-04T07:59", "2099-01-04T08:00"})
+    void assessmentDeadlineMustFollowStudentRegistration(String deadline) throws Exception {
+        for (String type : java.util.List.of("TLCN", "KLTN")) {
+            assertInvalidSchedule(type, "deadlineGvpbNopDiem", deadline, "Hạn chót GVPB");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2098-12-01T08:00", "2099-01-04T07:59", "2099-01-04T08:00"})
+    void councilReportMustFollowStudentRegistration(String reportTime) throws Exception {
+        assertInvalidSchedule("KLTN", "timeBcHd", reportTime, "Ngày báo cáo hội đồng");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2099-01-06T08:00", "2099-01-06T08:01"})
+    void reviewerDeadlineMustBeStrictlyBeforeCouncilReport(String deadline) throws Exception {
+        assertInvalidSchedule(
+                "KLTN", "deadlineGvpbNopDiem", deadline,
+                "Hạn chót GVPB nộp điểm phải trước thời điểm báo cáo hội đồng.");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2099-01-05T07:59", "2099-01-05T08:00"})
+    void movingCouncilReportCannotInvalidateReviewerDeadline(String reportTime) throws Exception {
+        assertInvalidSchedule(
+                "KLTN", "timeBcHd", reportTime,
+                "Hạn chót GVPB nộp điểm phải trước thời điểm báo cáo hội đồng.");
+    }
+
+    @Test
+    void reviewerDeadlineOneMinuteBeforeCouncilReportIsValidForCreateAndEdit() throws Exception {
+        var session = login("dean");
+        var form = periodForm("BEFORE_COUNCIL", "KLTN");
+        form.set("deadlineGvpbNopDiem", "2099-01-06T07:59");
+        mvc.perform(post("/dean/periods").session(session).with(csrf()).params(form))
+                .andExpect(redirectedUrl("/dean/periods"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        form.set("tenDotDangKy", "Lịch hợp lệ sát giờ hội đồng");
+        mvc.perform(post("/dean/periods/BEFORE_COUNCIL/edit")
+                        .session(session).with(csrf()).params(form))
+                .andExpect(redirectedUrl("/dean/periods"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        assertThat(jdbc.queryForObject(
+                "SELECT Deadline_GVPB_Nop_Diem FROM DOT_DANG_KY WHERE Ma_Dot='BEFORE_COUNCIL'",
+                LocalDateTime.class)).isEqualTo(LocalDateTime.parse("2099-01-06T07:59"));
+    }
+
+    private MultiValueMap<String, String> periodForm(String id, String type) {
+        var form = new LinkedMultiValueMap<String, String>();
+        form.add("maDot", id);
+        form.add("tenDotDangKy", "Đợt kiểm tra lịch");
+        form.add("loai", type);
+        form.add("beginGV", "2099-01-01T08:00");
+        form.add("endGV", "2099-01-02T08:00");
+        form.add("beginSV", "2099-01-03T08:00");
+        form.add("endSV", "2099-01-04T08:00");
+        if (type.equals("TLCN") || type.equals("KLTN"))
+            form.add("deadlineGvpbNopDiem", "2099-01-05T08:00");
+        if (type.equals("KLTN")) form.add("timeBcHd", "2099-01-06T08:00");
+        return form;
+    }
+
+    private void assertInvalidSchedule(String type, String field, String value, String message)
+            throws Exception {
+        var session = login("dean");
+        String id = "SCHEDULE_" + type;
+        var form = periodForm(id, type);
+        mvc.perform(post("/dean/periods").session(session).with(csrf()).params(form))
+                .andExpect(flash().attributeExists("thanhCong"));
+        String original = form.getFirst(field);
+        form.set(field, value);
+        mvc.perform(post("/dean/periods/" + id + "/edit")
+                        .session(session).with(csrf()).params(form))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("loi"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(message)));
+        mvc.perform(put("/api/v1/registration-periods/" + id)
+                        .session(session).with(csrf())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(tools.jackson.databind.json.JsonMapper.builder().build()
+                                .writeValueAsString(form.toSingleValueMap())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString(message)));
+        em.clear();
+        var unchanged = em.find(DotDangKy.class, id);
+        assertThat(field.equals("timeBcHd") ? unchanged.getTimeBcHd()
+                : unchanged.getDeadlineGvpbNopDiem()).isEqualTo(LocalDateTime.parse(original));
+
+        String newId = "NEW_" + type;
+        form.set("maDot", newId);
+        mvc.perform(post("/dean/periods").session(session).with(csrf()).params(form))
+                .andExpect(redirectedUrl("/dean/periods"))
+                .andExpect(flash().attributeExists("loi"))
+                .andExpect(result -> assertThat(result.getFlashMap().containsKey("thanhCong")).isFalse());
+        mvc.perform(post("/api/v1/registration-periods")
+                        .session(session).with(csrf())
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(tools.jackson.databind.json.JsonMapper.builder().build()
+                                .writeValueAsString(form.toSingleValueMap())))
+                .andExpect(status().isBadRequest());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DOT_DANG_KY WHERE Ma_Dot=?",
+                Integer.class, newId)).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"MonHoc", "NCKH", "TLCN", "KLTN"})
+    void validSchedulesCanBeCreatedAndEdited(String type) throws Exception {
+        var session = login("dean");
+        var form = periodForm("VALID_" + type, type);
+        mvc.perform(post("/dean/periods").session(session).with(csrf()).params(form))
+                .andExpect(redirectedUrl("/dean/periods"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        form.set("tenDotDangKy", "Đợt đã sửa tên");
+        mvc.perform(post("/dean/periods/VALID_" + type + "/edit")
+                        .session(session).with(csrf()).params(form))
+                .andExpect(redirectedUrl("/dean/periods"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        assertThat(jdbc.queryForObject("SELECT Ten_Dot_Dang_Ky FROM DOT_DANG_KY WHERE Ma_Dot=?",
+                String.class, "VALID_" + type)).isEqualTo("Đợt đã sửa tên");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"beginGV", "endGV", "beginSV", "endSV"})
+    void missingRequiredDateOnEditShowsValidationMessageAndKeepsForm(String field) throws Exception {
+        var session = login("dean");
+        var form = periodForm("EDIT_REQUIRED", "MonHoc");
+        mvc.perform(post("/dean/periods").session(session).with(csrf()).params(form))
+                .andExpect(flash().attributeExists("thanhCong"));
+        form.remove(field);
+        mvc.perform(post("/dean/periods/EDIT_REQUIRED/edit")
+                        .session(session).with(csrf()).params(form))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("form", field))
+                .andExpect(model().attribute("editingId", "EDIT_REQUIRED"))
+                .andExpect(model().attributeExists("loi"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Phải nhập thời gian")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/dean/periods/EDIT_REQUIRED/edit")));
+        assertThat(jdbc.queryForObject("SELECT Begin_GV FROM DOT_DANG_KY WHERE Ma_Dot='EDIT_REQUIRED'",
+                LocalDateTime.class)).isEqualTo(LocalDateTime.parse("2099-01-01T08:00"));
     }
 
     @Test

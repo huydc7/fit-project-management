@@ -1,6 +1,19 @@
 # Hệ thống quản lý đề tài khoa CNTT
 
-Ứng dụng MVC dùng Java 21, Spring Boot, Spring Data JPA/Hibernate, Spring Security, Thymeleaf, HTML/CSS thuần, JavaScript thuần và MySQL. Bản đầu hỗ trợ đợt đăng ký, đề xuất/duyệt đề tài, nhóm và lời mời, duyệt đăng ký, báo cáo, phản biện/hội đồng, chấm/tổng hợp/công bố, tài khoản và thông báo. Quy ước giao diện xem [docs/UI_DESIGN.md](docs/UI_DESIGN.md).
+Ứng dụng quản lý quy trình đề tài sinh viên của Khoa CNTT, từ đề xuất, đăng ký nhóm và nộp báo cáo đến chấm điểm, công bố kết quả. Hệ thống dùng Java 21, Spring Boot 4.1.1, Spring Data JPA/Hibernate, Spring Security, Thymeleaf, HTML/CSS, JavaScript và MySQL.
+
+## Chức năng chính
+
+- Admin quản lý tài khoản, hồ sơ, bộ môn, bổ nhiệm chức vụ và thông báo chung.
+- Trưởng khoa tạo đợt đăng ký, xác nhận đề tài, duyệt đăng ký nhóm, phân công đánh giá và công bố kết quả. Lịch GVPB phải sau hạn đăng ký SV; với KLTN, hạn GVPB phải trước ngày báo cáo hội đồng.
+- Giảng viên đề xuất đề tài; Trưởng bộ môn duyệt và chọn 1–2 GVHD. Mỗi GV hướng dẫn tối đa 3 đề tài trong một đợt, kể cả đồng hướng dẫn.
+- Sinh viên tạo nhóm, mời và xác nhận thành viên; mỗi SV chỉ thuộc một nhóm trong mỗi đợt. Nhóm cần 3–5 SV khi đăng ký, có đúng một nhóm trưởng đăng ký và nộp báo cáo.
+- Từ chối đăng ký nhóm bắt buộc có lý do. Lý do hiển thị riêng trong Thông báo và trang chủ của đúng nhóm trưởng, không đưa vào thông báo chung.
+- Lập hội đồng chọn đề tài trước; danh sách chủ tịch, thư ký và thành viên loại GVHD/GVPB của đề tài đó. Tạo, chốt và gán hội đồng trong cùng một transaction.
+- Báo cáo PDF/DOCX/ZIP có lịch sử phiên bản và kiểm tra quyền tải. GVPB/hội đồng chấm điểm; Chủ tịch tổng hợp, Trưởng khoa công bố. Sinh viên chỉ tra cứu kết quả nhóm mình theo đợt đã tham gia sau công bố.
+- Công bố kết quả tạo email riêng cho từng SV; có hàng đợi, theo dõi và thử lại thư lỗi. Thông báo chung và riêng được tìm kiếm, phân trang và sắp xếp mới nhất trước.
+
+Các chức năng trên dùng cấu trúc database SQL 01–10; không cần thêm bảng/cột cho giới hạn GVHD, thông báo riêng hoặc lựa chọn hội đồng. Quy ước giao diện xem [docs/UI_DESIGN.md](docs/UI_DESIGN.md).
 
 Bắt đầu tại [hướng dẫn local và kiểm thử](docs/LOCAL_TEST.md). Xem [danh mục và dữ liệu thực hành](docs/SAMPLE_DATA.md), [quy tắc nghiệp vụ](docs/PRODUCT_RULES.md), [kiến trúc](docs/ARCHITECTURE.md) và [cloud](docs/CLOUD_SETUP.md). Nếu chưa có tài khoản dịch vụ, làm theo [hướng dẫn deploy từng bước](docs/HUONG_DAN_DEPLOY_TUNG_BUOC.md).
 
@@ -13,7 +26,7 @@ Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn
 ## Chạy Docker
 
 ```powershell
-cd D:\project_web\final_projects
+# Chạy tại thư mục gốc repository.
 # Chỉ copy khi chưa có .env; không ghi đè cấu hình đang dùng.
 Copy-Item .env.example .env
 # Điền MYSQL_ROOT_PASSWORD và DB_PASSWORD.
@@ -21,7 +34,7 @@ Copy-Item .env.example .env
 .\tools\Start-Local.ps1 -Docker
 ```
 
-Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–10 tự nạp khi tạo volume mới lần đầu. Với volume cũ, sao lưu trước rồi chạy lần lượt các migration còn thiếu: `tools/Update-RubricDatabase.ps1` nâng cấp 06, `tools/Update-DepartmentReview.ps1` nâng cấp 07, `tools/Update-TopicReviewDeadline.ps1` nâng cấp 08, SQL 09 theo [hướng dẫn phân công GVHD](docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi `projects/Database/10_read_query_indexes.sql`. Database đã có 01–09 chỉ cần sao lưu và chạy SQL 10. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
+Website mặc định http://localhost:8080; MySQL Docker tại 127.0.0.1:3307. Database và báo cáo dùng volume. SQL 01–10 tự nạp khi tạo volume mới lần đầu. Với volume cũ, sao lưu trước rồi chạy lần lượt các migration còn thiếu: `tools/Update-RubricDatabase.ps1` nâng cấp 06, `tools/Update-DepartmentReview.ps1` nâng cấp 07, `tools/Update-TopicReviewDeadline.ps1` nâng cấp 08, SQL 09 theo [hướng dẫn phân công GVHD](docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md), rồi `projects/Database/10_read_query_indexes.sql`. Database đã có 01–09 cần sao lưu và chạy SQL 10. Không xóa volume để nâng cấp. Docker dùng JDK/JRE 21, user app không phải root.
 
 ## Chạy Java và MySQL đã cài
 
@@ -76,7 +89,18 @@ Trưởng khoa công bố kết quả sau khi chủ tịch tổng hợp. Sinh vi
 
 Local lưu file trong uploads hoặc LOCAL_STORAGE_PATH, tải qua endpoint kiểm tra quyền. Cloud dùng Supabase private, signed URL 300 giây, TLS MySQL VERIFY_IDENTITY với CA; prod luôn tắt bộ dữ liệu thực hành. Cấu hình CI/Render có sẵn, chưa đồng nghĩa cloud đã nghiệm thu.
 
-Không commit .env, .env.native, secret, uploads, target, truststore hoặc backups.
+Các biến môi trường cần cấu hình khi deploy:
+
+| Nhóm | Biến chính |
+|---|---|
+| MySQL | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_CA_CERT` |
+| Supabase Storage | `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_BUCKET` |
+| Email Brevo | `EMAIL_ENABLED`, `EMAIL_BACKEND`, `EMAIL_FROM`, `EMAIL_API_KEY` |
+| Địa chỉ ứng dụng | `PUBLIC_BASE_URL` |
+
+Đặt giá trị thật trong Environment của hosting. Bật email bằng `EMAIL_ENABLED=true`, chọn `EMAIL_BACKEND=brevo`, dùng người gửi đã xác minh và API key hợp lệ. `PUBLIC_BASE_URL` là URL HTTPS công khai của ứng dụng để liên kết trong email trỏ đúng website. Chi tiết cấu hình và TLS xem [hướng dẫn deploy](docs/HUONG_DAN_DEPLOY_TUNG_BUOC.md).
+
+Git lưu mã nguồn ứng dụng và test, SQL, tài liệu dự án, công cụ hỗ trợ, cấu hình Docker/CI/Render và `.env.example`. Không đưa vào Git các file `.env` thật, secret, uploads, target, truststore, backups, log, kịch bản và biên bản kiểm thử riêng trên máy.
 
 ## Kiến trúc và API
 
@@ -89,7 +113,7 @@ Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio),
 GV chỉ đề xuất nội dung → Trưởng bộ môn duyệt và chọn 1–2 GVHD → Trưởng khoa xác nhận và công bố.
 Database mới cần chạy SQL 01–10. Database đã có 01–08: dừng web, sao lưu, chạy
 `projects/Database/09_department_supervisor_assignment.sql`, sau đó chạy
-`projects/Database/10_read_query_indexes.sql` trong Workbench rồi khởi động lại. Database đã có 01–09 chỉ cần SQL 10.
+`projects/Database/10_read_query_indexes.sql` trong Workbench rồi khởi động lại. Database đã có 01–09 cần SQL 10.
 Migration giữ dữ liệu và quyết định cũ, không tự điền người/ngày xác nhận lịch sử.
 Nếu cần thay danh sách của đề tài nháp đã được duyệt ở bản cũ, người đề xuất sửa lại nháp để
 hủy xác nhận và danh sách cũ, sau đó bộ môn duyệt và chọn lại. Không nhập lại dữ liệu mẫu để nâng cấp.

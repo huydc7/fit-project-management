@@ -37,6 +37,58 @@ class CatalogIntegrationTest {
     private LocalDateTime now;
 
     @Test
+    void supervisionLimitCountsBothSupervisorsAndKeepsPeriodsIndependent() throws Exception {
+        for (int i = 1; i <= 3; i++) {
+            quotaTopic("CT_Q" + i, "CT_PERIOD");
+            api("ct.g2", "PATCH", "/api/v1/topics/CT_Q" + i + "/department-review",
+                    "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G2\"]}")
+                    .andExpect(status().isNoContent());
+        }
+        quotaTopic("CT_Q4", "CT_PERIOD");
+        for (String teacher : List.of("CT_G1", "CT_G2")) {
+            api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
+                    "{\"accept\":true,\"supervisors\":[\"CT_G0\",\"" + teacher + "\"]}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("đủ 3 đề tài")));
+        }
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai='CT_Q4'", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_Q4'", Integer.class)).isZero();
+        quotaTopic("CT_Q_OTHER", "CT_EMPTY");
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_Q_OTHER/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G0\"]}")
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void cancelledTopicReleasesSupervisionSlotButPublishedTopicStillCounts() throws Exception {
+        for (int i = 1; i <= 3; i++) {
+            quotaTopic("CT_Q" + i, "CT_PERIOD");
+            api("ct.g2", "PATCH", "/api/v1/topics/CT_Q" + i + "/department-review",
+                    "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                    .andExpect(status().isNoContent());
+        }
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q1/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
+        quotaTopic("CT_Q4", "CT_PERIOD");
+        mvc.perform(post("/department/topics/CT_Q4/review").session(session("ct.g2")).with(csrf())
+                        .param("accept", "true").param("supervisors", "CT_G1"))
+                .andExpect(flash().attribute("loi", org.hamcrest.Matchers.containsString("đủ 3 đề tài")));
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q2/review", "{\"accept\":false}")
+                .andExpect(status().isNoContent());
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+    }
+
+    private void quotaTopic(String id, String period) {
+        jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                + " VALUES (?,?,'Quota test','CT_B1',?,'CT_G1','Nhap',?)", id, id, period, now);
+    }
+
+    @Test
     void assignmentOptionsExcludeLockedAndAccountlessLecturers() throws Exception {
         unavailableLecturers();
         mvc.perform(get("/api/v1/catalog/lecturers").session(session("ct.g1")))

@@ -7,7 +7,6 @@ import com.example.quanlydetai.entity.GiangVien;
 import com.example.quanlydetai.repository.CatalogQueryRepository;
 import com.example.quanlydetai.repository.JpaEntityRepository;
 
-import jakarta.persistence.*;
 
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;

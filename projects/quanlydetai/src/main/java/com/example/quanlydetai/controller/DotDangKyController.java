@@ -97,7 +97,11 @@ public class DotDangKyController {
             Model model,
             RedirectAttributes flash) {
         model.addAttribute("editingId", id);
-        if (errors.hasErrors()) return danhSach(model);
+        if (errors.hasErrors()) {
+            model.addAttribute(
+                    "loi", errors.getAllErrors().stream().map(e -> e.getDefaultMessage()).toList());
+            return danhSach(model);
+        }
         return com.example.quanlydetai.controller.support.FormFeedback.formAction(
                 model,
                 flash,

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
 <head>
-<title>Thông báo chính thức</title>
+<title>Thông báo</title>
 </head>
 <body>
 <main>
-<h1 class="page-title space-bottom">Thông báo chính thức</h1>
+<h1 class="page-title space-bottom">Thông báo</h1>
 <form method="get" action="/announcements" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tìm tiêu đề hoặc nội dung thông báo" aria-label="Tìm kiếm" maxlength="200"><button class="button button-primary">Tìm kiếm</button><a href="/announcements" class="button button-outline">Bỏ lọc</a></form>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>

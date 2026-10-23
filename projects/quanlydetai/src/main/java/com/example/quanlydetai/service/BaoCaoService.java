@@ -58,7 +58,7 @@ public class BaoCaoService {
         Nhom initial = entities.require(Nhom.class, group);
         rules.check(initial.getMaDeTai() != null, "Nhóm chưa được duyệt đề tài.");
         DeTai t = entities.lock(DeTai.class, initial.getMaDeTai());
-        Nhom n = entities.lock(Nhom.class, group);
+        entities.lock(Nhom.class, group);
         var m = entities.require(ThanhVienNhom.class, new ThanhVienNhomId(group, sv));
         if (!"Truong_Nhom".equals(m.getVaiTro()))
             throw new AccessDeniedException("Chỉ nhóm trưởng được nộp báo cáo.");

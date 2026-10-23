@@ -3,7 +3,6 @@ package com.example.quanlydetai.service;
 import com.example.quanlydetai.entity.DotDangKy;
 import com.example.quanlydetai.exception.BusinessException;
 
-import jakarta.persistence.*;
 
 import org.springframework.stereotype.Component;
 
@@ -15,6 +14,7 @@ import java.util.*;
 public class AcademicRules {
     public static final int MIN_GROUP_MEMBERS = 3;
     public static final int MAX_GROUP_MEMBERS = 5;
+    public static final int MAX_SUPERVISED_TOPICS_PER_PERIOD = 3;
 
     public void registrationGroupSize(int size) {
         check(

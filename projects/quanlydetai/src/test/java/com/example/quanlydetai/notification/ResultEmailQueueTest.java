@@ -1,6 +1,7 @@
 package com.example.quanlydetai.notification;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
 
 import com.example.quanlydetai.entity.ResultEmail;
 import com.example.quanlydetai.repository.ResultEmailRepository;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,7 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class ResultEmailQueueTest {
     @Autowired ResultEmailService queue;
     @Autowired ResultEmailRepository emails;
-    @Autowired AcademicRules rules;
+    @MockitoSpyBean AcademicRules rules;
     @Autowired PlatformTransactionManager manager;
 
     @BeforeEach
@@ -91,6 +93,24 @@ class ResultEmailQueueTest {
         assertThat(emails.findById("queue-test").orElseThrow().getState()).isEqualTo("FAILED");
         queue.retry("queue-test");
         assertThat(queue.claim().attempt()).isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser(roles = "TRUONGKHOA")
+    void retryIsImmediatelyDueEvenWhenDatabaseRoundsFractionalSecondsUp() {
+        var now = java.time.LocalDateTime.of(2099, 1, 1, 8, 0, 0, 999_999_999);
+        doReturn(now).when(rules).now();
+        var row = pending();
+        row.setState("FAILED");
+        row.setAttempts(5);
+        emails.saveAndFlush(row);
+        queue.retry(row.getId());
+        var retried = emails.findById(row.getId()).orElseThrow();
+        assertThat(retried.getState()).isEqualTo("PENDING");
+        assertThat(retried.getNextAttemptAt()).isBeforeOrEqualTo(now);
+        var delivery = queue.claim();
+        assertThat(delivery).isNotNull();
+        assertThat(delivery.attempt()).isEqualTo(1);
     }
 
     @Test

@@ -1,5 +1,15 @@
 # REST API v1
 
+## Hội đồng và thông báo: không đổi cấu trúc database
+
+- GET `/councils/topics/{id}/candidates`: Trưởng khoa, danh sách GV hoạt động không phải GVHD/GVPB của chính đề tài, đã có nhóm được duyệt và chưa có điểm.
+- POST `/councils/topics/{id}`: HoiDongRequest, tạo/chốt/gán vào đề tài trong cùng transaction. Sai đợt, GVHD/GVPB, tài khoản khóa hoặc sai số thành viên đều bị từ chối và không lưu một phần. Không có plannedTopic trong database hay response.
+- PATCH `/councils/{id}/finalize?topic={topic}`: kiểm tra, chốt và gán nháp có sẵn cùng transaction; lỗi giữ DangLap. Nếu không có query topic, API giữ luồng chốt hội đồng chung cũ. Web luôn yêu cầu topic.
+- Web `/dean/councils?topic=...`: chọn đề tài trước, lọc cả ba danh sách; tạo sẽ đồng thời chốt/gán. Nháp cũ chọn đề tài cùng đợt khi sửa và khi chốt; không lưu bối cảnh nháp vào database.
+- Duyệt bộ môn `/topics/{id}/department-review`: HTTP 400 khi GVHD đã đủ 3 đề tài cùng đợt; không lưu một phần. Huy không chiếm suất, đồng hướng dẫn tính cho cả hai GV.
+- PATCH `/registrations/{id}/review`: từ chối bắt buộc reason không trắng, tối đa 1.000 ký tự. Lưu lịch sử trong DANG_KY_DE_TAI; không tạo dòng THONG_BAO.
+- GET `/announcements`: kết hợp thông báo công khai và lịch sử từ chối dành riêng cho nhóm trưởng hiện tại của đúng nhóm. Header phân trang/tìm kiếm không lộ bản ghi của người khác. Lịch sử có id `registration:{Ma_DK}`, scope `Riêng cho nhóm trưởng`, manageable=false; PUT/DELETE bị từ chối cả với Admin. Không có API tự chỉ định người nhận.
+
 Base URL local: `http://localhost:8080/api/v1`. API dùng cùng service, tài khoản và phiên đăng nhập với Thymeleaf. Không trả JPA entity hoặc hash mật khẩu. Request JSON dùng `Content-Type: application/json`; báo cáo dùng multipart. Ngày giờ nghiệp vụ theo múi giờ Việt Nam.
 
 ## Đăng nhập và CSRF

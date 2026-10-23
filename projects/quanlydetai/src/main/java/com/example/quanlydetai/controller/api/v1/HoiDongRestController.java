@@ -4,6 +4,7 @@ import static com.example.quanlydetai.controller.support.PageResponses.from;
 
 import com.example.quanlydetai.dto.HoiDongRequest;
 import com.example.quanlydetai.dto.HoiDongResponse;
+import com.example.quanlydetai.dto.LuaChonResponse;
 import com.example.quanlydetai.dto.PhanCongHoiDongRequest;
 import com.example.quanlydetai.dto.PhanCongPhanBienRequest;
 import com.example.quanlydetai.service.HoiDongService;
@@ -41,10 +42,22 @@ public class HoiDongRestController {
         service.create(body);
     }
 
+    @GetMapping("/topics/{id}/candidates")
+    public List<LuaChonResponse> candidates(@PathVariable String id) {
+        return service.candidates(id);
+    }
+
+    @PostMapping("/topics/{id}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createForTopic(@PathVariable String id, @Valid @RequestBody HoiDongRequest body) {
+        service.createForTopic(id, body);
+    }
+
     @PatchMapping("/{id}/finalize")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void finalizeCouncil(@PathVariable String id) {
-        service.finalizeCouncil(id);
+    public void finalizeCouncil(@PathVariable String id, @RequestParam(required = false) String topic) {
+        if (topic == null) service.finalizeCouncil(id);
+        else service.finalizeForTopic(id, topic);
     }
 
     @PutMapping("/{id}")
