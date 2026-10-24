@@ -72,7 +72,7 @@ public class DiemService {
                 .divide(BigDecimal.valueOf(scores.size()), 2, RoundingMode.HALF_UP);
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('GV')")
     public void submit(@jakarta.validation.Valid DiemRequest f) {
         String gv = currentUser.teacher();
@@ -95,6 +95,9 @@ public class DiemService {
                 entities.find(GvhdDeTai.class, new GvhdDeTaiId(gv, f.topic())) == null,
                 "GVHD không được chấm đề tài đang hướng dẫn.");
         authorize(gv, t, f.type());
+        rules.check(
+                queries.assignmentsComplete(f.topic()),
+                "Cần phân công đủ GVPB và hội đồng đã chốt trước khi chấm điểm.");
         rules.check(reports.hasForTopic(f.topic()), "Nhóm chưa nộp báo cáo để chấm.");
         var previous =
                 entities.query(
@@ -214,6 +217,7 @@ public class DiemService {
                             (BigDecimal) r[5],
                             r[6] == null ? "" : (String) r[6],
                             locked,
+                            (Boolean) r[11],
                             "ChuTich".equals(r[4]),
                             ((Number) r[9]).intValue(),
                             ((Number) r[10]).intValue(),

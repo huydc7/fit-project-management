@@ -3,6 +3,7 @@ package com.example.quanlydetai.controller;
 import static com.example.quanlydetai.controller.support.FormFeedback.*;
 import static com.example.quanlydetai.controller.support.PageResponses.add;
 
+import com.example.quanlydetai.dto.CapNhatNhomRequest;
 import com.example.quanlydetai.dto.NhomRequest;
 import com.example.quanlydetai.service.NhomService;
 
@@ -57,6 +58,24 @@ public class NhomController {
     public String answer(
             @PathVariable String id, @RequestParam boolean accept, RedirectAttributes flash) {
         return perform("/student/groups", flash, () -> groups.answer(id, accept));
+    }
+
+    @PostMapping("/student/groups/{id}/name")
+    public String renameGroup(
+            @PathVariable String id,
+            @Valid @ModelAttribute("groupEditForm") CapNhatNhomRequest f,
+            BindingResult errors,
+            Model m,
+            RedirectAttributes flash) {
+        m.addAttribute("editingGroupId", id);
+        if (errors.hasErrors()) {
+            m.addAttribute("groupEditError", errors.getFieldError("name").getDefaultMessage());
+            return studentGroups(m);
+        }
+        var page = (Pageable) m.getAttribute("pageRequest");
+        flash.addAttribute("page", page.getPageNumber());
+        flash.addAttribute("size", page.getPageSize());
+        return formAction(m, flash, "/student/groups", () -> groups.rename(id, f), () -> studentGroups(m));
     }
 
     @PostMapping("/student/groups/{id}/members/remove")

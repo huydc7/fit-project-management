@@ -10,6 +10,7 @@ public record PhieuChamDiemResponse(
         BigDecimal score,
         String comment,
         boolean locked,
+        boolean assignmentsComplete,
         boolean chair,
         int submitted,
         int required,

@@ -55,6 +55,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Đề xuất đề tài | POST `/topics` | GV; DeTaiRequest |
 | Duyệt đề tài | PATCH `/topics/{id}/review` | TKhoa; `{accept: true/false}`; chấp thuận xác nhận GVHD bộ môn đã chọn rồi công bố |
 | Nhóm của mình | GET, POST `/groups` | SV; POST: `{period, name}` |
+| Đổi tên nhóm | PATCH `/groups/{id}/name` | Trưởng nhóm; `{name}` không trắng, tối đa 150 ký tự; còn thời gian SV, chưa đăng ký chờ duyệt/chưa được chấp thuận |
 | Mời thành viên | POST `/groups/{id}/invitations` | Trưởng nhóm; `{student}` là Ma_SV |
 | Xóa thành viên | DELETE `/groups/{id}/members/{student}` | Trưởng nhóm; còn được sửa |
 | Lời mời của mình | GET `/invitations` | SV |
@@ -88,6 +89,8 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Thông tin cá nhân mình | GET `/session/profile` | SV/GV; chỉ hồ sơ của phiên đăng nhập, Admin trả 403; không nhận mã tài khoản cần xem |
 
 DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`. Người đề xuất không được gửi `supervisors`; Trưởng bộ môn chọn 1–2 Ma_GV qua DepartmentReviewRequest khi duyệt. DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
+
+`GET /grades/ballots` trả thêm `assignmentsComplete`: chỉ `true` khi đề tài có đúng một GVPB và hội đồng đã chốt được gán. Khi còn thiếu, `PUT /grades/ballots` trả 400 với lý do phải phân công đủ trước khi chấm, không ghi phiếu điểm hay khóa phiên bản báo cáo. Cần đồng thời có `assignmentsComplete=true`, `locked=false` và báo cáo để nhập điểm; quyền chấm và hạn nộp vẫn được kiểm tra ở server.
 
 `GET /admin/accounts` trả thêm hai cờ `dean` và `departmentHead` cho chức vụ **đang giữ**. Cả hai có thể cùng `true` khi kiêm nhiệm; sau thu hồi/thay thế, lần tải danh sách tiếp theo phản ánh dữ liệu mới. `role` vẫn là `GV` cho giảng viên, bao gồm Trưởng khoa/Trưởng bộ môn; bộ lọc `role=GV` vẫn trả các tài khoản này. Giao diện quản trị hiển thị tên vai trò tiếng Việt và nhãn chức vụ riêng.
 

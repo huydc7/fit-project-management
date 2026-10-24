@@ -1,5 +1,6 @@
 package com.example.quanlydetai.service;
 
+import com.example.quanlydetai.dto.CapNhatNhomRequest;
 import com.example.quanlydetai.dto.DangKyDeTaiResponse;
 import com.example.quanlydetai.dto.LoiMoiResponse;
 import com.example.quanlydetai.dto.LuaChonResponse;
@@ -69,6 +70,17 @@ public class NhomService {
         n.setMaDot(d.getMaDot());
         entities.insert(n);
         addMember(n.getMaNhom(), sv, "Truong_Nhom");
+    }
+
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    @PreAuthorize("hasRole('SV')")
+    public void rename(String group, @jakarta.validation.Valid CapNhatNhomRequest f) {
+        Nhom n = lockPeriodGroup(group);
+        requireLeader(n);
+        rules.check(isEditable(n), "Không được sửa tên nhóm khi đăng ký đang chờ duyệt hoặc đã được chấp thuận.");
+        rules.studentWindow(entities.require(DotDangKy.class, n.getMaDot()));
+        n.setTenNhom(f.name().strip());
+        entities.flush();
     }
 
     @Transactional
@@ -287,7 +299,8 @@ public class NhomService {
                             n.getMaDeTai(),
                             (String) row[2],
                             leader,
-                            n.getMaDeTai() == null && !reserved.contains(n.getMaNhom()),
+                            n.getMaDeTai() == null && !reserved.contains(n.getMaNhom())
+                                    && rules.inWindow((java.time.LocalDateTime) row[3], (java.time.LocalDateTime) row[4]),
                             team,
                             registrations.getOrDefault(n.getMaNhom(), List.of()));
                 });
@@ -317,8 +330,9 @@ public class NhomService {
     }
 
     private Nhom lockPeriodGroup(String id) {
-        Nhom n = entities.require(Nhom.class, id);
-        entities.lock(DotDangKy.class, n.getMaDot());
+        var periods = entities.query("select n.maDot from Nhom n where n.maNhom=?1", String.class, id);
+        rules.check(!periods.isEmpty(), "Không tìm thấy dữ liệu yêu cầu.");
+        entities.lock(DotDangKy.class, periods.getFirst());
         return entities.lock(Nhom.class, id);
     }
 

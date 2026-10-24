@@ -17,7 +17,9 @@ Hai chức năng này chỉ dùng cấu trúc SQL 01–10 hiện có; không th�
 - Một SV thuộc tối đa một nhóm **trong mỗi đợt**, theo thiết kế SQL ban đầu. Theo rubric cập nhật, đăng ký đề tài cần 3–5 SV đã xác nhận, đúng một nhóm trưởng. Nhóm đang lập có thể có 1–2 SV. Lời mời cần SV xác nhận. Nhóm trưởng được giữ nguyên trong bản đầu.
 - Trưởng khoa duyệt đăng ký nhóm. Một đăng ký đang chờ hoặc đã chấp thuận giữ một nhóm/một đề tài bằng UNIQUE; từ chối hoặc rút giải phóng chỗ. Rút chỉ khi chờ duyệt và còn giai đoạn SV. Đăng ký nộp đúng hạn có thể được duyệt sau hạn.
 - Thành viên bị khóa khi chờ duyệt hoặc đã được chấp thuận. Khi bị từ chối/rút, nhóm chưa được gán đề tài nên có thể chỉnh thành viên và đăng ký lại trong thời gian SV.
+- Nhóm trưởng được đổi tên nhóm (không trắng, tối đa 150 ký tự) tại Nhóm của tôi khi còn trong thời gian SV và nhóm chưa đăng ký chờ duyệt/chưa được chấp thuận. Sau từ chối hoặc rút đăng ký, được đổi tên lại nếu còn hạn. Thành viên thường và SV ngoài nhóm không được đổi tên. Chỉ sửa Ten_Nhom; không đổi mã nhóm, đợt, nhóm trưởng, thành viên hay đề tài qua chức năng này. Đợt của nhóm đã có thành viên giữ cố định theo SQL gốc. HTML/API dùng chung kiểm tra quyền và trạng thái, không cần migration.
 - Tất cả loại đợt trong bản đầu dùng một GVPB và hội đồng 3–5 người, đúng một chủ tịch và một thư ký, theo SQL gốc. GVHD không chấm đề tài mình hướng dẫn. GVPB độc lập với thành viên hội đồng của cùng đề tài.
+- Chỉ bắt đầu chấm khi đề tài đã được phân công đúng một GVPB và gán hội đồng đã chốt. Trang chấm điểm hiện lý do và ẩn form nhập điểm/tổng hợp khi còn thiếu phân công; backend kiểm tra lại cho cả HTML và API. Lưu điểm dùng cùng thứ tự khóa đợt rồi đề tài với thao tác phân công, ở isolation READ_COMMITTED, để đọc phân công mới nhất sau khi đợi khóa. Phiếu điểm đầu tiên tiếp tục khóa việc đổi phân công; yêu cầu chấm bị từ chối không khóa báo cáo hay ngăn bổ sung phân công. Quy tắc này dùng schema SQL 01–10, không cần migration.
 - Nhóm trưởng nộp báo cáo sau khi được duyệt. Mỗi lần nộp là một phiên bản bất biến. Khi có phiếu điểm đầu tiên, nộp bản mới bị khóa; mọi người chấm cùng bản mới nhất tại thời điểm đó. Các bản trước vẫn được giữ để đối chiếu.
 
 ## Điểm và công bố
@@ -50,7 +52,7 @@ Chủ tịch tổng hợp đủ phiếu rồi Trưởng khoa công bố. Một t
 
 Worker gửi sau commit qua SMTP hoặc HTTPS Brevo. Khi tắt gửi, thư vẫn ở hàng đợi. Mỗi thư có tên SV, đề tài, đợt, điểm và link `/student/results?period=...`. Chỉ nhóm mình và kết quả đã công bố được xem sau đăng nhập; email không cấp quyền truy cập mới.
 
-Worker thử tối đa 5 lần, giãn cách tăng dần; quá giới hạn thành FAILED để Trưởng khoa thử lại tại `/dean/result-emails`. ACCEPTED chỉ chứng minh dịch vụ nhận thư, không chứng minh Inbox. Nếu phản hồi gửi bị mất, retry có thể tạo thư trùng; không cam kết SMTP exactly-once. Có 24 entity, 24 bảng vật lý và 9 repository Spring Data sau SQL 01–09. Database đã có SQL 06 không cần đổi schema để khôi phục tính năng.
+Worker thử tối đa 5 lần, giãn cách tăng dần; quá giới hạn thành FAILED để Trưởng khoa thử lại tại `/dean/result-emails`. ACCEPTED chỉ chứng minh dịch vụ nhận thư, không chứng minh Inbox. Nếu phản hồi gửi bị mất, retry có thể tạo thư trùng; không cam kết SMTP exactly-once. Có 24 entity, 24 bảng vật lý và 10 repository Spring Data. Database đã có SQL 06 không cần đổi schema để khôi phục tính năng email.
 
 ## Chức vụ Trưởng bộ môn
 

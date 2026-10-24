@@ -50,7 +50,7 @@ public class NhomQueryRepository extends QuerySupport {
 
     public Page<Object[]> mine(String student, Pageable page) {
         return page(
-                "select n, p.tenDotDangKy, t.tenDeTai",
+                "select n, p.tenDotDangKy, t.tenDeTai, p.beginSV, p.endSV",
                 "from Nhom n join n.dot p left join n.deTai t where exists (select m.maSV from"
                         + " ThanhVienNhom m where m.maNhom=n.maNhom and m.maSV=:student)",
                 "n.maNhom",

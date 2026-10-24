@@ -37,6 +37,18 @@
 </h2>
 <p class="muted" th:text="${g.id + ' · ' + g.period}">
 </p>
+<details th:if="${g.leader and g.editable}" th:open="${editingGroupId == g.id}" class="space-bottom">
+<summary>Chỉnh sửa tên nhóm</summary>
+<form th:action="@{/student/groups/{id}/name(id=${g.id})}" method="post" class="space-top">
+<input type="hidden" name="page" th:value="${groupsPage.number}">
+<input type="hidden" name="size" th:value="${groupsPage.size}">
+<label class="field-label" th:for="${'group-name-' + g.id}">Tên nhóm</label>
+<input class="field space-bottom-sm" th:id="${'group-name-' + g.id}" name="name" required maxlength="150" th:value="${editingGroupId == g.id and groupEditForm != null ? groupEditForm.name : g.name}">
+<p th:if="${editingGroupId == g.id and groupEditError != null}" class="error-text caption" role="alert" th:text="${groupEditError}"></p>
+<button class="button button-primary">Lưu tên nhóm</button>
+</form>
+</details>
+<p th:if="${g.leader and !g.editable}" class="muted">Thông tin nhóm đã khóa khi đăng ký chờ duyệt, được chấp thuận hoặc ngoài thời gian sinh viên đăng ký.</p>
 <p>Đề tài: <strong th:text="${g.topicTitle ?: 'Chưa được duyệt'}">
 </strong>
 </p>

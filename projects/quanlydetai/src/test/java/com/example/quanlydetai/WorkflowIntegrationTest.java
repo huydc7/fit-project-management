@@ -773,6 +773,73 @@ class WorkflowIntegrationTest {
     }
 
     @Test
+    void reviewerCannotStartGradingUntilCouncilIsAssigned() throws Exception {
+        verifyIncompleteAssignmentCannotLockTopic(true);
+    }
+
+    @Test
+    void councilCannotStartGradingUntilReviewerIsAssigned() throws Exception {
+        verifyIncompleteAssignmentCannotLockTopic(false);
+    }
+
+    private void verifyIncompleteAssignmentCannotLockTopic(boolean reviewerFirst) throws Exception {
+        String group = registered();
+        String council = council();
+        String teacher = reviewerFirst ? "wf.gv2" : "wf.gv3";
+        String type = reviewerFirst ? "GVPB" : "HD";
+        if (reviewerFirst)
+            ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        else ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", council);
+        upload("wf.sv1", group, "eeeeeeeeeeeeeeeeeeeeeeee")
+                .andExpect(flash().attributeExists("thanhCong"));
+
+        String message = "Cần phân công đủ GVPB và hội đồng đã chốt trước khi chấm điểm.";
+        action(teacher, "/lecturer/grading", "topic", "WF_DT", "type", type,
+                        "value", "8", "comment", "Premature grading")
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("loi", message));
+        mvc.perform(put("/api/v1/grades/ballots").session(session(teacher)).with(csrf())
+                        .contentType("application/json")
+                        .content("{\"topic\":\"WF_DT\",\"type\":\"" + type
+                                + "\",\"value\":8,\"comment\":\"Premature grading\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(message));
+        mvc.perform(get("/api/v1/grades/ballots").session(session(teacher)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].assignmentsComplete").value(false));
+        mvc.perform(get("/lecturer/grading").session(session(teacher)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(message)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("name=\"value\""))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("name=\"comment\""))));
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM DIEM_THANH_PHAN WHERE Ma_De_Tai='WF_DT'", Integer.class)).isZero();
+        // Rejected grading must not lock report revisions or prevent completing assignments.
+        upload("wf.sv1", group, "ffffffffffffffffffffffff")
+                .andExpect(flash().attributeExists("thanhCong"));
+        if (reviewerFirst)
+            ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", council);
+        else ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        mvc.perform(get("/api/v1/grades/ballots").session(session(teacher)))
+                .andExpect(jsonPath("$[0].assignmentsComplete").value(true))
+                .andExpect(jsonPath("$[0].locked").value(false));
+        mvc.perform(get("/lecturer/grading").session(session(teacher)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"value\"")));
+        // The formerly blocked topic can now complete the entire grading/publication cycle.
+        for (int i = 2; i <= 5; i++)
+            ok("wf.gv" + i, "/lecturer/grading", "topic", "WF_DT", "type", i == 2 ? "GVPB" : "HD",
+                    "value", i == 2 ? "9" : "6", "comment", "Completed assignment");
+        action("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV6")
+                .andExpect(flash().attribute("loi", "Phân công đã khóa khi bắt đầu chấm điểm."));
+        ok("wf.gv3", "/lecturer/topics/WF_DT/aggregate", "comment", "Complete grading");
+        ok("wf.gv0", "/dean/topics/WF_DT/publish");
+        mvc.perform(get("/api/v1/grades/results/mine").param("period", "WF_SV").session(session("wf.sv1")))
+                .andExpect(jsonPath("$[0].score").value(6.75));
+    }
+
+    @Test
     void completeWorkflowLocksScoresAndKeepsResultsPrivate() throws Exception {
         String group = registered();
         String council = council();
@@ -1097,6 +1164,119 @@ class WorkflowIntegrationTest {
     }
 
     @Test
+    void leaderCanRenameCreatedGroupThroughHtmlAndApiWithoutChangingItsIdentity() throws Exception {
+        String id = group("wf.sv1");
+        join(id, "wf.sv1", 2, 3);
+        mvc.perform(get("/student/groups").session(session("wf.sv1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Chỉnh sửa tên nhóm")));
+        action("wf.sv1", "/student/groups/" + id + "/name", "name", "  Nhóm đổi tên  ",
+                        "period", "WF_GV", "topic", "WF_DT", "leader", "WF_SV2")
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("thanhCong"));
+        mvc.perform(get("/api/v1/groups").session(session("wf.sv2")))
+                .andExpect(jsonPath("$[0].id").value(id))
+                .andExpect(jsonPath("$[0].name").value("Nhóm đổi tên"))
+                .andExpect(jsonPath("$[0].members.length()").value(3));
+        renameGroupApi("wf.sv1", id, "<b>Nhóm API</b>").andExpect(status().isNoContent());
+        mvc.perform(get("/student/groups").session(session("wf.sv1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("&lt;b&gt;Nhóm API&lt;/b&gt;")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("<b>Nhóm API</b>"))));
+        var row = jdbc.queryForMap("SELECT Ma_Dot,Ma_De_Tai FROM NHOM WHERE Ma_Nhom=?", id);
+        assertThat(row.get("Ma_Dot")).isEqualTo("WF_SV");
+        assertThat(row.get("Ma_De_Tai")).isNull();
+        assertThat(jdbc.queryForObject("SELECT Ma_SV FROM THANH_VIEN_NHOM WHERE Ma_Nhom=? AND Vai_Tro='Truong_Nhom'", String.class, id))
+                .isEqualTo("WF_SV1");
+    }
+
+    @Test
+    void groupRenameRequiresLeaderRoleAuthenticationAndCsrf() throws Exception {
+        String id = group("wf.sv1");
+        join(id, "wf.sv1", 2, 3);
+        mvc.perform(patch("/api/v1/groups/" + id + "/name").with(csrf())
+                        .contentType("application/json").content("{\"name\":\"Forged\"}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(patch("/api/v1/groups/" + id + "/name").session(session("wf.sv1"))
+                        .contentType("application/json").content("{\"name\":\"Forged\"}"))
+                .andExpect(status().isForbidden());
+        for (String user : List.of("wf.sv2", "wf.sv4", "wf.gv1")) {
+            renameGroupApi(user, id, "Forged").andExpect(status().isForbidden());
+            action(user, "/student/groups/" + id + "/name", "name", "Forged")
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/student/groups").session(session("wf.sv2")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Chỉnh sửa tên nhóm"))));
+        assertThat(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, id))
+                .isEqualTo("Group wf.sv1");
+    }
+
+    @Test
+    void groupRenameValidatesNamesAndPreservesTheCorrectEditFormOnError() throws Exception {
+        String id = group("wf.sv1");
+        for (String name : List.of("", "   ", "a".repeat(151))) {
+            action("wf.sv1", "/student/groups/" + id + "/name", "name", name)
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("sv/groups"))
+                    .andExpect(model().attributeHasFieldErrors("groupEditForm", "name"))
+                    .andExpect(model().attribute("editingGroupId", id))
+                    .andExpect(model().attribute("groupEditForm", new com.example.quanlydetai.dto.CapNhatNhomRequest(name)))
+                    .andExpect(model().attributeExists("groupEditError"));
+            renameGroupApi("wf.sv1", id, name).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.name").exists());
+        }
+        assertThat(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, id))
+                .isEqualTo("Group wf.sv1");
+    }
+
+    @Test
+    void groupRenameLocksForPendingAndAcceptedRegistrationAndReopensAfterRejectionOrWithdrawal() throws Exception {
+        String registration = pendingRegistration();
+        String id = jdbc.queryForObject("SELECT Ma_Nhom FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, registration);
+        String locked = "Không được sửa tên nhóm khi đăng ký đang chờ duyệt hoặc đã được chấp thuận.";
+        action("wf.sv1", "/student/groups/" + id + "/name", "name", "Blocked")
+                .andExpect(model().attribute("loi", locked));
+        renameGroupApi("wf.sv1", id, "Blocked").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(locked));
+        mvc.perform(get("/student/groups").session(session("wf.sv1")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Chỉnh sửa tên nhóm"))));
+        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "false", "reason", "Need revisions");
+        ok("wf.sv1", "/student/groups/" + id + "/name", "name", "After rejection");
+        ok("wf.sv1", "/student/registrations", "group", id, "topic", "WF_DT");
+        registration = jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, id);
+        ok("wf.sv1", "/student/registrations/" + registration + "/withdraw");
+        renameGroupApi("wf.sv1", id, "After withdrawal").andExpect(status().isNoContent());
+        ok("wf.sv1", "/student/registrations", "group", id, "topic", "WF_DT");
+        registration = jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, id);
+        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "true", "reason", "");
+        renameGroupApi("wf.sv1", id, "Blocked again").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(locked));
+        assertThat(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, id))
+                .isEqualTo("After withdrawal");
+        assertThat(jdbc.queryForObject("SELECT Ma_De_Tai FROM NHOM WHERE Ma_Nhom=?", String.class, id))
+                .isEqualTo("WF_DT");
+    }
+
+    @Test
+    void groupRenameIsUnavailableWhenStudentRegistrationWindowCloses() throws Exception {
+        String id = group("wf.sv1");
+        jdbc.update("UPDATE DOT_DANG_KY SET End_SV=? WHERE Ma_Dot='WF_SV'", LocalDateTime.now().minusDays(1));
+        em.clear();
+        action("wf.sv1", "/student/groups/" + id + "/name", "name", "Too late")
+                .andExpect(model().attribute("loi", "Đã ngoài thời gian sinh viên đăng ký."));
+        renameGroupApi("wf.sv1", id, "Too late").andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/groups").session(session("wf.sv1")))
+                .andExpect(jsonPath("$[0].editable").value(false));
+        mvc.perform(get("/student/groups").session(session("wf.sv1")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Chỉnh sửa tên nhóm"))));
+        assertThat(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, id))
+                .isEqualTo("Group wf.sv1");
+    }
+
+    private ResultActions renameGroupApi(String user, String id, String name) throws Exception {
+        return mvc.perform(patch("/api/v1/groups/" + id + "/name").session(session(user)).with(csrf())
+                .contentType("application/json").content("{\"name\":\"" + name + "\"}"));
+    }
+
+    @Test
     void rejectingOrWithdrawingReleasesTopicWithoutSelectingIt() throws Exception {
         String g1 = group("wf.sv1"), g2 = group("wf.sv2");
         join(g1, "wf.sv1", 7, 8);
@@ -1222,6 +1402,7 @@ class WorkflowIntegrationTest {
     private void verifyReviewerDeadline(String type) throws Exception {
         String group = registered();
         ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        ok("wf.gv0", "/dean/topics/WF_DT/councils", "council", council());
         upload("wf.sv1", group, "dddddddddddddddddddddddd")
                 .andExpect(flash().attributeExists("thanhCong"));
         var now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));

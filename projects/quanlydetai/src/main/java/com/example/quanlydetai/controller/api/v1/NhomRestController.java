@@ -2,6 +2,7 @@ package com.example.quanlydetai.controller.api.v1;
 
 import static com.example.quanlydetai.controller.support.PageResponses.from;
 
+import com.example.quanlydetai.dto.CapNhatNhomRequest;
 import com.example.quanlydetai.dto.MoiThanhVienRequest;
 import com.example.quanlydetai.dto.NhomRequest;
 import com.example.quanlydetai.dto.NhomResponse;
@@ -44,6 +45,12 @@ public class NhomRestController {
     @ResponseStatus(HttpStatus.CREATED)
     public void invite(@PathVariable String id, @Valid @RequestBody MoiThanhVienRequest body) {
         service.invite(id, body.student());
+    }
+
+    @PatchMapping("/{id}/name")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rename(@PathVariable String id, @Valid @RequestBody CapNhatNhomRequest body) {
+        service.rename(id, body);
     }
 
     @DeleteMapping("/{id}/members/{student}")

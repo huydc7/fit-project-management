@@ -9,6 +9,20 @@ import java.util.*;
 
 @Repository
 public class DiemQueryRepository extends QuerySupport {
+    private static final String COMPLETE_ASSIGNMENTS =
+            "(select count(rp) from GvpbDeTai rp where rp.maDeTai=t.maDeTai)=1"
+                    + " and exists (select hc.maHd from HoiDongDeTai hc join hc.hd c"
+                    + " where hc.maDeTai=t.maDeTai and c.trangThai='DaChot')";
+
+    public boolean assignmentsComplete(String topic) {
+        return em.createQuery(
+                        "select count(t) from DeTai t where t.maDeTai=:topic and "
+                                + COMPLETE_ASSIGNMENTS,
+                        Long.class)
+                .setParameter("topic", topic)
+                .getSingleResult() == 1;
+    }
+
     public Page<Object[]> tasks(String teacher, Pageable page) {
         String from =
                 "from DeTai t join t.dot p"
@@ -23,7 +37,8 @@ public class DiemQueryRepository extends QuerySupport {
                 "select t.maDeTai, t.tenDeTai, t.trangThai, r.maGV, m.vaiTro, d.diem, d.nhanXet,"
                         + " k.maDeTai, p.deadlineGvpbNopDiem, (select count(s) from DiemThanhPhan s"
                         + " where s.maDeTai=t.maDeTai), case when h.maHd is null then 0 else 1 +"
-                        + " (select count(c) from ThanhVienHoiDong c where c.maHd=h.maHd) end";
+                        + " (select count(c) from ThanhVienHoiDong c where c.maHd=h.maHd) end,"
+                        + " case when " + COMPLETE_ASSIGNMENTS + " then true else false end";
         return page(
                 select,
                 from,
