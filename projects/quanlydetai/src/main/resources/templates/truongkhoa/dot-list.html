@@ -7,14 +7,16 @@
 <body>
   <main>
     <h1 class="page-title brand-text space-bottom-lg">Quản lý đợt đăng ký</h1>
-<form method="get" action="/dean/periods" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tìm mã, tên hoặc loại đợt" aria-label="Tìm kiếm" maxlength="200"><button class="button button-primary">Tìm kiếm</button><a href="/dean/periods" class="button button-outline">Bỏ lọc</a></form>
+    <form method="get" action="/dean/periods" class="panel panel-body inline-fields gap-sm space-bottom">
+      <input name="q" class="field" th:value="${q}" placeholder="Tìm mã, tên hoặc loại đợt" aria-label="Tìm kiếm" maxlength="200">
+      <button class="button button-primary" type="submit">Tìm kiếm</button>
+      <a href="/dean/periods" class="button button-outline">Bỏ lọc</a>
+    </form>
 
-    <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}">
-</div>
+    <div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}"></div>
     <div th:if="${loi}" class="notice notice-error">
       <ul class="space-bottom-none">
-        <li th:each="l : ${loi}" th:text="${l}">
-</li>
+        <li th:each="l : ${loi}" th:text="${l}"></li>
       </ul>
     </div>
 
@@ -25,40 +27,40 @@
           <thead>
             <tr>
               <th>Mã đợt</th>
-<th>Tên đợt</th>
-<th>Loại</th>
+              <th>Tên đợt</th>
+              <th>Loại</th>
               <th>GV đăng ký</th>
-<th>SV đăng ký</th><th>Thao tác</th>
+              <th>SV đăng ký</th>
+              <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             <tr th:each="d : ${dsDot}">
-              <td th:text="${d.maDot}">
-</td>
-              <td th:text="${d.tenDotDangKy}">
-</td>
+              <td th:text="${d.maDot}"></td>
+              <td th:text="${d.tenDotDangKy}"></td>
               <td>
-<span class="tag tag-neutral" th:text="${d.loai}">
-</span>
-</td>
-              <td>
-                <span th:text="${#temporals.format(d.beginGV,'dd/MM HH:mm')}">
-</span> -
-                <span th:text="${#temporals.format(d.endGV,'dd/MM HH:mm')}">
-</span>
+                <span class="tag tag-info" th:text="${d.loai}"></span>
+              </td>
+              <td class="no-wrap">
+                <span th:text="${#temporals.format(d.beginGV,'dd/MM/yyyy HH:mm')}"></span> –
+                <span th:text="${#temporals.format(d.endGV,'dd/MM/yyyy HH:mm')}"></span>
+              </td>
+              <td class="no-wrap">
+                <span th:text="${#temporals.format(d.beginSV,'dd/MM/yyyy HH:mm')}"></span> –
+                <span th:text="${#temporals.format(d.endSV,'dd/MM/yyyy HH:mm')}"></span>
               </td>
               <td>
-                <span th:text="${#temporals.format(d.beginSV,'dd/MM HH:mm')}">
-</span> -
-                <span th:text="${#temporals.format(d.endSV,'dd/MM HH:mm')}">
-</span>
+                <div class="inline-fields gap-xs no-wrap">
+                  <a class="button button-outline button-small" th:href="@{/dean/periods/{id}/edit(id=${d.maDot})}">Sửa đợt</a>
+                  <form method="post" th:action="@{/dean/periods/{id}/delete(id=${d.maDot})}" data-confirm="Xóa đợt chưa có dữ liệu này?" class="inline">
+                    <button class="button button-danger button-small" type="submit">Xóa đợt</button>
+                  </form>
+                </div>
               </td>
-<td><a class="button button-outline button-small" th:href="@{/dean/periods/{id}/edit(id=${d.maDot})}">Sửa đợt</a>
-<form method="post" th:action="@{/dean/periods/{id}/delete(id=${d.maDot})}" data-confirm="Xóa đợt chưa có dữ liệu này?"><button class="button button-danger button-small">Xóa đợt</button></form></td>
             </tr>
             <tr th:if="${#lists.isEmpty(dsDot)}">
-<td colspan="6" class="muted">Chưa có đợt nào.</td>
-</tr>
+              <td colspan="6" class="muted">Chưa có đợt nào.</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -72,15 +74,11 @@
 
           <div class="span-3">
             <label class="field-label" for="maDot">Mã đợt</label>
-<input type="text" class="field" th:field="*{maDot}" th:readonly="${editingId != null}" placeholder="DOT01" required>
+            <input type="text" class="field" th:field="*{maDot}" th:readonly="${editingId != null}" placeholder="DOT01" required>
           </div>
-          <div class="span-5">
-            <label class="field-label" for="tenDotDangKy">Tên đợt</label>
-<input type="text" class="field" th:field="*{tenDotDangKy}" required>
-          </div>
-          <div class="span-4">
+          <div class="span-3">
             <label class="field-label" for="loai">Loại đợt</label>
-<select class="select-field" th:field="*{loai}" id="loai" required>
+            <select class="select-field" th:field="*{loai}" id="loai" required>
               <option value="">-- Chọn --</option>
               <option value="MonHoc">Môn học</option>
               <option value="NCKH">NCKH</option>
@@ -88,62 +86,55 @@
               <option value="KLTN">KLTN</option>
             </select>
           </div>
-
-          <div class="span-4">
-            <label class="field-label" for="beginGV">GV đăng ký: từ</label>
-<input type="datetime-local" class="field" th:field="*{beginGV}" required>
-          </div>
-          <div class="span-4">
-            <label class="field-label" for="endGV">đến</label>
-<input type="datetime-local" class="field" th:field="*{endGV}" required>
+          <div class="span-6">
+            <label class="field-label" for="tenDotDangKy">Tên đợt</label>
+            <input type="text" class="field" th:field="*{tenDotDangKy}" placeholder="VD: Khóa luận tốt nghiệp — Học kỳ I, năm học 2026–2027" required>
           </div>
 
-          <div class="span-4">
-            <label class="field-label" for="beginSV">SV đăng ký: từ</label>
-<input type="datetime-local" class="field" th:field="*{beginSV}" required>
+          <div class="span-6">
+            <label class="field-label" for="beginGV">GV đăng ký: từ ngày</label>
+            <input type="datetime-local" class="field" th:field="*{beginGV}" required>
           </div>
-          <div class="span-4">
-            <label class="field-label" for="endSV">đến</label>
-<input type="datetime-local" class="field" th:field="*{endSV}" required>
+          <div class="span-6">
+            <label class="field-label" for="endGV">GV đăng ký: đến ngày</label>
+            <input type="datetime-local" class="field" th:field="*{endGV}" required>
           </div>
 
-          <div class="span-4 truong-tlcn-kltn" style="display:none;">
+          <div class="span-6">
+            <label class="field-label" for="beginSV">SV đăng ký: từ ngày</label>
+            <input type="datetime-local" class="field" th:field="*{beginSV}" required>
+          </div>
+          <div class="span-6">
+            <label class="field-label" for="endSV">SV đăng ký: đến ngày</label>
+            <input type="datetime-local" class="field" th:field="*{endSV}" required>
+          </div>
+
+          <div class="span-6 truong-tlcn-kltn" style="display:none;">
             <label class="field-label" for="deadlineGvpbNopDiem">Hạn chót GVPB nộp điểm</label>
-<input type="datetime-local" class="field" th:field="*{deadlineGvpbNopDiem}">
+            <input type="datetime-local" class="field" th:field="*{deadlineGvpbNopDiem}">
           </div>
-          <div class="span-4 truong-kltn" style="display:none;">
+          <div class="span-6 truong-kltn" style="display:none;">
             <label class="field-label" for="timeBcHd">Ngày báo cáo hội đồng</label>
-<input type="datetime-local" class="field" th:field="*{timeBcHd}">
-            <p class="muted">Hạn GVPB nộp điểm phải trước thời điểm báo cáo hội đồng.</p>
+            <input type="datetime-local" class="field" th:field="*{timeBcHd}">
           </div>
 
-          <div class="span-full">
-            <button type="submit" class="button button-primary" th:text="${editingId != null ? 'Lưu thay đổi' : 'Tạo đợt'}">Lưu</button><a class="button button-outline" th:if="${editingId != null}" th:href="@{/dean/periods}">Hủy sửa</a>
+          <div class="span-full inline-fields gap-sm">
+            <button type="submit" class="button button-primary" th:text="${editingId != null ? 'Lưu thay đổi' : 'Tạo đợt'}">Lưu</button>
+            <a class="button button-outline" th:if="${editingId != null}" th:href="@{/dean/periods}">Hủy sửa</a>
           </div>
         </form>
       </div>
     </div>
-  <script th:inline="javascript">
-    const select = document.getElementById('loai');
-    function capNhatTruong(selector, hienThi) {
-      document.querySelectorAll(selector).forEach(el => {
-        el.style.display = hienThi ? '' : 'none';
-        el.querySelectorAll('input').forEach(input => {
-          input.disabled = !hienThi;
-          input.required = hienThi;
-          if (!hienThi) input.value = '';
-        });
-      });
-    }
-    function capNhatHienThi() {
-      const loai = select.value;
-      capNhatTruong('.truong-tlcn-kltn', loai === 'TLCN' || loai === 'KLTN');
-      capNhatTruong('.truong-kltn', loai === 'KLTN');
-    }
-    select.addEventListener('change', capNhatHienThi);
-    capNhatHienThi();
-  </script>
-  <div th:replace="~{layout/pagination :: pager(${dsDotPage}, '/dean/periods', 'page')}"></div>
-</main>
+    <script th:inline="javascript">
+      const select = document.getElementById("loai");
+      function capNhatHienThi() {
+        const loai = select.value;
+        document.querySelectorAll(".truong-tlcn-kltn").forEach(el => el.style.display = (loai === "TLCN" || loai === "KLTN") ? "" : "none");
+        document.querySelectorAll(".truong-kltn").forEach(el => el.style.display = (loai === "KLTN") ? "" : "none");
+      }
+      select.addEventListener("change", capNhatHienThi);
+      capNhatHienThi();
+    </script>
+  </main>
 </body>
 </html>

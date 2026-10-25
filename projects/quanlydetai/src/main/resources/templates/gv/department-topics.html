@@ -1,42 +1,39 @@
-<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}"><head><title>Duyệt đề tài bộ môn</title></head><body><main>
-<h1 class="page-title">Duyệt đề tài bộ môn</h1>
-<p class="muted">Mỗi giảng viên hướng dẫn tối đa 3 đề tài trong một đợt, kể cả đồng hướng dẫn. Đề tài đã hủy không tính vào giới hạn.</p>
-<p class="muted">Trưởng bộ môn duyệt nội dung và chọn 1–2 GVHD thuộc bộ môn mình quản lý; Trưởng khoa xác nhận danh sách rồi công bố. Nội dung sửa sau duyệt phải được duyệt lại.</p>
-<div th:if="${thanhCong}" class="notice notice-success" th:text="${thanhCong}"></div><div th:if="${loi}" class="notice notice-error" th:text="${loi}"></div>
-<div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>
-<p th:if="${#lists.isEmpty(topics)}" class="muted">Không có đề tài phù hợp.</p>
-<article th:each="t:${topics}" class="panel panel-body space-bottom"><h2 class="item-title" th:text="${t.title}"></h2>
-<p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state}"></p><p class="pre-wrap" th:text="${t.content}"></p>
-<p th:text="${t.departmentApproved ? 'Bộ môn đã duyệt.' : 'Chưa có xác nhận duyệt của bộ môn.'}"></p>
-<p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt trước giai đoạn SV đăng ký.</p>
-<p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
-<p>GVHD bộ môn lựa chọn: <span th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></span></p>
-<form th:if="${t.state == 'Nhap' &amp;&amp; !t.departmentApproved &amp;&amp; t.reviewOpen}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}">
-<input type="hidden" name="accept" value="true">
-<fieldset class="teacher-picker space-bottom" data-teacher-picker data-max="2" th:attr="aria-describedby=${'teacher-help-' + t.id}">
-<legend class="field-label">Giảng viên hướng dẫn</legend>
-<div class="teacher-picker-heading">
-<span>Chọn từ 1 đến 2 giảng viên</span>
-<span class="teacher-count" data-teacher-count role="status" aria-live="polite"></span>
-</div>
-<label class="teacher-search" data-teacher-search-control hidden>
-<span class="field-label">Tìm giảng viên</span>
-<input class="field" type="search" placeholder="Nhập họ tên hoặc mã giảng viên" data-teacher-search autocomplete="off">
-</label>
-<div class="teacher-options">
-<label class="teacher-option" th:each="g : ${teachers}">
-<input type="checkbox" name="supervisors" th:value="${g.id}" th:checked="${#lists.contains(t.supervisorIds, g.id)}">
-<span th:text="${g.label}"></span>
-</label>
-</div>
-<p class="teacher-help" th:if="${#lists.isEmpty(teachers)}">Bộ môn chưa có giảng viên có tài khoản đang hoạt động để phân công GVHD. Vui lòng liên hệ quản trị viên để cập nhật hồ sơ hoặc tài khoản.</p>
-<p class="teacher-help" data-teacher-no-results hidden>Không tìm thấy giảng viên phù hợp.</p>
-<p class="teacher-help" th:id="${'teacher-help-' + t.id}" data-teacher-feedback>Đánh dấu vào giảng viên muốn chọn. Bỏ dấu chọn để thay đổi.</p>
-</fieldset>
-<button class="button button-primary" data-teacher-submit>Duyệt, chọn GVHD và chuyển Trưởng khoa</button>
-</form>
-<form th:if="${t.state == 'Nhap' &amp;&amp; t.reviewOpen}" method="post" class="space-top" th:action="@{/department/topics/{id}/review(id=${t.id})}">
-<button class="button button-danger" name="accept" value="false">Từ chối đề tài</button>
-</form>
-</article><div th:replace="~{layout/pagination :: pager(${topicsPage}, '/department/topics', 'page')}"></div>
-</main></body></html>
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head>
+  <title>Duyệt đề tài bộ môn</title>
+</head>
+<body>
+<main>
+  <h1 class="page-title space-bottom">Duyệt đề tài bộ môn</h1>
+  <div class="notice notice-info">Bộ môn duyệt nội dung chuyên môn trước; Trưởng khoa quyết định công bố. Cả hai bước phải hoàn tất trước thời điểm mở đăng ký cho sinh viên. Nội dung sửa sau khi duyệt phải được bộ môn duyệt lại.</div>
+  <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
+  <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+  <div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>
+  <p th:if="${#lists.isEmpty(topics)}" class="muted">Không có đề tài phù hợp trong bộ môn của bạn.</p>
+  <article th:each="t : ${topics}" class="panel panel-body space-bottom">
+    <div class="inline-fields spread">
+      <h2 class="item-title" th:text="${t.title}"></h2>
+      <span class="tag self-start"
+            th:classappend="${t.state == 'DaCongBo' or t.state == 'HoanThanh'} ? 'tag-success' : (${t.state == 'Huy'} ? 'tag-danger' : (${t.state == 'DangThucHien'} ? 'tag-info' : 'tag-neutral'))"
+            th:text="${t.state == 'Nhap' ? 'Bản nháp' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}">
+      </span>
+    </div>
+    <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
+    <p class="pre-wrap" th:text="${t.content}"></p>
+    <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
+    <p>
+      <span class="tag"
+            th:classappend="${t.departmentApproved} ? 'tag-success' : 'tag-warning'"
+            th:text="${t.departmentApproved ? 'Bộ môn đã duyệt' : 'Chưa có xác nhận duyệt của bộ môn'}">
+      </span>
+    </p>
+    <p th:unless="${t.reviewOpen}" class="warning-text">Đã đóng phê duyệt trước giai đoạn sinh viên đăng ký.</p>
+    <form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}" class="space-top">
+      <button th:disabled="${t.departmentApproved || !t.reviewOpen}" class="button button-primary space-right-sm" name="accept" value="true">Duyệt và chuyển Trưởng khoa</button>
+      <button th:disabled="${!t.reviewOpen}" class="button button-danger" name="accept" value="false">Từ chối</button>
+    </form>
+  </article>
+</main>
+</body>
+</html>

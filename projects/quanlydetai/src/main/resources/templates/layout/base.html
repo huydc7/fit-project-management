@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>(()=>{try{const t=localStorage.getItem('fit-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/hcmute-favicon.png(v=20261002c)}">
 <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico(v=20261002c)}">
 <meta name="theme-color" content="#123e63">
 <title th:replace="${title}">Quản lý đề tài | FIT HCMUTE</title>
-<link rel="stylesheet" th:href="@{/css/custom.css(v=20261022-teacher-picker)}">
-<script defer th:src="@{/js/app.js(v=20261022-teacher-picker)}">
+<link rel="stylesheet" th:href="@{/css/custom.css(v=20261022-dark)}">
+<script defer th:src="@{/js/app.js(v=20261022-dark)}">
 </script>
 </head>
 <body class="app-page">

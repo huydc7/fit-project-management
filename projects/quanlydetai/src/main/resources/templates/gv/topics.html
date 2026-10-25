@@ -7,82 +7,91 @@
 <main>
 <h1 class="page-title space-bottom">Đề tài của tôi</h1>
 <div th:replace="~{layout/search :: topicFilters(@{/lecturer/topics})}"></div>
-<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
-</div>
-<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
-</div>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
 <form method="post" th:action="@{/lecturer/topics}" th:object="${form}" class="panel panel-body space-bottom-lg">
-<h2 class="item-title">Đề xuất đề tài mới</h2>
-<div class="space-bottom">
-<label class="field-label" for="period">Đợt đăng ký</label>
-<select class="select-field" id="period" th:field="*{period}" required>
-<option value="">Chọn…</option>
-<option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}">
-</option>
-</select>
-<div class="error-text caption" th:errors="*{period}">
-</div>
-</div>
-<div class="space-bottom">
-<label class="field-label" for="title">Tên đề tài</label>
-<input type="text" class="field" id="title" th:field="*{title}" required maxlength="300">
-<div class="error-text caption" th:errors="*{title}">
-</div>
-</div>
-<div class="space-bottom">
-<label class="field-label" for="content">Nội dung / yêu cầu</label>
-<textarea class="field" id="content" th:field="*{content}" required maxlength="20000" rows="4">
-</textarea>
-<div class="error-text caption" th:errors="*{content}">
-</div>
-</div>
-<div class="space-bottom">
-<label class="field-label" for="department">Bộ môn</label>
-<select class="select-field" id="department" th:field="*{department}" required>
-<option value="">Chọn…</option>
-<option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}">
-</option>
-</select>
-<div class="error-text caption" th:errors="*{department}">
-</div>
-</div>
-<p class="muted">Trưởng bộ môn chọn GVHD khi duyệt; Trưởng khoa xác nhận và công bố.</p>
-<button class="button button-primary self-start" type="submit">Lưu</button>
+  <h2 class="item-title">Đề xuất đề tài mới</h2>
+  <div class="space-bottom">
+    <label class="field-label" for="period">Đợt đăng ký</label>
+    <select class="select-field" id="period" th:field="*{period}" required>
+      <option value="">Chọn…</option>
+      <option th:each="o : ${periods}" th:value="${o.id}" th:text="${o.label}"></option>
+    </select>
+    <div class="error-text caption" th:errors="*{period}"></div>
+  </div>
+  <div class="space-bottom">
+    <label class="field-label" for="title">Tên đề tài</label>
+    <input type="text" class="field" id="title" th:field="*{title}" required maxlength="300" placeholder="Nhập tên đề tài rõ ràng, cụ thể">
+    <div class="error-text caption" th:errors="*{title}"></div>
+  </div>
+  <div class="space-bottom">
+    <label class="field-label" for="content">Nội dung / yêu cầu</label>
+    <textarea class="field" id="content" th:field="*{content}" required maxlength="20000" rows="4" placeholder="Mô tả mục tiêu, phạm vi và yêu cầu đạt được của đề tài"></textarea>
+    <div class="error-text caption" th:errors="*{content}"></div>
+  </div>
+  <div class="space-bottom">
+    <label class="field-label" for="department">Bộ môn</label>
+    <select class="select-field" id="department" th:field="*{department}" required>
+      <option value="">Chọn…</option>
+      <option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}"></option>
+    </select>
+    <div class="error-text caption" th:errors="*{department}"></div>
+  </div>
+  <div class="space-bottom">
+    <label class="field-label" for="supervisors">Chọn 1–2 giảng viên hướng dẫn (giữ Ctrl để chọn nhiều)</label>
+    <select class="select-field" id="supervisors" th:field="*{supervisors}" required multiple size="5">
+      <option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}"></option>
+    </select>
+    <div class="error-text caption" th:errors="*{supervisors}"></div>
+  </div>
+  <button class="button button-primary self-start" type="submit">Lưu</button>
 </form>
 <p class="muted" th:if="${#lists.isEmpty(topics)}">Bạn chưa có đề tài.</p>
 <article th:each="t : ${topics}" class="panel panel-body space-bottom">
-<div class="inline-fields spread">
-<h2 class="item-title" th:text="${t.title}">
-</h2>
-<span class="tag tag-neutral self-start" th:text="${t.state}">
-</span>
-</div>
-<p class="muted" th:text="${t.period + ' · ' + t.department}">
-</p>
-<p class="pre-wrap" th:text="${t.content}">
-</p>
-<p>GVHD: <span th:text="${#strings.listJoin(t.supervisors, ', ')}">
-</span>
-</p>
-<p th:if="${t.reviewer}">GVPB: <span th:text="${t.reviewer}">
-</span>
-</p>
-<p th:if="${t.group}">Nhóm: <span th:text="${t.group}">
-</span> · <a th:href="@{/lecturer/reports}">Xem báo cáo được phân công</a>
-</p>
-<p class="muted" th:if="${t.state == 'Nhap'}" th:text="${t.departmentApproved ? 'Bộ môn đã duyệt và chọn GVHD, chờ Trưởng khoa xác nhận và công bố.' : 'Chờ Trưởng bộ môn duyệt.'}"></p>
-<details th:if="${t.editable}" class="space-top"><summary>Sửa đề tài</summary>
-<form method="post" th:action="@{/lecturer/topics/{id}/edit(id=${t.id})}" class="space-top">
-<label class="field-label">Tên đề tài<input class="field space-bottom" name="title" th:value="${t.title}" required maxlength="300"></label>
-<label class="field-label">Nội dung<textarea class="field space-bottom" name="content" th:text="${t.content}" required maxlength="20000" rows="4"></textarea></label>
-<label class="field-label">Bộ môn<select class="select-field space-bottom" name="department" required><option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}" th:selected="${o.id == t.departmentId}"></option></select></label>
-
-<p class="muted">Sau khi sửa, xác nhận bộ môn và danh sách GVHD bị hủy; bộ môn cần duyệt và chọn lại.</p>
-<button class="button button-primary">Lưu thay đổi</button></form></details>
-<form th:if="${t.editable}" method="post" th:action="@{/lecturer/topics/{id}/delete(id=${t.id})}" data-confirm="Xóa đề tài nháp này?" class="space-top">
-<button class="button button-danger">Xóa đề tài nháp</button></form>
+  <div class="inline-fields spread">
+    <h2 class="item-title" th:text="${t.title}"></h2>
+    <span class="tag self-start"
+          th:classappend="${t.state == 'DaCongBo' or t.state == 'HoanThanh'} ? 'tag-success' : (${t.state == 'Huy'} ? 'tag-danger' : (${t.state == 'DangThucHien'} ? 'tag-info' : 'tag-neutral'))"
+          th:text="${t.state == 'Nhap' ? 'Bản nháp' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}">
+    </span>
+  </div>
+  <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
+  <p class="pre-wrap" th:text="${t.content}"></p>
+  <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
+  <p th:if="${t.reviewer}">GVPB: <strong th:text="${t.reviewer}"></strong></p>
+  <p th:if="${t.group}">Nhóm thực hiện: <strong th:text="${t.group}"></strong> · <a th:href="@{/lecturer/reports}">Xem báo cáo được phân công</a></p>
+  <p class="muted" th:if="${t.state == 'Nhap'}" th:text="${t.departmentApproved ? 'Bộ môn đã duyệt, chờ Trưởng khoa công bố.' : 'Chờ Trưởng bộ môn duyệt.'}"></p>
+  <details th:if="${t.editable}" class="space-top">
+    <summary>Sửa đề tài</summary>
+    <form method="post" th:action="@{/lecturer/topics/{id}/edit(id=${t.id})}" class="space-top">
+      <div class="space-bottom">
+        <label class="field-label" th:for="${'edit-title-' + t.id}">Tên đề tài</label>
+        <input class="field" th:id="${'edit-title-' + t.id}" name="title" th:value="${t.title}" required maxlength="300">
+      </div>
+      <div class="space-bottom">
+        <label class="field-label" th:for="${'edit-content-' + t.id}">Nội dung</label>
+        <textarea class="field" th:id="${'edit-content-' + t.id}" name="content" th:text="${t.content}" required maxlength="20000" rows="4"></textarea>
+      </div>
+      <div class="space-bottom">
+        <label class="field-label" th:for="${'edit-dept-' + t.id}">Bộ môn</label>
+        <select class="select-field" th:id="${'edit-dept-' + t.id}" name="department" required>
+          <option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}" th:selected="${o.id == t.departmentId}"></option>
+        </select>
+      </div>
+      <div class="space-bottom">
+        <label class="field-label" th:for="${'edit-sup-' + t.id}">Chọn 1–2 GVHD (giữ Ctrl để chọn nhiều)</label>
+        <select class="select-field" th:id="${'edit-sup-' + t.id}" name="supervisors" multiple required size="5">
+          <option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}" th:selected="${#lists.contains(t.supervisorIds, o.id)}"></option>
+        </select>
+      </div>
+      <p class="muted">Sau khi sửa, đề tài cần được bộ môn duyệt lại.</p>
+      <button class="button button-primary" type="submit">Lưu thay đổi</button>
+    </form>
+  </details>
+  <form th:if="${t.editable}" method="post" th:action="@{/lecturer/topics/{id}/delete(id=${t.id})}" data-confirm="Xóa đề tài nháp này?" class="space-top">
+    <button class="button button-danger button-small" type="submit">Xóa đề tài nháp</button>
+  </form>
 </article>
-<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/lecturer/topics', 'page')}"></div>
 </main>
 </body>
 </html>
