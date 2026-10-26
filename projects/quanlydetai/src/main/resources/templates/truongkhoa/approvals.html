@@ -69,18 +69,17 @@
           th:text="${t.state == 'Nhap' ? 'Bản nháp' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}">
     </span>
   </div>
-  <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
+  <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state + ' · ' + t.department}"></p>
+  <p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
+  <p th:if="${t.confirmedBy}">Trưởng khoa xác nhận: <span th:text="${t.confirmedBy}"></span> · <span th:text="${t.confirmedAt}"></span></p>
   <p class="pre-wrap" th:text="${t.content}"></p>
-  <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
+  <p>GVHD do bộ môn lựa chọn: <span th:text="${#strings.listJoin(t.supervisors, ', ')}"></span></p>
   <p th:if="${t.group}">Nhóm thực hiện: <strong th:text="${t.group}"></strong></p>
   <form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/dean/topics/{id}/review(id=${t.id})}">
     <p class="muted" th:unless="${t.departmentApproved}">Chưa được Trưởng bộ môn duyệt.</p>
-    <p class="tag tag-success space-bottom-sm" th:if="${t.departmentApproved}">Đã được Trưởng bộ môn duyệt nội dung</p>
     <p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt: phải hoàn tất trước giờ SV bắt đầu đăng ký.</p>
-    <div>
-      <button class="button button-success space-right-sm" name="accept" value="true" type="submit" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Duyệt và công bố đề tài</button>
-      <button class="button button-danger" name="accept" value="false" type="submit">Từ chối</button>
-    </div>
+    <button class="button button-success space-right-sm" name="accept" value="true" type="submit" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Xác nhận GVHD và công bố đề tài</button>
+    <button class="button button-danger" name="accept" value="false" type="submit">Từ chối</button>
   </form>
   <div th:if="${t.state == 'DangThucHien'}" class="divider-top space-top pad-top">
     <p>GVPB hiện tại: <strong th:text="${t.reviewer ?: 'Chưa phân công'}"></strong></p>
@@ -127,7 +126,7 @@
     </span>
   </div>
   <p>
-    Điểm tổng kết: <strong th:text="${r.score}"></strong> / 10 · Nhóm: <strong th:text="${r.group}"></strong> · <span class="muted" th:text="${r.periodName}"></span>
+    <strong th:text="${r.score}"></strong> / 10 · <span th:text="${r.group + ' · ' + r.state}"></span> · <span class="muted" th:text="${r.periodName}"></span>
   </p>
   <p class="pre-wrap" th:text="${r.comment}"></p>
   <form th:if="${r.state == 'ChuaCongBo'}" method="post" th:action="@{/dean/topics/{id}/publish(id=${r.topic})}">

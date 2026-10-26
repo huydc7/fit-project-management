@@ -96,9 +96,9 @@
 <section class="panel panel-body space-bottom-lg">
   <h2 class="section-title">Quản lý bộ môn</h2>
   <form method="post" th:action="@{/admin/departments}" class="space-bottom">
-    <label class="field-label" for="departmentId">Mã bộ môn mới</label>
+    <label class="field-label" for="departmentId">Mã bộ môn</label>
     <input id="departmentId" name="id" required maxlength="20" class="field space-bottom-sm" placeholder="VD: CNPM">
-    <label class="field-label" for="departmentName">Tên bộ môn mới</label>
+    <label class="field-label" for="departmentName">Tên bộ môn</label>
     <input id="departmentName" name="name" required maxlength="150" class="field space-bottom-sm" placeholder="VD: Công nghệ phần mềm">
     <button class="button button-outline" type="submit">Thêm bộ môn</button>
   </form>
@@ -165,7 +165,8 @@
             </form>
           </details>
           <div class="inline-fields gap-xs space-top-sm">
-            <form method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
+            <a th:if="${a.role == 'GV' and a.state == 'HoatDong'}" th:href="@{/admin/accounts/{id}/lock(id=${a.id})}" class="button button-small button-neutral">Khóa / Xem ảnh hưởng</a>
+            <form th:unless="${a.role == 'GV' and a.state == 'HoatDong'}" method="post" th:action="@{/admin/accounts/{id}/status(id=${a.id})}">
               <input type="hidden" name="active" th:value="${a.state != 'HoatDong'}">
               <button class="button button-small button-neutral" type="submit" th:text="${a.state == 'HoatDong' ? 'Khóa' : 'Mở khóa'}"></button>
             </form>
