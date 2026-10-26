@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head><title>Duyệt đăng ký nhóm</title></head>
+<body><main th:with="inlineErrorVisible=${registrationErrorId != null and #lists.contains(registrations.![id], registrationErrorId)}">
+<h1 class="page-title space-bottom">Duyệt đăng ký đề tài của nhóm</h1>
+<p class="muted">Chỉ hiển thị đăng ký đang chờ duyệt của các đề tài bạn hướng dẫn. Một GVHD chấp thuận hoặc từ chối là quyết định cho đăng ký đó.</p>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
+<div th:if="${loi != null and !inlineErrorVisible}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+<p class="muted" th:if="${#lists.isEmpty(registrations)}">Không có đăng ký chờ duyệt.</p>
+<article class="panel panel-body space-bottom" th:each="r : ${registrations}" th:id="${'registration-' + r.id}">
+  <div class="inline-fields spread">
+    <h3 class="item-title" th:text="${r.groupName + ' → ' + r.topicTitle}"></h3>
+    <span class="tag tag-warning">Chờ duyệt</span>
+  </div>
+  <p class="muted" th:text="${'Mã nhóm: ' + r.group + ' · Mã đề tài: ' + r.topic + ' · Ngày đăng ký: ' + #temporals.format(r.submitted,'dd/MM/yyyy HH:mm')}"></p>
+  <form method="post" th:action="@{/lecturer/registrations/{id}/review(id=${r.id})}" data-registration-review>
+<input type="hidden" name="registrationsPage" th:value="${registrationPageIndex}">
+<input type="hidden" name="size" th:value="${registrationsPage.size}">
+    <label class="field-label" th:for="${'reason-' + r.id}">Lý do / ghi chú (bắt buộc khi từ chối)</label>
+    <input class="field space-bottom-sm" name="reason" maxlength="1000" th:id="${'reason-' + r.id}" placeholder="Nhập lý do nếu từ chối đăng ký của nhóm"
+       th:value="${registrationErrorId == r.id ? registrationReason : ''}"
+       th:attr="aria-invalid=${registrationErrorId == r.id ? 'true' : null},aria-describedby=${'reason-error-' + r.id}">
+<p class="error-text caption space-bottom-sm" th:id="${'reason-error-' + r.id}" data-reason-error role="alert" th:text="${registrationErrorId == r.id ? loi : ''}"></p>
+    <button class="button button-success space-right-sm" name="accept" value="true" type="submit">Chấp thuận nhóm</button>
+    <button class="button button-danger" name="accept" value="false" type="submit">Từ chối, mở lại đề tài</button>
+  </form>
+</article>
+<div th:replace="~{layout/pagination :: pager(${registrationsPage}, '/lecturer/registrations', 'registrationsPage')}"></div>
+</main></body></html>

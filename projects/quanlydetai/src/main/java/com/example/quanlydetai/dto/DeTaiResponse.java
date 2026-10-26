@@ -24,4 +24,13 @@ public record DeTaiResponse(
         boolean reviewOpen,
         String proposerId,
         String confirmedBy,
-        java.time.LocalDateTime confirmedAt) {}
+        java.time.LocalDateTime confirmedAt,
+        String proposerName,
+        String groupName,
+        List<ThanhVienResponse> groupMembers,
+        List<ThanhVienResponse> councilMembers) {
+    public boolean legacySupervision() {
+        return !supervisorIds.isEmpty()
+                && (supervisorIds.size() != 1 || !supervisorIds.contains(proposerId));
+    }
+}

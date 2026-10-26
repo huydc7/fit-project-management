@@ -65,6 +65,7 @@
         </table>
       </div>
     </div>
+
     <div th:replace="~{layout/pagination :: pager(${dsDotPage}, '/dean/periods', 'page')}"></div>
 
     <div class="panel space-top">
@@ -128,26 +129,24 @@
     </div>
     <script th:inline="javascript">
       const select = document.getElementById("loai");
-      const deadlineInput = document.getElementById("deadlineGvpbNopDiem");
-      const councilInput = document.getElementById("timeBcHd");
-      function capNhatHienThi() {
-        const loai = select.value;
-        const hasDeadline = loai === "TLCN" || loai === "KLTN";
-        const hasCouncil = loai === "KLTN";
-        document.querySelectorAll(".truong-tlcn-kltn").forEach(el => el.style.display = hasDeadline ? "" : "none");
-        document.querySelectorAll(".truong-kltn").forEach(el => el.style.display = hasCouncil ? "" : "none");
-        if (deadlineInput) {
-          deadlineInput.disabled = !hasDeadline;
-          if (!hasDeadline) deadlineInput.value = "";
-        }
-        if (councilInput) {
-          councilInput.disabled = !hasCouncil;
-          if (!hasCouncil) councilInput.value = "";
-        }
-      }
+    function capNhatTruong(selector, hienThi) {
+      document.querySelectorAll(selector).forEach(el => {
+        el.style.display = hienThi ? '' : 'none';
+        el.querySelectorAll('input').forEach(input => {
+          input.disabled = !hienThi;
+          input.required = hienThi;
+          if (!hienThi) input.value = '';
+        });
+      });
+    }
+    function capNhatHienThi() {
+      const loai = select.value;
+      capNhatTruong('.truong-tlcn-kltn', loai === 'TLCN' || loai === 'KLTN');
+      capNhatTruong('.truong-kltn', loai === 'KLTN');
+    }
       select.addEventListener("change", capNhatHienThi);
       capNhatHienThi();
     </script>
-  </main>
+</main>
 </body>
 </html>

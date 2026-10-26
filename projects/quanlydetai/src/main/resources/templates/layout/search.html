@@ -1,33 +1,34 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<body>
-<form method="get" class="panel panel-body space-bottom inline-fields gap-sm topic-filters" th:fragment="topicFilters(action)" th:action="${action}">
-  <input class="field" name="q" th:value="${q}" placeholder="Tìm theo mã, tên hoặc nội dung đề tài" aria-label="Tìm đề tài" maxlength="200">
-  <select class="select-field" name="department" aria-label="Lọc bộ môn">
-    <option value="">Tất cả bộ môn</option>
-    <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.label}" th:selected="${d.id == departmentFilter}"></option>
-  </select>
-  <select class="select-field" name="period" aria-label="Lọc đợt">
-    <option value="">Tất cả đợt</option>
-    <option th:each="p : ${periods}" th:value="${p.id}" th:text="${p.label}" th:selected="${p.id == periodFilter}"></option>
-  </select>
-  <select class="select-field" name="type" aria-label="Lọc loại đợt">
-    <option value="">Tất cả loại đợt</option>
+<html xmlns:th="http://www.thymeleaf.org"><body>
+<form method="get" class="panel panel-body topic-filters" th:fragment="topicFilters(action)" th:action="${action}" aria-label="Bộ lọc đề tài">
+  <label class="filter-field filter-query">
+    <span>Tìm đề tài</span>
+    <svg class="filter-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+    <input class="field" name="q" th:value="${q}" placeholder="Mã, tên hoặc nội dung đề tài…" maxlength="200">
+  </label>
+  <label class="filter-field filter-period"><span>Đợt đăng ký</span>
+    <select class="select-field" name="period"><option value="">Tất cả đợt đăng ký</option>
+      <option th:each="p : ${periods}" th:value="${p.id}" th:text="${p.label}" th:selected="${p.id == periodFilter}"></option>
+    </select><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+  </label>
+  <label class="filter-field filter-department"><span>Bộ môn</span>
+    <select class="select-field" name="department"><option value="">Tất cả bộ môn</option>
+      <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.label}" th:selected="${d.id == departmentFilter}"></option>
+    </select><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
+  </label>
+  <label class="filter-field filter-type"><span>Loại đợt</span><select class="select-field" name="type"><option value="">Tất cả loại đợt</option>
     <option value="MonHoc" th:selected="${typeFilter == 'MonHoc'}">Môn học</option>
-    <option value="NCKH" th:selected="${typeFilter == 'NCKH'}">Nghiên cứu khoa học (NCKH)</option>
-    <option value="TLCN" th:selected="${typeFilter == 'TLCN'}">Tiểu luận chuyên ngành (TLCN)</option>
-    <option value="KLTN" th:selected="${typeFilter == 'KLTN'}">Khóa luận tốt nghiệp (KLTN)</option>
-  </select>
-  <select class="select-field" name="state" aria-label="Lọc trạng thái">
-    <option value="">Tất cả trạng thái</option>
-    <option value="Nhap" th:selected="${stateFilter == 'Nhap'}">Bản nháp (Chờ duyệt)</option>
+    <option value="NCKH" th:selected="${typeFilter == 'NCKH'}">Nghiên cứu khoa học</option>
+    <option value="TLCN" th:selected="${typeFilter == 'TLCN'}">Tiểu luận chuyên ngành</option>
+    <option value="KLTN" th:selected="${typeFilter == 'KLTN'}">Khóa luận tốt nghiệp</option>
+  </select><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></label>
+  <label th:unless="${approvalQueue == true}" class="filter-field filter-state"><span>Trạng thái</span><select class="select-field" name="state"><option value="">Tất cả trạng thái</option>
+    <option value="Nhap" th:selected="${stateFilter == 'Nhap'}">Nháp / Chờ duyệt</option>
     <option value="DaCongBo" th:selected="${stateFilter == 'DaCongBo'}">Đã công bố</option>
     <option value="DangThucHien" th:selected="${stateFilter == 'DangThucHien'}">Đang thực hiện</option>
     <option value="HoanThanh" th:selected="${stateFilter == 'HoanThanh'}">Hoàn thành</option>
     <option value="Huy" th:selected="${stateFilter == 'Huy'}">Đã hủy / Từ chối</option>
-  </select>
-  <button class="button button-primary" type="submit">Tìm kiếm</button>
-  <a class="button button-outline" th:href="${action}">Bỏ lọc</a>
+  </select><svg class="filter-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></label>
+  <div class="filter-actions" th:classappend="${approvalQueue == true} ? 'filter-actions-wide' : ''"><a class="button button-outline" th:href="${action}">Đặt lại</a><button class="button button-primary" type="submit">Tìm kiếm</button></div>
 </form>
-</body>
-</html>
+</body></html>

@@ -6,64 +6,82 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Hội đồng phản biện</h1>
-<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
-<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
-<div class="panel panel-body space-bottom-lg">
-  <h2 class="item-title" th:text="${editingId != null ? 'Sửa hội đồng đang lập' : 'Lập hội đồng 3–5 giảng viên'}"></h2>
-  <form method="get" th:action="${editingId != null} ? @{/dean/councils/{id}/edit(id=${editingId})} : @{/dean/councils}" class="space-bottom">
-    <label class="field-label" for="topicSelect">Đề tài cần lập hội đồng</label>
-    <div class="inline-fields gap-sm">
-      <select class="select-field" id="topicSelect" name="topic" required>
-        <option value="">Chọn đề tài đã có nhóm được duyệt…</option>
-        <option th:each="t : ${topicOptions}" th:value="${t.id}" th:text="${t.label}" th:selected="${t.id == selectedTopic}"></option>
-      </select>
-      <button class="button button-outline no-wrap" type="submit">Chọn đề tài</button>
-      <a th:if="${editingId != null}" class="button button-neutral no-wrap" th:href="@{/dean/councils}">Hủy sửa</a>
-    </div>
-  </form>
-  <p class="muted" th:if="${editingId != null and #strings.isEmpty(selectedTopic)}">Hãy chọn đề tài cùng đợt để lọc giảng viên trước khi sửa hội đồng nháp.</p>
-  <p class="muted" th:if="${editingId == null and #strings.isEmpty(selectedTopic)}">Hãy chọn đề tài trước để lọc danh sách giảng viên độc lập với GVHD và GVPB của đề tài.</p>
-
-  <form th:if="${!#strings.isEmpty(selectedTopic)}" method="post" th:action="${editingId != null} ? @{/dean/councils/{id}/edit(id=${editingId})} : @{/dean/councils}" th:object="${form}" class="divider-top space-top pad-top">
-    <input type="hidden" name="topic" th:value="${selectedTopic}">
-    <p class="space-bottom">Đề tài đang chọn: <strong th:text="${selectedTopicLabel}"></strong></p>
-    <div class="space-bottom">
-      <label class="field-label" for="period">Đợt</label>
-      <select class="select-field" id="period" th:field="*{period}" required>
-        <option value="">Chọn…</option>
-        <option th:each="o : ${periods}" th:if="${editingId == null || o.id == form.period}" th:value="${o.id}" th:text="${o.label}"></option>
-      </select>
-      <div class="error-text caption" th:errors="*{period}"></div>
-    </div>
-    <div class="space-bottom">
-      <label class="field-label" for="chair">Chủ tịch</label>
-      <select class="select-field" id="chair" th:field="*{chair}" required>
-        <option value="">Chọn…</option>
-        <option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}"></option>
-      </select>
-      <div class="error-text caption" th:errors="*{chair}"></div>
-    </div>
-    <div class="space-bottom">
-      <label class="field-label" for="secretary">Thư ký</label>
-      <select class="select-field" id="secretary" th:field="*{secretary}" required>
-        <option value="">Chọn…</option>
-        <option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}"></option>
-      </select>
-      <div class="error-text caption" th:errors="*{secretary}"></div>
-    </div>
-    <div class="space-bottom">
-      <label class="field-label" for="members">Thêm 1–3 thành viên khác (giữ Ctrl để chọn nhiều)</label>
-      <select class="select-field" id="members" th:field="*{members}" required multiple size="5">
-        <option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}"></option>
-      </select>
-      <div class="error-text caption" th:errors="*{members}"></div>
-    </div>
-    <div class="inline-fields gap-sm">
-      <button class="button button-primary self-start" type="submit" th:text="${editingId != null ? 'Lưu thay đổi' : 'Lưu'}">Lưu</button>
-      <a th:if="${editingId != null}" class="button button-outline" th:href="@{/dean/councils}">Hủy sửa</a>
-    </div>
-  </form>
+<p class="muted">Chọn đề tài trước khi lập hội đồng. Danh sách Chủ tịch, Thư ký và thành viên chỉ gồm GV đang hoạt động, không phải GVHD hoặc GVPB của đề tài đó.</p>
+<div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
+</div>
+<form th:if="${editingId == null || #strings.isEmpty(selectedTopic)}" method="get" th:action="${editingId != null} ? @{/dean/councils/{id}/edit(id=${editingId})} : @{/dean/councils}" class="panel panel-body space-bottom">
+<p th:if="${editingId != null}" class="muted">Chọn một đề tài cùng đợt để lọc giảng viên trước khi sửa hội đồng nháp.</p>
+<label class="field-label" for="council-topic">Đề tài cần lập hội đồng</label>
+<select id="council-topic" name="topic" class="select-field space-bottom" required>
+<option value="">Chọn đề tài đã có nhóm được duyệt, chưa chấm điểm…</option>
+<option th:each="t : ${topicOptions}" th:value="${t.id}" th:text="${t.label}" th:selected="${t.id == selectedTopic}"></option>
+</select>
+<p th:if="${#lists.isEmpty(topicOptions)}" class="muted">Chưa có đề tài đủ điều kiện lập hội đồng.</p>
+<button class="button button-outline">Chọn đề tài và tải danh sách giảng viên</button>
+</form>
+<form th:if="${!#strings.isEmpty(selectedTopic)}" method="post" th:action="${editingId != null} ? @{/dean/councils/{id}/edit(id=${editingId})} : @{/dean/councils}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<input type="hidden" name="topic" th:value="${selectedTopic}">
+<p th:if="${!#strings.isEmpty(selectedTopic)}">Đề tài: <strong th:text="${selectedTopicLabel}"></strong></p>
+<p th:if="${!#strings.isEmpty(selectedTopic)}" class="muted">GVHD/GVPB của đề tài đã được loại khỏi cả ba danh sách. Tạo hội đồng sẽ đồng thời kiểm tra, chốt và gán vào đề tài. Nếu có xung đột, hệ thống không lưu hội đồng. Hội đồng nháp cũ có thể sửa rồi chọn đề tài khi chốt.</p>
+<p th:if="${#lists.size(teachers) &lt; 3}" class="notice notice-error" role="alert" th:text="${'Chỉ có ' + #lists.size(teachers) + ' giảng viên đủ điều kiện. Cần ít nhất 3 người độc lập với GVHD/GVPB để lập hội đồng.'}"></p>
+<h2 class="item-title" th:text="${editingId != null ? 'Sửa hội đồng đang lập' : 'Lập và gán hội đồng 3–5 giảng viên'}"></h2>
+<div class="space-bottom">
+<label class="field-label" for="period">Đợt</label>
+<select class="select-field" id="period" th:field="*{period}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${periods}" th:if="${o.id == form.period}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{period}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="chair">Chủ tịch</label>
+<select class="select-field" id="chair" th:field="*{chair}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{chair}">
+</div>
+</div>
+<div class="space-bottom">
+<label class="field-label" for="secretary">Thư ký</label>
+<select class="select-field" id="secretary" th:field="*{secretary}" required>
+<option value="">Chọn…</option>
+<option th:each="o : ${teachers}" th:value="${o.id}" th:text="${o.label}">
+</option>
+</select>
+<div class="error-text caption" th:errors="*{secretary}">
+</div>
+</div>
+<fieldset class="teacher-picker space-bottom" data-teacher-picker data-kind="council" data-max="3" aria-describedby="council-member-help">
+<legend class="field-label">Thành viên hội đồng</legend>
+<div class="teacher-picker-heading">
+<span>Chọn thêm 1–3 giảng viên ngoài Chủ tịch và Thư ký</span>
+<span class="teacher-count" data-teacher-count role="status" aria-live="polite"></span>
+</div>
+<label class="teacher-search" data-teacher-search-control hidden>
+<span class="field-label">Tìm giảng viên</span>
+<input class="field" type="search" placeholder="Nhập họ tên hoặc mã giảng viên" data-teacher-search autocomplete="off">
+</label>
+<div class="teacher-options">
+<label class="teacher-option" th:each="o : ${teachers}">
+<input type="checkbox" th:field="*{members}" th:value="${o.id}">
+<span th:text="${o.label}"></span>
+<span class="teacher-role" data-teacher-role hidden></span>
+</label>
+</div>
+<p class="teacher-help" th:if="${#lists.isEmpty(teachers)}">Chưa có giảng viên có tài khoản đang hoạt động để lựa chọn.</p>
+<p class="teacher-help" data-teacher-no-results hidden>Không tìm thấy giảng viên phù hợp.</p>
+<p class="teacher-help" id="council-member-help" data-teacher-feedback>Đánh dấu vào từng thành viên. Hội đồng cần 3–5 giảng viên khác nhau.</p>
+<div class="error-text caption" th:errors="*{members}">
+</div>
+</fieldset>
+<button class="button button-primary self-start" type="submit" data-teacher-submit th:text="${editingId != null ? 'Lưu thay đổi' : 'Tạo, chốt và gán hội đồng'}">Lưu</button><a th:if="${editingId != null}" class="button button-outline" th:href="@{/dean/councils}">Hủy sửa</a>
+</form>
 <p class="muted" th:if="${#lists.isEmpty(councils)}">Chưa có hội đồng.</p>
 <article th:each="h : ${councils}" class="panel panel-body space-bottom">
   <div class="inline-fields spread">
@@ -73,10 +91,9 @@
           th:text="${h.state == 'DaChot' ? 'Đã chốt' : 'Đang lập (Nháp)'}">
     </span>
   </div>
-  <p class="muted" th:text="${h.state}"></p>
   <ul class="record-list space-bottom">
     <li class="record-item inline-fields spread" th:each="m : ${h.members}">
-      <span th:text="${m.name + ' — ' + m.role}"></span>
+      <strong th:text="${m.name + ' (' + m.id + ')'}"></strong>
       <span class="tag"
             th:classappend="${m.role == 'ChuTich'} ? 'tag-info' : 'tag-neutral'"
             th:text="${m.role == 'ChuTich' ? 'Chủ tịch hội đồng' : (m.role == 'ThuKy' ? 'Thư ký hội đồng' : 'Ủy viên')}">
@@ -89,13 +106,14 @@
       <button class="button button-danger button-small" type="submit">Xóa hội đồng nháp</button>
     </form>
   </div>
-  <form th:if="${h.state == 'DangLap'}" method="post" th:action="@{/dean/councils/{id}/finalize(id=${h.id})}" class="inline-fields gap-sm">
-    <select name="topic" class="select-field" required aria-label="Chọn đề tài để chốt và gán hội đồng">
-      <option value="">Chọn đề tài cùng đợt…</option>
-      <option th:each="t : ${topicOptions}" th:value="${t.id}" th:text="${t.label}" th:selected="${t.id == selectedTopic}"></option>
-    </select>
-    <button class="button button-primary no-wrap" type="submit">Chốt và khóa thành viên</button>
-  </form>
+  <form th:if="${h.state == 'DangLap'}" method="post" th:action="@{/dean/councils/{id}/finalize(id=${h.id})}">
+<label class="field-label" th:for="${'finalize-topic-' + h.id}">Đề tài cần gán</label>
+<select class="select-field space-bottom" name="topic" th:id="${'finalize-topic-' + h.id}" required>
+<option value="">Chọn đề tài…</option>
+<option th:each="t : ${topicOptions}" th:value="${t.id}" th:text="${t.label}"></option>
+</select>
+<button class="button button-primary">Chốt và gán cho đề tài</button>
+</form>
   <div th:unless="${#lists.isEmpty(h.topics)}" class="space-top">
     <p class="field-label">Đề tài được phân công:</p>
     <ul class="space-top-sm">

@@ -66,6 +66,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 "HoatDong".equals(account.getTrangThai()),
                 account.getMaGV(),
                 account.getMaSV(),
-                authorities);
+                authorities,
+                account.getGiangVien() != null ? account.getGiangVien().getHoTen()
+                        : account.getSinhVien() != null ? account.getSinhVien().getHoTen()
+                        : "Quản trị viên");
     }
 }

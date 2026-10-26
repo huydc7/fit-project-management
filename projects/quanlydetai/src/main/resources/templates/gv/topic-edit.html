@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head><title>Chỉnh sửa đề xuất</title></head><body><main>
+<div class="topic-page-heading"><div><h1 class="page-title">Chỉnh sửa đề xuất</h1><p class="muted" th:text="${topic.id + ' · ' + topic.period}"></p></div><a class="button button-outline" th:href="${topicManagementPath}">Quản lý đề tài</a></div>
+<form class="panel panel-body" method="post" th:action="@{/lecturer/topics/{id}/edit(id=${topic.id})}" th:object="${form}">
+  <div class="space-bottom"><label class="field-label" for="title">Tên đề tài</label><input class="field" id="title" th:field="*{title}" maxlength="300" required></div>
+  <div class="space-bottom"><label class="field-label" for="content">Nội dung / yêu cầu</label><textarea class="field" id="content" th:field="*{content}" rows="6" maxlength="20000" required></textarea></div>
+  <div class="space-bottom"><label class="field-label" for="department">Bộ môn</label><select class="select-field" id="department" th:field="*{department}" required><option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.label}"></option></select></div>
+  <p class="muted">Sau khi sửa, đề tài cần được bộ môn duyệt lại. Người đề xuất vẫn là GVHD duy nhất.</p>
+  <div class="inline-fields"><button class="button button-primary" type="submit">Lưu thay đổi</button><a class="button button-outline" th:href="${topicManagementPath}">Hủy</a></div>
+</form>
+</main></body></html>

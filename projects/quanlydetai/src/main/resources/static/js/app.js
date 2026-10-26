@@ -55,6 +55,54 @@
   });
 })();
 
+// Native dialogs keep keyboard focus inside and return it to the opening button.
+const topicOpeners = new WeakMap();
+document.querySelectorAll('[data-topic-open]').forEach(button => {
+  const dialog = document.getElementById(button.getAttribute('aria-controls'));
+  if (!(dialog instanceof HTMLDialogElement)) return;
+  button.addEventListener('click', () => {
+    topicOpeners.set(dialog, button);
+    dialog.showModal();
+    dialog.querySelector('.topic-dialog-body').scrollTop = 0;
+    document.documentElement.classList.add('topic-dialog-open');
+  });
+});
+document.querySelectorAll('dialog.topic-dialog').forEach(dialog => {
+  dialog.querySelectorAll('[data-topic-close]').forEach(button => {
+    button.addEventListener('click', () => dialog.close());
+  });
+  dialog.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const controls = [...dialog.querySelectorAll(
+      'button:not(:disabled),a[href],input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])'
+    )].filter(control => control.getClientRects().length > 0);
+    const first = controls[0];
+    const last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first?.focus();
+    }
+  });
+  const outside = event => {
+    const bounds = dialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right
+      || event.clientY < bounds.top || event.clientY > bounds.bottom;
+  };
+  let backdropPress = false;
+  dialog.addEventListener('pointerdown', event => { backdropPress = event.target === dialog && outside(event); });
+  dialog.addEventListener('click', event => {
+    if (backdropPress && event.target === dialog && outside(event)) dialog.close();
+    backdropPress = false;
+  });
+  dialog.addEventListener('close', () => {
+    document.documentElement.classList.remove('topic-dialog-open');
+    topicOpeners.get(dialog)?.focus();
+  });
+});
+
 document.querySelectorAll('form[data-confirm]').forEach(form => {
   form.addEventListener('submit', event => { if (!window.confirm(form.dataset.confirm)) event.preventDefault(); });
 });

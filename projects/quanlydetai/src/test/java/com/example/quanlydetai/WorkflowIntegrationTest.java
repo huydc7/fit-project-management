@@ -328,6 +328,44 @@ class WorkflowIntegrationTest {
                 user);
     }
 
+
+    @Test
+    void registrationReviewIsScopedToSupervisorsInHtmlAndApi() throws Exception {
+        String id = pendingRegistration();
+        mvc.perform(get("/lecturer/registrations").session(session("wf.gv1")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("registration-" + id)));
+        mvc.perform(get("/api/v1/registrations/pending").session(session("wf.gv1")))
+                .andExpect(jsonPath("$[0].id").value(id));
+        for (String user : List.of("wf.gv0", "wf.gv2")) {
+            mvc.perform(get("/api/v1/registrations/pending").session(session(user)))
+                    .andExpect(jsonPath("$.length()").value(0));
+            mvc.perform(get("/lecturer/registrations").session(session(user)))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("registration-" + id))));
+            action(user, "/lecturer/registrations/" + id + "/review", "accept", "true", "reason", "")
+                    .andExpect(status().isForbidden());
+            mvc.perform(patch("/api/v1/registrations/" + id + "/review").session(session(user))
+                            .with(csrf()).contentType("application/json").content("{\"accept\":true}"))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(get("/api/v1/registrations/pending").session(session("wf.sv1")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/dean/registrations/" + id + "/review").session(session("wf.gv0"))
+                        .with(csrf()).param("accept", "true"))
+                .andExpect(status().isNotFound());
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id))
+                .isEqualTo("ChoDuyet");
+        mvc.perform(patch("/api/v1/registrations/" + id + "/review").session(session("wf.gv1"))
+                        .with(csrf()).contentType("application/json").content("{\"accept\":true}"))
+                .andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT Ma_GV_Duyet FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id))
+                .isEqualTo("WF_GV1");
+        action("wf.gv1", "/lecturer/registrations/" + id + "/review", "accept", "false", "reason", "Too late")
+                .andExpect(flash().attributeExists("loi"));
+        assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id))
+                .isEqualTo("ChapThuan");
+    }
+
     private String pendingRegistration() throws Exception {
         String group = group("wf.sv1");
         join(group, "wf.sv1", 7, 8);
@@ -339,20 +377,20 @@ class WorkflowIntegrationTest {
     void rejectionRequiresReasonAndShowsErrorBesideTheCorrectRegistration() throws Exception {
         String id = pendingRegistration();
         for (String reason : List.of("", "   ", "x".repeat(1001))) {
-            var result = action("wf.gv0", "/dean/registrations/" + id + "/review",
+            var result = action("wf.gv1", "/lecturer/registrations/" + id + "/review",
                     "accept", "false", "reason", reason, "registrationsPage", "0", "size", "1")
                     .andExpect(flash().attributeExists("loi"))
                     .andExpect(flash().attribute("registrationErrorId", id))
-                    .andExpect(redirectedUrl("/dean/approvals?registrationsPage=0&size=1#registration-" + id))
+                    .andExpect(redirectedUrl("/lecturer/registrations?registrationsPage=0&size=1#registration-" + id))
                     .andReturn();
-            mvc.perform(get("/dean/approvals").param("size", "1").session(session("wf.gv0"))
+            mvc.perform(get("/lecturer/registrations").param("size", "1").session(session("wf.gv1"))
                             .flashAttrs(result.getFlashMap()))
                     .andExpect(status().isOk())
                     .andExpect(content().string(org.hamcrest.Matchers.matchesRegex(
                             "(?s).*<p[^>]*id=\"reason-error-" + id + "\"[^>]*>Từ chối phải ghi lý do \\(tối đa 1.000 ký tự\\)\\.</p>.*")))
                     .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-invalid=\"true\"")));
         }
-        mvc.perform(patch("/api/v1/registrations/" + id + "/review").session(session("wf.gv0"))
+        mvc.perform(patch("/api/v1/registrations/" + id + "/review").session(session("wf.gv1"))
                         .with(csrf()).contentType("application/json").content("{\"accept\":false,\"reason\":\"   \"}"))
                 .andExpect(status().isBadRequest());
         assertThat(jdbc.queryForObject("SELECT Trang_Thai FROM DANG_KY_DE_TAI WHERE Ma_DK=?", String.class, id)).isEqualTo("ChoDuyet");
@@ -363,7 +401,7 @@ class WorkflowIntegrationTest {
     void rejectionNoticesArePrivateAcrossHtmlApiSearchCountsAndHome() throws Exception {
         String id = pendingRegistration();
         String reason = "PRIVATE_REJECTION_713: Cần bổ sung phạm vi thực hiện <script>alert(1)</script>";
-        ok("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "false", "reason", reason);
+        ok("wf.gv1", "/lecturer/registrations/" + id + "/review", "accept", "false", "reason", reason);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
         for (String user : List.of("wf.sv1")) {
             mvc.perform(get("/api/v1/announcements").param("q", "PRIVATE_REJECTION_713").param("size", "1").session(session(user)))
@@ -397,7 +435,7 @@ class WorkflowIntegrationTest {
         String notice = "registration:" + id;
         mvc.perform(delete("/api/v1/announcements/" + notice).session(session("wf.admin")).with(csrf()))
                 .andExpect(status().isForbidden());
-        action("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "false", "reason", reason)
+        action("wf.gv1", "/lecturer/registrations/" + id + "/review", "accept", "false", "reason", reason)
                 .andExpect(flash().attributeExists("loi"));
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM THONG_BAO", Integer.class)).isZero();
     }
@@ -411,7 +449,7 @@ class WorkflowIntegrationTest {
     @Test
     void mixedAnnouncementFeedPaginatesBothSourcesWithoutDuplicatesOrPrivateCountsForOthers() throws Exception {
         String registration = pendingRegistration();
-        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "false", "reason", "MIXED_FEED_TEST");
+        ok("wf.gv1", "/lecturer/registrations/" + registration + "/review", "accept", "false", "reason", "MIXED_FEED_TEST");
         LocalDateTime posted = jdbc.queryForObject("SELECT Ngay_Duyet FROM DANG_KY_DE_TAI WHERE Ma_DK=?",
                 LocalDateTime.class, registration);
         for (int i = 1; i <= 3; i++) {
@@ -449,8 +487,37 @@ class WorkflowIntegrationTest {
         String id =
                 jdbc.queryForObject(
                         "SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Ma_Nhom=?", String.class, group);
-        ok("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "true", "reason", "");
+        ok("wf.gv1", "/lecturer/registrations/" + id + "/review", "accept", "true", "reason", "");
         return group;
+    }
+
+    @Test
+    void topicDetailsShowGroupAndCouncilMembersWithinTheAuthorizedTopicScope() throws Exception {
+        String group = registered();
+        ok("wf.gv0", "/dean/topics/WF_DT/reviewer", "teacher", "WF_GV2");
+        ok("wf.gv0", "/dean/councils", "topic", "WF_DT", "period", "WF_SV",
+                "chair", "WF_GV3", "secretary", "WF_GV4", "members", "WF_GV5");
+        var response = mvc.perform(get("/dean/topics").session(session("wf.gv0")))
+                .andExpect(status().isOk()).andReturn();
+        @SuppressWarnings("unchecked")
+        var rows = (List<com.example.quanlydetai.dto.DeTaiResponse>) response.getModelAndView().getModel().get("topics");
+        var topic = rows.stream().filter(t -> "WF_DT".equals(t.id())).findFirst().orElseThrow();
+        assertThat(topic.group()).isEqualTo(group);
+        assertThat(topic.groupName()).isEqualTo(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, group));
+        assertThat(topic.proposerName()).isEqualTo("Teacher 1");
+        assertThat(topic.supervisorIds()).containsExactly("WF_GV1");
+        assertThat(topic.legacySupervision()).isFalse();
+        assertThat(topic.groupMembers()).extracting(m -> m.id()).containsExactly("WF_SV1", "WF_SV7", "WF_SV8");
+        assertThat(topic.groupMembers()).extracting(m -> m.roleLabel()).containsExactly("Nhóm trưởng", "Thành viên", "Thành viên");
+        assertThat(topic.councilMembers()).extracting(m -> m.id()).containsExactly("WF_GV3", "WF_GV4", "WF_GV5");
+        assertThat(topic.councilMembers()).extracting(m -> m.roleLabel()).containsExactly("Chủ tịch hội đồng", "Thư ký hội đồng", "Ủy viên hội đồng");
+        String html = response.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(html).contains("Student 7", "Student 8", "Teacher 3", "Chủ tịch hội đồng", "Thư ký hội đồng");
+        mvc.perform(get("/lecturer/topic-management").session(session("wf.gv1")))
+                .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString("Student 7")));
+        mvc.perform(get("/lecturer/topic-management").session(session("wf.gv6")))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Student 7"))));
     }
 
     private void join(String group, String leader, int... students) throws Exception {
@@ -584,7 +651,7 @@ class WorkflowIntegrationTest {
             mvc.perform(patch("/api/v1/councils/" + id + "/finalize").session(session("wf.gv0")).with(csrf()))
                 .andExpect(status().isNoContent());
         }
-        var result = mvc.perform(get("/dean/approvals").session(session("wf.gv0")))
+        var result = mvc.perform(get("/dean/topics").session(session("wf.gv0")))
                 .andExpect(status().isOk()).andReturn();
         String html = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(html).contains("value=\"" + ids.get(2) + "\"")
@@ -668,8 +735,8 @@ class WorkflowIntegrationTest {
                         String.class,
                         target);
         ok(
-                "wf.gv0",
-                "/dean/registrations/" + registration + "/review",
+                "wf.gv1",
+                "/lecturer/registrations/" + registration + "/review",
                 "accept",
                 "true",
                 "reason",
@@ -923,7 +990,20 @@ class WorkflowIntegrationTest {
                 .isEqualByComparingTo("6.75");
         mvc.perform(get("/student/results").session(session("wf.sv1")))
                 .andExpect(model().attribute("results", org.hamcrest.Matchers.empty()));
+        mvc.perform(get("/dean/approvals").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()))
+                .andExpect(model().attribute("results", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/dean/topics/WF_DT/publish")));
+        mvc.perform(get("/dean/approvals").param("period", "WF_GV").session(session("wf.gv0")))
+                .andExpect(model().attribute("results", org.hamcrest.Matchers.empty()));
+        mvc.perform(get("/dean/approvals").param("q", "no matching topic").session(session("wf.gv0")))
+                .andExpect(model().attribute("results", org.hamcrest.Matchers.empty()));
         ok("wf.gv0", "/dean/topics/WF_DT/publish");
+        mvc.perform(get("/dean/approvals").param("state", "DaCongBo").session(session("wf.gv0")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()))
+                .andExpect(model().attribute("results", org.hamcrest.Matchers.empty()));
         assertThat(
                         jdbc.queryForObject(
                                 "SELECT Trang_Thai_Cong_Bo FROM KET_QUA_DE_TAI WHERE"
@@ -1238,7 +1318,7 @@ class WorkflowIntegrationTest {
                 .andExpect(jsonPath("$.detail").value(locked));
         mvc.perform(get("/student/groups").session(session("wf.sv1")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Chỉnh sửa tên nhóm"))));
-        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "false", "reason", "Need revisions");
+        ok("wf.gv1", "/lecturer/registrations/" + registration + "/review", "accept", "false", "reason", "Need revisions");
         ok("wf.sv1", "/student/groups/" + id + "/name", "name", "After rejection");
         ok("wf.sv1", "/student/registrations", "group", id, "topic", "WF_DT");
         registration = jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, id);
@@ -1246,7 +1326,7 @@ class WorkflowIntegrationTest {
         renameGroupApi("wf.sv1", id, "After withdrawal").andExpect(status().isNoContent());
         ok("wf.sv1", "/student/registrations", "group", id, "topic", "WF_DT");
         registration = jdbc.queryForObject("SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, id);
-        ok("wf.gv0", "/dean/registrations/" + registration + "/review", "accept", "true", "reason", "");
+        ok("wf.gv1", "/lecturer/registrations/" + registration + "/review", "accept", "true", "reason", "");
         renameGroupApi("wf.sv1", id, "Blocked again").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").value(locked));
         assertThat(jdbc.queryForObject("SELECT Ten_Nhom FROM NHOM WHERE Ma_Nhom=?", String.class, id))
@@ -1288,8 +1368,8 @@ class WorkflowIntegrationTest {
                 jdbc.queryForObject(
                         "SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Active_Group=?", String.class, g1);
         ok(
-                "wf.gv0",
-                "/dean/registrations/" + id + "/review",
+                "wf.gv1",
+                "/lecturer/registrations/" + id + "/review",
                 "accept",
                 "false",
                 "reason",
@@ -1551,7 +1631,7 @@ class WorkflowIntegrationTest {
                 "UPDATE DOT_DANG_KY SET End_SV=? WHERE Ma_Dot='WF_SV'",
                 LocalDateTime.now().minusHours(1));
         em.clear();
-        ok("wf.gv0", "/dean/registrations/" + id + "/review", "accept", "true", "reason", "");
+        ok("wf.gv1", "/lecturer/registrations/" + id + "/review", "accept", "true", "reason", "");
         assertThat(
                         jdbc.queryForObject(
                                 "SELECT Ma_De_Tai FROM NHOM WHERE Ma_Nhom=?", String.class, group))

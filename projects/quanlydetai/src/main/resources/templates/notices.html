@@ -6,13 +6,13 @@
 <body>
 <main>
 <h1 class="page-title space-bottom">Thông báo</h1>
-<form method="get" action="/announcements" class="panel panel-body inline-fields gap-sm space-bottom"><input name="q" class="field" th:value="${q}" placeholder="Tìm tiêu đề hoặc nội dung thông báo" aria-label="Tìm kiếm" maxlength="200"><button class="button button-primary">Tìm kiếm</button><a href="/announcements" class="button button-outline">Bỏ lọc</a></form>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}">
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
 </div>
 <div sec:authorize="hasAnyRole('ADMIN','TRUONGKHOA')">
 <form method="post" th:action="@{/announcements}" th:object="${form}" class="panel panel-body space-bottom-lg">
+<h2 class="item-title">Đăng thông báo mới</h2>
 <div class="space-bottom">
 <label class="field-label" for="title">Tiêu đề</label>
 <input type="text" class="field" id="title" th:field="*{title}" required maxlength="300">
@@ -26,15 +26,22 @@
 <div class="error-text caption" th:errors="*{content}">
 </div>
 </div>
+<div class="space-bottom">
 <label class="field-label" for="scope">Phạm vi</label>
-<select id="scope" class="select-field space-bottom" th:field="*{scope}">
+<select id="scope" class="select-field" th:field="*{scope}">
 <option value="Khoa">Khoa</option>
 <option value="NhaTruong" sec:authorize="hasRole('ADMIN')">Nhà trường</option>
 </select>
+<div class="error-text caption" th:errors="*{scope}"></div></div>
 <button class="button button-primary self-start" type="submit">Lưu</button>
 </form>
 </div>
-<p class="muted" th:if="${#lists.isEmpty(notices)}">Chưa có thông báo.</p>
+<h2 class="section-title">Danh sách thông báo</h2>
+<form method="get" th:action="@{/announcements}" class="panel notice-search space-bottom" aria-label="Tìm thông báo">
+  <label for="notice-query"><span class="field-label">Tìm thông báo</span><input id="notice-query" name="q" class="field" th:value="${q}" placeholder="Nhập tiêu đề hoặc nội dung thông báo…" maxlength="200"></label>
+  <div class="notice-search-actions"><button type="submit" class="button button-primary">Tìm kiếm</button><a th:href="@{/announcements}" class="button button-outline">Đặt lại</a></div>
+</form>
+<p class="muted" th:if="${#lists.isEmpty(notices)}" th:text="${#strings.isEmpty(q) ? 'Chưa có thông báo.' : 'Không tìm thấy thông báo phù hợp.'}"></p>
 <article class="panel panel-body space-bottom" th:each="n : ${notices}">
 <h2 class="item-title" th:text="${n.title}">
 </h2>

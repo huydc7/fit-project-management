@@ -40,6 +40,7 @@ public class BaoCaoController {
             @RequestParam String token,
             @RequestParam MultipartFile file,
             RedirectAttributes flash) {
+
         return perform("/student/reports", flash, () -> reports.submit(group, token, file));
     }
 

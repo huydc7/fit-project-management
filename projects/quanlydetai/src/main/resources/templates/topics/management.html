@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
+<head><title>Quản lý đề tài</title></head>
+<body><main>
+  <div class="topic-page-heading">
+    <div><p class="topic-eyebrow">KHÔNG GIAN LÀM VIỆC</p><h1 class="page-title">Quản lý đề tài</h1><p class="muted" th:text="${managementScope}"></p></div>
+    <a class="button button-primary" th:href="@{/lecturer/topics}">Đề xuất đề tài mới</a>
+  </div>
+  <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
+  <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+  <div th:replace="~{layout/search :: topicFilters(${managementAction})}"></div>
+  <section class="panel topic-catalog" aria-labelledby="topic-list-title">
+    <div class="panel-heading topic-list-heading"><h2 id="topic-list-title" class="item-title">Danh sách đề tài</h2><span class="topic-count" th:text="${topicsPage.totalElements + ' đề tài'}"></span></div>
+    <div class="topic-empty" th:if="${#lists.isEmpty(topics)}"><h3 class="item-title">Không tìm thấy đề tài</h3><p class="muted">Thử chọn đợt khác hoặc đặt lại bộ lọc để xem danh sách trong phạm vi của bạn.</p><a class="button button-outline" th:href="${managementAction}">Xem tất cả</a></div>
+    <div class="table-scroll" th:unless="${#lists.isEmpty(topics)}">
+      <table class="data-table topic-table">
+        <thead><tr><th scope="col">Đề tài</th><th scope="col">Đợt đăng ký</th><th scope="col">Bộ môn</th><th scope="col">GV hướng dẫn</th><th scope="col">Nhóm</th><th scope="col">Trạng thái</th></tr></thead>
+        <tbody><tr th:each="t : ${topics}">
+          <td class="topic-title-cell">
+            <span class="topic-title" th:text="${t.title}"></span>
+            <span class="topic-code" th:text="${t.id}"></span>
+            <button type="button" class="topic-detail-trigger" data-topic-open
+                    th:attr="aria-controls=${'topic-detail-' + t.id},aria-label=${'Xem chi tiết đề tài ' + t.title}" aria-haspopup="dialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>
+              Xem chi tiết
+            </button>
+          </td>
+          <td><span th:text="${t.period}"></span><span class="topic-code" th:text="${t.periodType}"></span></td>
+          <td th:text="${t.department}"></td><td th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></td><td><span th:text="${t.groupName ?: 'Chưa có nhóm'}"></span><span class="topic-code" th:if="${t.group}" th:text="${t.group}"></span></td>
+          <td><span class="tag" th:classappend="${t.state == 'DaCongBo' or t.state == 'HoanThanh'} ? 'tag-success' : (${t.state == 'Huy'} ? 'tag-danger' : (${t.state == 'DangThucHien'} ? 'tag-info' : 'tag-neutral'))" th:text="${t.state == 'Nhap' ? 'Nháp / Chờ duyệt' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}"></span></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </section>
+  <div th:replace="~{layout/pagination :: pager(${topicsPage}, ${managementAction}, 'page')}"></div>
+  <dialog class="topic-dialog" th:each="t : ${topics}" th:id="${'topic-detail-' + t.id}"
+          th:attr="aria-labelledby=${'topic-detail-title-' + t.id}">
+    <div class="topic-dialog-shell">
+      <header class="topic-dialog-header">
+        <div><p class="topic-eyebrow">THÔNG TIN ĐỀ TÀI</p><h2 th:id="${'topic-detail-title-' + t.id}" th:text="${t.title}"></h2><span class="topic-code" th:text="${t.id}"></span></div>
+        <button type="button" class="topic-dialog-close" data-topic-close aria-label="Đóng chi tiết đề tài" autofocus>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="topic-dialog-body">
+        <dl class="topic-info-grid">
+          <div><dt>Đợt đăng ký</dt><dd th:text="${t.period}"></dd></div>
+          <div><dt>Bộ môn</dt><dd th:text="${t.department}"></dd></div>
+          <div><dt>Giảng viên đề xuất</dt><dd th:text="${t.proposerName}"></dd></div>
+          <div><dt>Giảng viên hướng dẫn</dt><dd th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></dd></div>
+          <div><dt>Nhóm thực hiện</dt><dd th:text="${t.groupName ?: 'Chưa có nhóm'}"></dd></div>
+          <div><dt>Trạng thái đề tài</dt><dd><span class="tag" th:classappend="${t.state == 'DaCongBo' or t.state == 'HoanThanh'} ? 'tag-success' : (${t.state == 'Huy'} ? 'tag-danger' : (${t.state == 'DangThucHien'} ? 'tag-info' : 'tag-neutral'))" th:text="${t.state == 'Nhap' ? 'Nháp / Chờ duyệt' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}"></span></dd></div>
+          <div><dt>Duyệt chuyên môn</dt><dd th:text="${t.departmentApproved ? 'Đã được Trưởng bộ môn duyệt' : 'Chưa được Trưởng bộ môn duyệt'}"></dd></div>
+          <div><dt>Giảng viên phản biện</dt><dd th:text="${t.reviewer ?: 'Chưa phân công'}"></dd></div>
+          <div><dt>Hội đồng đánh giá</dt><dd th:text="${t.council != null ? 'Đã phân công · ' + #lists.size(t.councilMembers) + ' thành viên' : 'Chưa phân công'}"></dd></div>
+          <div th:if="${t.confirmedAt != null}"><dt>Thời điểm Trưởng khoa xác nhận</dt><dd th:text="${#temporals.format(t.confirmedAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+        </dl>
+        <p class="notice notice-info topic-legacy-note" th:if="${t.legacySupervision()}">Phân công GVHD bên trên là dữ liệu đã lưu theo quy trình cũ. Quy tắc hiện tại: người đề xuất là GVHD duy nhất khi tạo đề tài mới.</p>
+        <div class="topic-people-grid" th:if="${t.group != null or t.council != null}">
+          <section class="topic-people-card" th:if="${t.group != null}" th:attr="aria-label=${'Thành viên nhóm ' + t.groupName}">
+            <h3>Thành viên nhóm <span class="topic-member-count" th:text="${#lists.size(t.groupMembers)}"></span></h3>
+            <p class="topic-code" th:text="${t.group}"></p>
+            <p class="muted" th:if="${#lists.isEmpty(t.groupMembers)}">Chưa có thành viên.</p>
+            <ul class="topic-member-list">
+              <li th:each="member : ${t.groupMembers}"><div><strong th:text="${member.name}"></strong><span class="topic-code" th:text="${member.id}"></span></div><span class="tag tag-neutral" th:text="${member.roleLabel()}"></span></li>
+            </ul>
+          </section>
+          <section class="topic-people-card" th:if="${t.council != null}" aria-label="Thành viên hội đồng">
+            <h3>Thành viên hội đồng <span class="topic-member-count" th:text="${#lists.size(t.councilMembers)}"></span></h3>
+            <p class="topic-code" th:text="${t.council}"></p>
+            <p class="muted" th:if="${#lists.isEmpty(t.councilMembers)}">Chưa có thành viên.</p>
+            <ul class="topic-member-list">
+              <li th:each="member : ${t.councilMembers}"><div><strong th:text="${member.name}"></strong><span class="topic-code" th:text="${member.id}"></span></div><span class="tag" th:classappend="${member.role == 'ChuTich'} ? 'tag-info' : 'tag-neutral'" th:text="${member.roleLabel()}"></span></li>
+            </ul>
+          </section>
+        </div>
+        <section class="topic-description"><h3>Nội dung đề tài</h3><p class="pre-wrap" th:text="${t.content}"></p></section>
+        <div class="topic-dialog-actions" th:if="${t.editable or (managementAction == '/dean/topics' and t.state == 'Nhap' and t.departmentApproved)}">
+          <a class="button button-outline button-small" th:if="${t.editable}" th:href="@{/lecturer/topics/{id}/edit(id=${t.id})}">Chỉnh sửa đề xuất</a>
+          <form th:if="${t.editable}" method="post" th:action="@{/lecturer/topics/{id}/delete(id=${t.id})}" data-confirm="Xóa đề tài nháp này?"><button class="button button-danger button-small" type="submit">Xóa đề tài nháp</button></form>
+          <a class="button button-primary button-small" sec:authorize="hasRole('TRUONGKHOA')" th:if="${t.state == 'Nhap' and t.departmentApproved}" th:href="@{/dean/approvals(q=${t.id})}">Mở trang duyệt và công bố</a>
+        </div>
+  <div sec:authorize="hasRole('TRUONGKHOA')" th:if="${managementAction == '/dean/topics' and t.state == 'DangThucHien'}" class="divider-top space-top pad-top">
+    <p>GVPB hiện tại: <strong th:text="${t.reviewer ?: 'Chưa phân công'}"></strong></p>
+    <form method="post" th:action="@{/dean/topics/{id}/reviewer(id=${t.id})}" class="inline-fields gap-sm space-bottom">
+      <select name="teacher" class="select-field" required aria-label="GVPB">
+        <option value="">Chọn GVPB…</option>
+        <option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}"></option>
+      </select>
+      <button class="button button-outline no-wrap" type="submit">Phân công GVPB</button>
+    </form>
+    <p>Hội đồng hiện tại: <strong th:text="${t.council ?: 'Chưa phân công'}"></strong></p>
+    <p><a class="button button-outline" th:href="@{/dean/councils(topic=${t.id})}">Lập hội đồng cho đề tài này</a></p>
+    <form method="post" th:action="@{/dean/topics/{id}/councils(id=${t.id})}" class="inline-fields gap-sm">
+      <select name="council" class="select-field" required aria-label="Hội đồng">
+        <option value="">Chọn hội đồng đã chốt…</option>
+        <option th:each="h : ${councilsByTopic[t.id]}" th:value="${h.id}" th:text="${h.id + ' — ' + h.period}"></option>
+      </select>
+      <button class="button button-outline no-wrap" type="submit">Gán hội đồng</button>
+    </form>
+  </div>
+      </div>
+      <footer class="topic-dialog-footer"><span class="muted">Nhấn Esc để đóng</span><button type="button" class="button button-outline button-small" data-topic-close>Đóng</button></footer>
+    </div>
+  </dialog>
+</main></body></html>

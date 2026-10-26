@@ -27,3 +27,21 @@ Trang đăng nhập điều chỉnh kích thước logo và khoảng cách theo 
 ## Xem và chỉnh sửa
 
 Mở `/login` để xem trang đăng nhập hoặc `/` sau khi đăng nhập. Chỉnh HTML trong template, CSS trong `custom.css`; không cần npm hoặc bước build frontend. Nếu chạy Docker, build lại service app để đưa tài nguyên mới vào JAR. Khi chạy trực tiếp qua Spring Boot dev, khởi động lại ứng dụng nếu tài nguyên chưa được cập nhật.
+
+## Danh sách và bộ lọc đề tài
+
+Quản lý đề tài là mục điều hướng riêng, dùng bảng với tên/mã, đợt, bộ môn, GVHD, nhóm và trạng thái. Nút Xem chi tiết mở cửa sổ dialog giữa màn hình, không giãn hàng trong bảng. Dialog có thông tin và thao tác theo quyền, vùng nội dung cuộn riêng, nút đóng, Esc và đóng bằng nền ngoài; giữ focus trong cửa sổ và trả lại nút mở khi đóng. Danh sách toàn khoa chỉ dành cho Trưởng khoa, không mở rộng quyền của giảng viên hoặc Trưởng bộ môn.
+
+Bộ lọc dùng grid 12 cột, nhãn nổi, ô cao 48px và hai hàng trên desktop; tự xuống hàng trên màn hình nhỏ. Không dùng flex-basis làm chiều cao trong form dọc. Lựa chọn đợt dùng dữ liệu thực tế, không suy đoán năm học/học kỳ. Form GET giữ giá trị đang lọc, phân trang giữ query và nút Đặt lại về danh sách gốc. Tái sử dụng bộ lọc ở trang duyệt và danh sách SV.
+
+Tên góc phải và sidebar lấy từ hồ sơ thay cho username. Mũi tên SVG 16px xoay khi mở menu; summary có focus ring cho bàn phím. CSS/JS được đổi phiên bản khi cập nhật để tránh cache giao diện cũ.
+
+Trang Đề xuất đề tài chỉ có form tạo mới. Danh sách và thao tác sửa/xóa nằm trong Quản lý đề tài; chỉnh sửa dùng trang riêng, vẫn kiểm tra người đề xuất, trạng thái và thời hạn ở backend.
+
+Trang Duyệt & công bố là danh sách chờ xử lý: chỉ lấy đề tài Nháp đã có duyệt chuyên môn của Trưởng bộ môn và kết quả Chưa công bố. Không tải đề tài đã công bố, đang thực hiện, hoàn thành hoặc hủy vào phần duyệt đề tài; kết quả đã công bố cũng rời danh sách chờ. Lọc và phân trang thực hiện trên truy vấn database cho cả hai phần. Không có bộ lọc trạng thái để mở rộng phạm vi này. Đề tài quá hạn duyệt vẫn hiện cảnh báo thời hạn, không được bỏ qua kiểm tra khi duyệt. Phân công GVPB và hội đồng nằm trong chi tiết đề tài Đang thực hiện tại Quản lý đề tài.
+
+Chi tiết đề tài hiển thị tên nhóm cùng danh sách SV (mã, họ tên, nhóm trưởng/thành viên); hội đồng hiển thị các GV cùng vai trò chủ tịch, thư ký, ủy viên, mã hội đồng ở dòng phụ. Hiển thị người đề xuất riêng với danh sách GVHD thực tế. Nếu phân công cũ khác quy tắc một GVHD là người đề xuất, giao diện ghi rõ dữ liệu theo quy trình cũ; không che bớt GVHD hoặc tự sửa lịch sử đã chấm điểm. Các danh sách thành viên được truy vấn theo lô cho các đề tài thuộc trang và phạm vi được phép xem.
+
+Trang Thông báo đặt form đăng trước, thanh tìm kiếm gọn ngay trước danh sách. Form đề xuất không còn câu nhắc tự gán GVHD hoặc giới hạn 3 đề tài mỗi đợt.
+
+Đối chiếu giao diện với hai commit 3e661ff và de9a5eb trên team/main ngày 26/10/2026: bổ sung liên kết xem ảnh hưởng trước khi khóa GV đang hoạt động, nhãn bộ môn gọn, phân trang ngay sau danh sách đợt và tránh lặp lỗi từ chối đăng ký ở đầu trang. Hiển thị tên người đề xuất ở các hàng chờ duyệt. Giữ nghiệp vụ hiện tại: người đề xuất là GVHD duy nhất, GVHD duyệt nhóm, bộ môn chỉ duyệt chuyên môn; giữ form đề xuất riêng, cửa sổ chi tiết, bộ lọc gọn và các thông báo đã bỏ theo yêu cầu. Các phần phân trang, chọn đề tài trước khi lập hội đồng và kiểm tra inline vốn đã có trong bản local.

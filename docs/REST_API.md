@@ -6,7 +6,7 @@
 - POST `/councils/topics/{id}`: HoiDongRequest, tạo/chốt/gán vào đề tài trong cùng transaction. Sai đợt, GVHD/GVPB, tài khoản khóa hoặc sai số thành viên đều bị từ chối và không lưu một phần. Không có plannedTopic trong database hay response.
 - PATCH `/councils/{id}/finalize?topic={topic}`: kiểm tra, chốt và gán nháp có sẵn cùng transaction; lỗi giữ DangLap. Nếu không có query topic, API giữ luồng chốt hội đồng chung cũ. Web luôn yêu cầu topic.
 - Web `/dean/councils?topic=...`: chọn đề tài trước, lọc cả ba danh sách; tạo sẽ đồng thời chốt/gán. Nháp cũ chọn đề tài cùng đợt khi sửa và khi chốt; không lưu bối cảnh nháp vào database.
-- Duyệt bộ môn `/topics/{id}/department-review`: HTTP 400 khi GVHD đã đủ 3 đề tài cùng đợt; không lưu một phần. Huy không chiếm suất, đồng hướng dẫn tính cho cả hai GV.
+- Duyệt bộ môn `/topics/{id}/department-review`: HTTP 400 khi GVHD đã đủ 3 đề tài cùng đợt; không lưu một phần. Huy không chiếm suất; đề tài mới có một GVHD là người đề xuất. Phân công đồng hướng dẫn lịch sử vẫn tính hạn mức của từng GV.
 - PATCH `/registrations/{id}/review`: từ chối bắt buộc reason không trắng, tối đa 1.000 ký tự. Lưu lịch sử trong DANG_KY_DE_TAI; không tạo dòng THONG_BAO.
 - GET `/announcements`: kết hợp thông báo công khai và lịch sử từ chối dành riêng cho nhóm trưởng hiện tại của đúng nhóm. Header phân trang/tìm kiếm không lộ bản ghi của người khác. Lịch sử có id `registration:{Ma_DK}`, scope `Riêng cho nhóm trưởng`, manageable=false; PUT/DELETE bị từ chối cả với Admin. Không có API tự chỉ định người nhận.
 
@@ -53,7 +53,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Đề tài hướng dẫn/đề xuất | GET `/topics/mine` | GV |
 | Quản lý đề tài | GET `/topics/management` | TKhoa |
 | Đề xuất đề tài | POST `/topics` | GV; DeTaiRequest |
-| Duyệt đề tài | PATCH `/topics/{id}/review` | TKhoa; `{accept: true/false}`; chấp thuận xác nhận GVHD bộ môn đã chọn rồi công bố |
+| Duyệt đề tài | PATCH `/topics/{id}/review` | TKhoa; `{accept: true/false}`; chấp thuận xác nhận người đề xuất là GVHD rồi công bố |
 | Nhóm của mình | GET, POST `/groups` | SV; POST: `{period, name}` |
 | Đổi tên nhóm | PATCH `/groups/{id}/name` | Trưởng nhóm; `{name}` không trắng, tối đa 150 ký tự; còn thời gian SV, chưa đăng ký chờ duyệt/chưa được chấp thuận |
 | Mời thành viên | POST `/groups/{id}/invitations` | Trưởng nhóm; `{student}` là Ma_SV |
@@ -62,8 +62,8 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Trả lời lời mời | PATCH `/invitations/{id}` | Người được mời; `{accept: true/false}` |
 | Đăng ký đề tài | POST `/registrations` | Trưởng nhóm; `{group, topic}` |
 | Rút đăng ký | PATCH `/registrations/{id}/withdraw` | Trưởng nhóm |
-| Đăng ký chờ duyệt | GET `/registrations/pending` | TKhoa |
-| Duyệt đăng ký | PATCH `/registrations/{id}/review` | TKhoa; `{accept, reason}` |
+| Đăng ký chờ duyệt | GET `/registrations/pending` | GVHD; chỉ đăng ký thuộc đề tài mình hướng dẫn |
+| Duyệt đăng ký | PATCH `/registrations/{id}/review` | GVHD của đề tài; `{accept, reason}` |
 | Báo cáo nhóm mình | GET `/reports/mine` | SV |
 | Báo cáo được phân công | GET `/reports/assigned` | GV |
 | Nộp báo cáo | POST `/reports` | Trưởng nhóm; multipart `group`, `token`, `file` |
@@ -88,7 +88,7 @@ Các đường dẫn trong bảng đều có tiền tố `/api/v1`. `TK` là tà
 | Đổi mật khẩu mình | PUT `/session/password` | TK; `{currentPassword, newPassword, confirmation}` |
 | Thông tin cá nhân mình | GET `/session/profile` | SV/GV; chỉ hồ sơ của phiên đăng nhập, Admin trả 403; không nhận mã tài khoản cần xem |
 
-DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`. Người đề xuất không được gửi `supervisors`; Trưởng bộ môn chọn 1–2 Ma_GV qua DepartmentReviewRequest khi duyệt. DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
+DTO có validation nằm trong `src/main/java/com/example/quanlydetai/dto`. Ví dụ DeTaiRequest gồm `period`, `title`, `content`, `department`. Người đề xuất không được gửi `supervisors`; DepartmentReviewRequest chỉ nhận quyết định accept; trường supervisors nếu gửi sẽ bị từ chối. DiemRequest gồm `topic`, `type` (`GVPB` hoặc `HD`), `value` (0–10, tối đa 2 số thập phân), `comment`. Không lấy số điểm tổng hợp từ client.
 
 `GET /grades/ballots` trả thêm `assignmentsComplete`: chỉ `true` khi đề tài có đúng một GVPB và hội đồng đã chốt được gán. Khi còn thiếu, `PUT /grades/ballots` trả 400 với lý do phải phân công đủ trước khi chấm, không ghi phiếu điểm hay khóa phiên bản báo cáo. Cần đồng thời có `assignmentsComplete=true`, `locked=false` và báo cáo để nhập điểm; quyền chấm và hạn nộp vẫn được kiểm tra ở server.
 
@@ -119,8 +119,8 @@ Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừ
 |---|---|
 | GET `/topics`, `/topics/mine`, `/topics/management` | Quyền cũ; thêm q, department, period |
 | GET `/topics/department` | Trưởng bộ môn; chỉ đề tài bộ môn mình |
-| PATCH `/topics/{id}/department-review` | Trưởng bộ môn; `{accept:true, supervisors:["GV01"]}` hoặc `{accept:false}` |
-| PUT `/topics/{id}` | Người đề xuất nháp trong hạn GV; `{title, content, department?}`, hủy xác nhận bộ môn và danh sách GVHD |
+| PATCH `/topics/{id}/department-review` | Trưởng bộ môn; `{accept:true}` hoặc `{accept:false}`; không nhận supervisors |
+| PUT `/topics/{id}` | Người đề xuất nháp trong hạn GV; `{title, content, department?}`, hủy xác nhận bộ môn, giữ người đề xuất là GVHD duy nhất |
 | DELETE `/topics/{id}` | Người đề xuất nháp trong hạn, chưa có lịch sử |
 | PUT `/admin/accounts/{id}/profile` | Admin; `{name, email, department}` (department cho GV) |
 | DELETE `/admin/accounts/{id}` | Admin; tài khoản và hồ sơ chưa có tham chiếu |
@@ -130,6 +130,8 @@ Giới hạn file là 20 MiB, toàn bộ multipart request là 21 MiB. File vừ
 | PUT, DELETE `/announcements/{id}` | Admin hoặc Trưởng khoa với thông báo Khoa của mình; PUT ThongBaoRequest |
 
 GET `/admin/accounts` thêm q, role; `/announcements`, `/registration-periods`, `/catalog/departments` thêm q. Công bố qua `/topics/{id}/review` bắt buộc đã được bộ môn duyệt. Các ràng buộc còn lại xem [PRODUCT_RULES.md](PRODUCT_RULES.md). Tìm kiếm áp dụng tại database trước khi phân trang.
+
+Thông báo chính thức có `audience`: `TatCa` (mặc định khi client cũ không gửi), `GV`, `SV`. POST/PUT nhận và GET trả trường này; giá trị khác bị từ chối. `scope` vẫn là `Khoa`/`NhaTruong`, độc lập với đối tượng nhận; chỉ Admin được đăng phạm vi Nhà trường. GV/SV thường chỉ đọc thông báo Tất cả hoặc đúng vai trò trong HTML, API, trang chủ và tổng phân trang; request không được tự chọn vai trò để mở rộng quyền đọc. Admin/Trưởng khoa xem mọi đối tượng để quản lý, quyền sửa/xóa theo chủ sở hữu giữ nguyên. Thông báo riêng từ chối đăng ký vẫn chỉ thuộc nhóm trưởng, không mở rộng theo audience.
 
 ## Email kết quả — bổ sung 18/10/2026
 
@@ -142,7 +144,7 @@ JSON GET: `{content, page, size, totalElements, totalPages}`. content có id/top
 
 ## Bổ sung 19/10/2026
 
-- PUT `/topics/{id}` giữ title/content bắt buộc, department tùy chọn. Người đề xuất không được gửi supervisors; mọi thay đổi hủy duyệt bộ môn và xóa danh sách GVHD.
+- PUT `/topics/{id}` giữ title/content bắt buộc, department tùy chọn. Người đề xuất không được gửi supervisors; mọi thay đổi hủy duyệt bộ môn, giữ người đề xuất làm GVHD duy nhất. Không được chuyển sang bộ môn khác với bộ môn của người đề xuất.
 - GET `/topics`, `/topics/mine`, `/topics/management`, `/topics/department` thêm type/state; endpoint department hỗ trợ period, luôn giới hạn đúng bộ môn.
 - PUT `/councils/{id}` nhận HoiDongRequest, DELETE `/councils/{id}`: Trưởng khoa, chỉ DangLap chưa dùng. Không đổi đợt qua PUT.
 - PUT `/registration-periods/{id}`: đợt có dữ liệu chỉ sửa tên/gia hạn End_SV và deadline GVPB, không rút ngắn. Có kết quả tổng hợp chỉ đổi tên. Đợt trống vẫn sửa đầy đủ.
@@ -151,11 +153,13 @@ JSON GET: `{content, page, size, totalElements, totalPages}`. content có id/top
 ## Phân công GVHD theo bộ môn (SQL 09)
 
 - POST `/topics`: `{period,title,content,department}`. Gửi `supervisors` sẽ bị từ chối.
-- PUT `/topics/{id}`: `{title,content,department?}`. Sửa nháp xóa xác nhận bộ môn và GVHD.
-- PATCH `/topics/{id}/department-review`: `{accept:true,supervisors:["GV01","GV02"]}`.
-  Chỉ Trưởng bộ môn đúng phạm vi; bắt buộc 1–2 mã GV khác nhau, tài khoản hoạt động và cùng bộ môn với đề tài/bộ môn đang quản lý. Gửi mã GV khác bộ môn trả 400 và giữ nguyên phân công/xác nhận. Từ chối: `{accept:false}`, không cần supervisors. Quyền chọn GVPB/hội đồng của Trưởng khoa vẫn áp dụng toàn khoa.
+- PUT `/topics/{id}`: `{title,content,department?}`. Sửa nháp xóa xác nhận bộ môn, giữ người đề xuất là GVHD duy nhất.
+- PATCH `/topics/{id}/department-review`: `{accept:true}` hoặc `{accept:false}`; gửi supervisors bị từ chối.
+  Chỉ Trưởng bộ môn đúng phạm vi; backend lấy người đề xuất làm GVHD duy nhất, kiểm tra tài khoản hoạt động và cùng bộ môn. Không cho client chọn thêm hoặc đổi GVHD. Từ chối chỉ cần `{accept:false}`. Quyền chọn GVPB/hội đồng của Trưởng khoa vẫn áp dụng toàn khoa.
 - PATCH `/topics/{id}/review`: `{accept:true}` để Trưởng khoa xác nhận và công bố.
   Không thay đổi GVHD ở endpoint này. Trả về proposerId, confirmedBy, confirmedAt trong danh sách đề tài.
+
+Danh sách đề tài bổ sung `proposerName`, `groupName`, `groupMembers`, `councilMembers` để dựng chi tiết. Mỗi thành viên có `id`, `name`, `role`; nhóm dùng `Truong_Nhom`/`Thanh_Vien`, hội đồng dùng `ChuTich`/`ThuKy`/`ThanhVien`. Chỉ lấy thành viên của các đề tài trong phạm vi được xem, không có endpoint tra cứu tự do bằng mã nhóm/hội đồng. Các trường `group` và `council` vẫn là mã để giữ tương thích; danh sách GVHD phản ánh phân công thực tế đã lưu, kể cả dữ liệu cũ.
 
 
 ## Phân trang danh sách
@@ -165,3 +169,7 @@ Các API danh sách đề tài, tài khoản, báo cáo, thông báo, đợt đ�
 Ví dụ: `GET /api/v1/topics/management?q=du%20lieu&department=CNPM&period=DOT01&type=MonHoc&state=Nhap&page=0&size=25`. Bộ lọc được áp dụng trước khi phân trang; total chỉ đếm trong phạm vi được cấp quyền. `GET /api/v1/reports/assigned?page=1&size=10` chỉ trả báo cáo được phép xem; không nhận quyền GV/Trưởng khoa từ tham số URL. API nhiệm vụ chấm trả báo cáo mới nhất; dùng API danh sách báo cáo để tra lịch sử.
 
 API danh mục đợt và GV phục vụ chọn giá trị vẫn trả danh mục lựa chọn như trước. Danh mục bộ môn có tìm kiếm hỗ trợ phân trang cùng quy ước trên.
+
+### GVHD tự động và duyệt đăng ký
+
+POST `/topics` tự gán người đang đăng nhập làm GVHD; không nhận supervisors từ client. Trưởng bộ môn chỉ duyệt chuyên môn, không gửi danh sách GVHD. Mỗi GVHD tối đa 3 đề tài chưa Huy trong một đợt, tính cả nháp. GET `/registrations/pending` lọc theo GVHD từ phiên đăng nhập; giả mạo mã đăng ký của đề tài khác khi PATCH review trả 403. Trưởng khoa không có ngoại lệ bỏ qua quan hệ hướng dẫn.

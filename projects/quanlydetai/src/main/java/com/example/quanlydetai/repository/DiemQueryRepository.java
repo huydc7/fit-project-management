@@ -1,6 +1,7 @@
 package com.example.quanlydetai.repository;
 
 import com.example.quanlydetai.dto.KetQuaResponse;
+import com.example.quanlydetai.dto.TopicSearch;
 
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Repository;
@@ -50,6 +51,14 @@ public class DiemQueryRepository extends QuerySupport {
     }
 
     public Page<KetQuaResponse> results(String student, String period, Pageable page) {
+        return results(student, period, null, page);
+    }
+
+    public Page<KetQuaResponse> pendingPublication(TopicSearch filter, Pageable page) {
+        return results(null, filter.period(), filter, page);
+    }
+
+    private Page<KetQuaResponse> results(String student, String period, TopicSearch pendingFilter, Pageable page) {
         var params = new HashMap<String, Object>();
         var from =
                 new StringBuilder(
@@ -62,6 +71,12 @@ public class DiemQueryRepository extends QuerySupport {
             params.put("student", student);
         }
         equal(from, params, "p.maDot", "period", period);
+        if (pendingFilter != null) {
+            from.append(" and k.trangThaiCongBo='ChuaCongBo' and ")
+                    .append(contains(pendingFilter.q(), params, "t.maDeTai", "t.tenDeTai", "t.noiDung"));
+            equal(from, params, "t.maBoMon", "department", pendingFilter.department());
+            equal(from, params, "p.loai", "type", pendingFilter.type());
+        }
         return page(
                 "select new com.example.quanlydetai.dto.KetQuaResponse(k.maDeTai, t.tenDeTai,"
                     + " coalesce(n.tenNhom,''), k.diemCuoi, k.nhanXetTongHop, k.trangThaiCongBo,"

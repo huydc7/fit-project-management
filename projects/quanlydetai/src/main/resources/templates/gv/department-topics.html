@@ -6,11 +6,11 @@
 <body>
 <main>
   <h1 class="page-title space-bottom">Duyệt đề tài bộ môn</h1>
-  <div class="notice notice-info">Bộ môn duyệt nội dung và chọn 1–2 GVHD; Trưởng khoa xác nhận danh sách rồi công bố. Nội dung sửa sau duyệt phải được duyệt lại.</div>
+  <div class="notice notice-info">Người đề xuất là GVHD duy nhất của đề tài. Trưởng bộ môn duyệt chuyên môn và chuyển Trưởng khoa xác nhận, công bố. Cả hai bước phải hoàn tất trước thời điểm mở đăng ký cho sinh viên. Nội dung sửa sau khi duyệt phải được bộ môn duyệt lại.</div>
   <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
   <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
   <div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>
-  <p th:if="${#lists.isEmpty(topics)}" class="muted">Không có đề tài phù hợp.</p>
+  <p th:if="${#lists.isEmpty(topics)}" class="muted">Không có đề tài phù hợp trong bộ môn của bạn.</p>
   <article th:each="t : ${topics}" class="panel panel-body space-bottom">
     <div class="inline-fields spread">
       <h2 class="item-title" th:text="${t.title}"></h2>
@@ -19,30 +19,28 @@
             th:text="${t.state == 'Nhap' ? 'Bản nháp' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}">
       </span>
     </div>
-    <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state + ' · ' + t.department}"></p>
+    <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
     <p class="pre-wrap" th:text="${t.content}"></p>
+    <p>Người đề xuất: <strong th:text="${t.proposerName}"></strong></p>
+    <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
     <p>
       <span class="tag"
             th:classappend="${t.departmentApproved} ? 'tag-success' : 'tag-warning'"
-            th:text="${t.departmentApproved ? 'Bộ môn đã duyệt.' : 'Chưa có xác nhận duyệt của bộ môn.'}">
+            th:text="${t.departmentApproved ? 'Bộ môn đã duyệt' : 'Chưa có xác nhận duyệt của bộ môn'}">
       </span>
     </p>
-    <p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt trước giai đoạn SV đăng ký.</p>
-    <p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
-    <p>GVHD bộ môn lựa chọn: <span th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></span></p>
-    <form th:if="${t.state == 'Nhap' &amp;&amp; !t.departmentApproved &amp;&amp; t.reviewOpen}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}" class="space-top">
-      <input type="hidden" name="accept" value="true">
-      <label class="field-label" th:for="${'supervisors-' + t.id}">Chọn 1–2 GVHD (giữ Ctrl để chọn nhiều)</label>
-      <select class="select-field space-bottom" name="supervisors" multiple required size="5" th:id="${'supervisors-' + t.id}">
-        <option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}" th:selected="${#lists.contains(t.supervisorIds, g.id)}"></option>
-      </select>
-      <button class="button button-primary" type="submit">Duyệt, chọn GVHD và chuyển Trưởng khoa</button>
-    </form>
-    <form th:if="${t.state == 'Nhap' &amp;&amp; t.reviewOpen}" method="post" class="space-top" th:action="@{/department/topics/{id}/review(id=${t.id})}">
-      <button class="button button-danger" name="accept" value="false" type="submit">Từ chối đề tài</button>
-    </form>
+    <p th:unless="${t.reviewOpen}" class="warning-text">Đã đóng phê duyệt trước giai đoạn sinh viên đăng ký.</p>
+<form th:if="${t.state == 'Nhap' &amp;&amp; !t.departmentApproved &amp;&amp; t.reviewOpen}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}">
+<input type="hidden" name="accept" value="true">
+<p class="muted">GVHD là người đề xuất đề tài. Trưởng bộ môn chỉ duyệt nội dung chuyên môn.</p>
+<button class="button button-primary" type="submit">Duyệt chuyên môn và chuyển Trưởng khoa</button>
+</form>
+<form th:if="${t.state == 'Nhap' &amp;&amp; t.reviewOpen}" method="post" class="space-top" th:action="@{/department/topics/{id}/review(id=${t.id})}">
+<button class="button button-danger" name="accept" value="false">Từ chối đề tài</button>
+</form>
+
   </article>
-  <div th:replace="~{layout/pagination :: pager(${topicsPage}, '/department/topics', 'page')}"></div>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/department/topics', 'page')}"></div>
 </main>
 </body>
 </html>

@@ -69,6 +69,6 @@ Các fixture kiểm thử bảo vệ phân quyền, thời gian, giới hạn nh
 
 Đề tài mới nhập từ bộ mẫu luôn ở Nhap, chưa có GVHD và chưa có quyết định duyệt giả lập.
 Trường supervisors trong JSON chỉ giúp xác định GV đề xuất từ mục đầu tiên; không tạo phân công.
-Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để chọn GVHD, sau đó Trưởng khoa xác nhận.
+Người đề xuất của mỗi nháp được gán làm GVHD khi nhập dữ liệu mới. Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để duyệt chuyên môn, sau đó Trưởng khoa công bố. GVHD duyệt đăng ký nhóm tại `/lecturer/registrations`.
 Refresh không thay quyết định, GVHD hoặc trạng thái của đề tài đã tồn tại.
 Trường `published` trong JSON không tự công bố đề tài mới. Chỉ công bố trước Begin_SV; nếu đợt mẫu đã qua hạn, tạo đợt kiểm thử mới để chạy trọn hai giai đoạn, không nới lịch cũ để vượt kiểm tra.

@@ -273,6 +273,13 @@ public class DiemService {
         return queries.results(null, null, page);
     }
 
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<KetQuaResponse> pendingPublication(com.example.quanlydetai.dto.TopicSearch filter, Pageable page) {
+        Paging.check(page);
+        currentUser.dean();
+        return queries.pendingPublication(filter == null ? com.example.quanlydetai.dto.TopicSearch.empty() : filter, page);
+    }
+
     private String council(String topic) {
         var h =
                 entities.query(

@@ -31,13 +31,13 @@ public class HoiDongController {
     @PostMapping("/dean/topics/{id}/reviewer")
     public String assignReviewer(
             @PathVariable String id, @RequestParam String teacher, RedirectAttributes flash) {
-        return perform("/dean/approvals", flash, () -> councils.assignReviewer(id, teacher));
+        return perform("/dean/topics", flash, () -> councils.assignReviewer(id, teacher));
     }
 
     @PostMapping("/dean/topics/{id}/councils")
     public String assignCouncil(
             @PathVariable String id, @RequestParam String council, RedirectAttributes flash) {
-        return perform("/dean/approvals", flash, () -> councils.assignCouncil(id, council));
+        return perform("/dean/topics", flash, () -> councils.assignCouncil(id, council));
     }
 
     @GetMapping("/dean/councils")

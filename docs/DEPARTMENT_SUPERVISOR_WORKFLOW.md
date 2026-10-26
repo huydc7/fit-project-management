@@ -1,15 +1,16 @@
-# Luồng đề tài: bộ môn chọn GVHD, Trưởng khoa xác nhận
+# Luồng đề tài: người đề xuất là GVHD, GVHD duyệt nhóm
 
-## Hành vi sau thay đổi
+## Quy trình hiện tại
 
-1. GV tạo đề tài tại /lecturer/topics, chỉ nhập đợt, tên, nội dung và bộ môn.
-2. Trưởng bộ môn tại /department/topics chọn 1–2 GVHD khác nhau, có tài khoản hoạt động và thuộc bộ môn mình quản lý rồi duyệt. Danh sách lựa chọn được lọc tại database; HTML và REST đều kiểm tra lại phạm vi khi lưu.
-3. Trưởng khoa tại /dean/approvals xem danh sách, bấm Xác nhận GVHD và công bố đề tài.
-4. Khi từ chối, không cần chọn GVHD. Từ chối chuyển Huy, không phải trả về sửa.
-5. Nếu người đề xuất sửa nháp còn hạn GV, xác nhận bộ môn và danh sách GVHD bị hủy; bộ môn phải chọn lại.
-6. Sau công bố không sửa GVHD theo luồng này. Quyền phân công GVPB/hội đồng vẫn thuộc Trưởng khoa.
+1. GV tạo đề tài tại `/lecturer/topics`, nhập đợt, tên, nội dung và bộ môn của mình.
+2. Backend lấy mã GV từ phiên đăng nhập, tự lưu phân công GVHD cùng đề tài. Nếu vượt hạn mức 3 đề tài trong đợt thì không lưu một phần. Nháp chưa hủy cũng tính hạn mức.
+3. Trưởng bộ môn tại `/department/topics` chỉ duyệt nội dung chuyên môn và chuyển Trưởng khoa. Không nhập danh sách GVHD, không thêm đồng hướng dẫn. GVHD duy nhất là người đề xuất, có tài khoản đang hoạt động và cùng bộ môn.
+4. Trưởng khoa tại `/dean/approvals` xác nhận và công bố trước Begin_SV.
+5. Nhóm trưởng đăng ký đề tài trong thời gian SV. GVHD vào **Duyệt đăng ký nhóm** (`/lecturer/registrations`) để chấp thuận/từ chối. GVHD là người đề xuất quyết định; quyết định sau bị chặn vì đã xử lý. Trưởng khoa không được duyệt nếu không phải GVHD của đề tài.
+6. Từ chối nhóm bắt buộc lý do; vẫn giữ cơ chế giữ chỗ, rút đăng ký và thông báo riêng cho nhóm trưởng. Đăng ký gửi đúng hạn có thể duyệt sau hạn SV.
+7. Sửa nháp trong thời gian GV hủy duyệt bộ môn, giữ người đề xuất là GVHD duy nhất. Sau công bố không sửa GVHD theo luồng này. Phân công GVPB/hội đồng vẫn thuộc Trưởng khoa.
 
-GV đề xuất không tự động là GVHD. Trưởng bộ môn chỉ được chọn GVHD thuộc cùng bộ môn với đề tài và bộ môn mình quản lý. Quy tắc này áp dụng cho phân công mới; các quyết định cũ được giữ. Trưởng khoa vẫn phân công GVPB và hội đồng trong phạm vi toàn khoa theo quy tắc tránh xung đột hiện có.
+Bản cập nhật dùng schema SQL 01–10 hiện có, không thêm bảng/cột/trigger và không cần migration mới nếu database đã đủ 01–10. Các bước dưới đây chỉ dành cho database cũ chưa có SQL 09; sau đó chạy SQL 10 theo LOCAL_TEST.md.
 
 ## Nâng cấp database đang dùng trên máy
 
@@ -42,31 +43,20 @@ SHOW TRIGGERS WHERE `Table` IN ('DUYET_BO_MON','GVHD_DETAI');
 
 Mở `http://localhost:<PORT>` theo file env đã chọn (mặc định 8080). Không ghi đè file env đang dùng. Dùng đợt mới có thời gian GV hiện tại và Begin_SV trong tương lai để duyệt và công bố trước Begin_SV.
 
-## Dữ liệu cũ
+## Dữ liệu đã có
 
-Migration thêm Ma_GV_Xac_Nhan (FK → GV), Ngay_Xac_Nhan và thay/bổ sung trigger.
-Không xóa đề tài, GVHD, xác nhận bộ môn hay kết quả cũ. Hai cột mới của dữ liệu cũ giữ NULL vì không suy đoán lịch sử.
-Các quyết định bộ môn cũ tiếp tục được giữ. Nếu muốn chọn lại GVHD cho nháp cũ đã duyệt,
-người đề xuất sửa nháp trong hạn để hủy xác nhận và danh sách, sau đó bộ môn chọn lại.
-Không thay đổi GVHD của đề tài đã công bố/đang thực hiện/hoàn thành.
+Không tự thay GVHD hoặc người duyệt trong lịch sử cũ. Quy tắc tự gán áp dụng khi tạo đề tài mới. Đề tài cũ chưa công bố được sửa trong thời gian GV sẽ gán lại người đề xuất; đề tài đã công bố vẫn giữ phân công đã có. Không xóa database hoặc nhập lại demo để cập nhật source.
 
-## Kiểm thử thủ công
+## Kiểm thử
 
-- GV tạo mới không có GVHD; gửi supervisors qua request tạo/sửa bị từ chối.
-- Bộ môn chọn 1 hoặc 2 GVHD hợp lệ cùng bộ môn: thành công; rỗng, trùng, >2, mã không tồn tại, khác bộ môn hoặc tài khoản không hoạt động: thất bại và không lưu một phần.
-- Bộ môn khác không được duyệt; Trưởng khoa không công bố trước duyệt bộ môn.
-- Nội dung sửa sau duyệt: không còn DUYET_BO_MON/GVHD_DETAI; phải duyệt lại.
-- Trưởng khoa công bố: GVHD không đổi, DE_TAI có Ma_GV_Xac_Nhan và Ngay_Xac_Nhan.
-- Quá hạn Begin_SV: bộ môn và khoa không duyệt/công bố mới.
-- Sau công bố: không sửa nội dung/GVHD; GVHD không được phản biện/chấm cùng đề tài.
-- Từ chối nháp chưa có GVHD vẫn hoạt động.
+- Tạo HTML/API tự có đúng GVHD là người đăng nhập; gửi supervisors tùy ý bị từ chối.
+- Tạo đề tài thứ tư trong đợt bị từ chối và không để lại đề tài thiếu GVHD; hủy một đề tài giải phóng suất. Đợt khác có hạn mức riêng.
+- Duyệt chuyên môn chỉ gửi quyết định accept. Gửi supervisors qua HTML/API bị từ chối, kể cả gửi lại đúng người đề xuất. Không ghi duyệt hoặc thay phân công khi request không hợp lệ.
+- Sửa nháp giữ người đề xuất là GVHD duy nhất, xóa duyệt chuyên môn cũ; phải duyệt lại trước công bố.
+- GVHD xem và duyệt đăng ký của mình; GV khác/Trưởng khoa không hướng dẫn/SV/Admin không được duyệt bằng URL hoặc API giả mạo.
+- Sau chấp thuận, lưu đúng Ma_GV_Duyet và chuyển đề tài DangThucHien; từ chối lưu lý do và giải phóng giữ chỗ. Quyết định lần hai bị chặn.
+- Danh sách phân trang, hội đồng theo đề tài, phản hồi lỗi cạnh lý do và form thời gian loại đợt vẫn hoạt động.
 
-## Kiểm thử tự động
+Chạy `mvnw.cmd verify` bằng Java 21; kiểm thử MySQL trên container riêng trong compose.test.yaml. Không chạy test trên database vận hành.
 
-```powershell
-cd projects/quanlydetai
-.\mvnw.cmd test
-```
-
-Mặc định H2. MySQL trigger tests chỉ chạy khi TEST_DB_DRIVER=com.mysql.cj.jdbc.Driver. Dùng MySQL kiểm thử ở container/server riêng đã nạp SQL 01–09 với schema `quanlydetai`; xem [kiểm thử MySQL](LOCAL_TEST.md). Không dùng server chứa database đang vận hành.
-Không đặt TEST_DDL_MODE=create-drop khi trỏ MySQL có dữ liệu cần giữ.
+Nháp cũ chưa được bộ môn duyệt có danh sách GVHD khác quy tắc mới sẽ được chuẩn hóa về đúng người đề xuất khi duyệt. Không thay phân công của đề tài đã công bố hoặc đã có quyết định duyệt cũ.

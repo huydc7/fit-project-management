@@ -10,6 +10,7 @@ public final class AccountPrincipal extends User {
     private final String maGV;
     private final String maSV;
     private final String credentialVersion;
+    private final String displayName;
 
     public AccountPrincipal(
             String accountId,
@@ -19,7 +20,15 @@ public final class AccountPrincipal extends User {
             String maGV,
             String maSV,
             Collection<? extends GrantedAuthority> roles) {
+        this(accountId, username, password, active, maGV, maSV, roles, username);
+    }
+
+    public AccountPrincipal(
+            String accountId, String username, String password, boolean active,
+            String maGV, String maSV, Collection<? extends GrantedAuthority> roles,
+            String displayName) {
         super(username, password, active, true, true, active, roles);
+        this.displayName = displayName == null || displayName.isBlank() ? "Tài khoản" : displayName;
         this.accountId = accountId;
         this.maGV = maGV;
         this.maSV = maSV;
@@ -51,5 +60,9 @@ public final class AccountPrincipal extends User {
 
     public String getCredentialVersion() {
         return credentialVersion;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 }

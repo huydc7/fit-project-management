@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:replace="~{layout/base :: layout(~{::title}, ~{::main})}">
 <head>
-<title>Duyệt, phân công và công bố</title>
+<title>Duyệt &amp; công bố</title>
 </head>
 <body>
 <main>
@@ -54,97 +54,52 @@
     }
   }
 </style>
-<h1 class="page-title space-bottom">Duyệt, phân công và công bố</h1>
+<h1 class="page-title space-bottom">Duyệt &amp; công bố</h1>
+<p class="muted">Chỉ hiển thị đề tài đã được Trưởng bộ môn duyệt và kết quả đã tổng hợp đang chờ công bố. Xem toàn bộ đề tài và phân công GVPB/hội đồng tại <a th:href="@{/dean/topics}">Quản lý đề tài</a>.</p>
 <div th:replace="~{layout/search :: topicFilters(@{/dean/approvals})}"></div>
 <p><a class="button button-outline button-small" th:href="@{/dean/result-emails}">Theo dõi email kết quả ↗</a></p>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
-<div th:if="${loi != null and registrationErrorId == null}" class="notice notice-error" role="alert" th:text="${loi}"></div>
-<h2 class="section-title">Đề tài</h2>
-<p class="muted" th:if="${#lists.isEmpty(topics)}">Chưa có đề tài.</p>
+<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+<h2 class="section-title">Đề tài chờ duyệt và công bố</h2>
+<p class="muted" th:if="${#lists.isEmpty(topics)}">Không có đề tài chờ duyệt và công bố.</p>
 <article class="panel panel-body space-bottom" th:each="t : ${topics}">
   <div class="inline-fields spread">
     <h3 class="item-title" th:text="${t.title}"></h3>
-    <span class="tag self-start"
-          th:classappend="${t.state == 'DaCongBo' or t.state == 'HoanThanh'} ? 'tag-success' : (${t.state == 'Huy'} ? 'tag-danger' : (${t.state == 'DangThucHien'} ? 'tag-info' : 'tag-neutral'))"
-          th:text="${t.state == 'Nhap' ? 'Bản nháp' : (t.state == 'DaCongBo' ? 'Đã công bố' : (t.state == 'DangThucHien' ? 'Đang thực hiện' : (t.state == 'HoanThanh' ? 'Hoàn thành' : (t.state == 'Huy' ? 'Đã hủy' : t.state))))}">
-    </span>
+    <span class="tag tag-warning self-start">Chờ duyệt và công bố</span>
   </div>
-  <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.state + ' · ' + t.department}"></p>
-  <p>Người đề xuất: <span th:text="${t.proposerId}"></span></p>
-  <p th:if="${t.confirmedBy}">Trưởng khoa xác nhận: <span th:text="${t.confirmedBy}"></span> · <span th:text="${t.confirmedAt}"></span></p>
+  <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
   <p class="pre-wrap" th:text="${t.content}"></p>
-  <p>GVHD do bộ môn lựa chọn: <span th:text="${#strings.listJoin(t.supervisors, ', ')}"></span></p>
+  <p>Người đề xuất: <strong th:text="${t.proposerName}"></strong></p>
+  <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
   <p th:if="${t.group}">Nhóm thực hiện: <strong th:text="${t.group}"></strong></p>
   <form th:if="${t.state == 'Nhap'}" method="post" th:action="@{/dean/topics/{id}/review(id=${t.id})}">
     <p class="muted" th:unless="${t.departmentApproved}">Chưa được Trưởng bộ môn duyệt.</p>
+    <p class="tag tag-success space-bottom-sm" th:if="${t.departmentApproved}">Đã được Trưởng bộ môn duyệt nội dung</p>
     <p th:unless="${t.reviewOpen}" class="muted">Đã đóng phê duyệt: phải hoàn tất trước giờ SV bắt đầu đăng ký.</p>
-    <button class="button button-success space-right-sm" name="accept" value="true" type="submit" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Xác nhận GVHD và công bố đề tài</button>
-    <button class="button button-danger" name="accept" value="false" type="submit">Từ chối</button>
+    <div>
+      <button class="button button-success space-right-sm" name="accept" value="true" type="submit" th:disabled="${!t.departmentApproved || !t.reviewOpen}">Duyệt và công bố đề tài</button>
+      <button class="button button-danger" name="accept" value="false" type="submit" th:disabled="${!t.reviewOpen}">Từ chối</button>
+    </div>
   </form>
-  <div th:if="${t.state == 'DangThucHien'}" class="divider-top space-top pad-top">
-    <p>GVPB hiện tại: <strong th:text="${t.reviewer ?: 'Chưa phân công'}"></strong></p>
-    <form method="post" th:action="@{/dean/topics/{id}/reviewer(id=${t.id})}" class="inline-fields gap-sm space-bottom">
-      <select name="teacher" class="select-field" required aria-label="GVPB">
-        <option value="">Chọn GVPB…</option>
-        <option th:each="g : ${teachers}" th:value="${g.id}" th:text="${g.label}"></option>
-      </select>
-      <button class="button button-outline no-wrap" type="submit">Phân công GVPB</button>
-    </form>
-    <p>Hội đồng hiện tại: <strong th:text="${t.council ?: 'Chưa phân công'}"></strong></p>
-    <form method="post" th:action="@{/dean/topics/{id}/councils(id=${t.id})}" class="inline-fields gap-sm">
-      <select name="council" class="select-field" required aria-label="Hội đồng">
-        <option value="">Chọn hội đồng đã chốt…</option>
-        <option th:each="h : ${councilsByTopic[t.id]}" th:value="${h.id}" th:text="${h.id + ' — ' + h.period}"></option>
-      </select>
-      <button class="button button-outline no-wrap" type="submit">Gán hội đồng</button>
-    </form>
-  </div>
 </article>
 <div th:replace="~{layout/pagination :: pager(${topicsPage}, '/dean/approvals', 'page')}"></div>
-
-<h2 class="section-title space-top-lg">Đăng ký nhóm chờ duyệt</h2>
-<p class="muted" th:if="${#lists.isEmpty(registrations)}">Không có đăng ký chờ duyệt.</p>
-<article class="panel panel-body space-bottom" th:each="r : ${registrations}" th:id="${'registration-' + r.id}">
-  <div class="inline-fields spread">
-    <h3 class="item-title" th:text="${r.groupName + ' → ' + r.topicTitle}"></h3>
-    <span class="tag tag-warning">Chờ duyệt</span>
-  </div>
-  <p class="muted" th:text="${'Mã nhóm: ' + r.group + ' · Mã đề tài: ' + r.topic + ' · Ngày đăng ký: ' + #temporals.format(r.submitted,'dd/MM/yyyy HH:mm')}"></p>
-  <form method="post" th:action="@{/dean/registrations/{id}/review(id=${r.id})}" data-registration-review>
-    <input type="hidden" name="registrationsPage" th:value="${registrationPageIndex}">
-    <input type="hidden" name="size" th:value="${pageSize}">
-    <label class="field-label" th:for="${'reason-' + r.id}">Lý do / ghi chú (bắt buộc khi từ chối)</label>
-    <input class="field space-bottom-sm" name="reason" maxlength="1000" th:id="${'reason-' + r.id}"
-           th:value="${registrationErrorId == r.id ? registrationReason : ''}"
-           th:attr="aria-invalid=${registrationErrorId == r.id ? 'true' : null},aria-describedby=${registrationErrorId == r.id ? 'reason-error-' + r.id : null}"
-           placeholder="Nhập lý do nếu từ chối đăng ký của nhóm">
-    <p th:id="${'reason-error-' + r.id}" class="error-text caption space-bottom-sm" data-reason-error role="alert" th:text="${registrationErrorId == r.id ? loi : ''}"></p>
-    <button class="button button-success space-right-sm" name="accept" value="true" type="submit">Chấp thuận nhóm</button>
-    <button class="button button-danger" name="accept" value="false" type="submit">Từ chối, mở lại đề tài</button>
-  </form>
-</article>
-<div th:replace="~{layout/pagination :: pager(${registrationsPage}, '/dean/approvals', 'registrationsPage')}"></div>
-
-<h2 class="section-title space-top-lg">Kết quả đã tổng hợp</h2>
-<p class="muted" th:if="${#lists.isEmpty(results)}">Chưa có kết quả tổng hợp.</p>
+<h2 class="section-title space-top-lg">Kết quả chờ công bố</h2>
+<p class="muted" th:if="${#lists.isEmpty(results)}">Không có kết quả chờ công bố.</p>
 <article class="panel panel-body space-bottom" th:each="r : ${results}">
   <div class="inline-fields spread">
     <h3 class="item-title" th:text="${r.title}"></h3>
-    <span class="tag self-start"
-          th:classappend="${r.state == 'DaCongBo'} ? 'tag-success' : 'tag-warning'"
-          th:text="${r.state == 'DaCongBo' ? 'Đã công bố' : 'Chờ công bố'}">
-    </span>
+    <span class="tag tag-warning self-start">Chờ công bố</span>
   </div>
   <p>
-    <strong th:text="${r.score}"></strong> / 10 · <span th:text="${r.group + ' · ' + r.state}"></span> · <span class="muted" th:text="${r.periodName}"></span>
+    Điểm tổng kết: <strong th:text="${r.score}"></strong> / 10 · Nhóm: <strong th:text="${r.group}"></strong> · <span class="muted" th:text="${r.periodName}"></span>
   </p>
   <p class="pre-wrap" th:text="${r.comment}"></p>
   <form th:if="${r.state == 'ChuaCongBo'}" method="post" th:action="@{/dean/topics/{id}/publish(id=${r.topic})}">
     <button class="button button-primary" type="submit">Công bố kết quả cho sinh viên</button>
   </form>
 </article>
-<div th:replace="~{layout/pagination :: pager(${resultsPage}, '/dean/approvals', 'resultsPage')}"></div>
 
+<div th:replace="~{layout/pagination :: pager(${resultsPage}, '/dean/approvals', 'resultsPage')}"></div>
 <button type="button" class="scroll-fab" id="scrollFab" data-direction="down" aria-label="Cuộn xuống cuối trang" title="Cuộn xuống cuối trang">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M12 5v14M5 12l7 7 7-7"/>

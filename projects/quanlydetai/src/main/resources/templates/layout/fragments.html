@@ -69,11 +69,22 @@
         </a>
       </li>
       <li sec:authorize="hasRole('GV')">
+        <a class="nav-link" th:href="${topicManagementPath}" th:classappend="${currentPath == topicManagementPath} ? 'active' : ''" th:attr="aria-current=${currentPath == topicManagementPath ? 'page' : null}">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span>Quản lý đề tài</span>
+        </a>
+      </li>
+      <li sec:authorize="hasRole('GV')">
         <a class="nav-link" th:href="@{/lecturer/topics}" th:classappend="${currentPath == '/lecturer/topics'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/lecturer/topics' ? 'page' : null}">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 5v16M3 3h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v16h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>
           </svg>
           <span>Đề xuất đề tài</span>
+        </a>
+      </li>
+      <li sec:authorize="hasRole('GV')">
+        <a class="nav-link" th:href="@{/lecturer/registrations}" th:classappend="${currentPath == '/lecturer/registrations'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/lecturer/registrations' ? 'page' : null}">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 11l3 3L22 4M21 12v7H3V3h12"/></svg>
+          <span>Duyệt đăng ký nhóm</span>
         </a>
       </li>
       <li sec:authorize="hasRole('GV')">
@@ -165,7 +176,7 @@
         </svg>
       </span>
       <div>
-        <strong sec:authentication="name">Tài khoản</strong>
+        <strong th:text="${accountDisplayName}" th:title="${accountDisplayName}">Tài khoản</strong>
         <small>
           <span sec:authorize="hasRole('ADMIN')">Quản trị viên</span>
           <span sec:authorize="hasRole('TRUONGKHOA')">Trưởng khoa</span>
@@ -348,8 +359,8 @@
             <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5"/>
           </svg>
         </span>
-        <span sec:authentication="name">Tài khoản</span>
-        <span aria-hidden="true">⌄</span>
+        <span class="account-name" th:text="${accountDisplayName}" th:title="${accountDisplayName}">Tài khoản</span>
+        <svg class="account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
       </summary>
       <div class="account-dropdown">
         <a sec:authorize="hasAnyRole('SV', 'GV')" th:href="@{/accounts/profile}">Thông tin cá nhân</a>

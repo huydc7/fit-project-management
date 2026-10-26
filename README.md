@@ -5,10 +5,10 @@
 ## Chức năng chính
 
 - Admin quản lý tài khoản, hồ sơ, bộ môn, bổ nhiệm chức vụ và thông báo chung.
-- Trưởng khoa tạo đợt đăng ký, xác nhận đề tài, duyệt đăng ký nhóm, phân công đánh giá và công bố kết quả. Lịch GVPB phải sau hạn đăng ký SV; với KLTN, hạn GVPB phải trước ngày báo cáo hội đồng.
-- Giảng viên đề xuất đề tài; Trưởng bộ môn duyệt và chọn 1–2 GVHD. Mỗi GV hướng dẫn tối đa 3 đề tài trong một đợt, kể cả đồng hướng dẫn.
+- Trưởng khoa tạo đợt đăng ký, xác nhận đề tài, phân công đánh giá và công bố kết quả. Lịch GVPB phải sau hạn đăng ký SV; với KLTN, hạn GVPB phải trước ngày báo cáo hội đồng.
+- Giảng viên đề xuất được tự động gán làm GVHD. Người đề xuất là GVHD duy nhất; Trưởng bộ môn chỉ duyệt chuyên môn và chuyển Trưởng khoa. Mỗi GV hướng dẫn tối đa 3 đề tài trong một đợt, kể cả nháp chưa hủy.
 - Sinh viên tạo nhóm, mời và xác nhận thành viên; mỗi SV chỉ thuộc một nhóm trong mỗi đợt. Nhóm trưởng được sửa tên nhóm trong thời gian đăng ký, trước khi đăng ký chờ duyệt hoặc được chấp thuận. Nhóm cần 3–5 SV khi đăng ký, có đúng một nhóm trưởng đăng ký và nộp báo cáo.
-- Từ chối đăng ký nhóm bắt buộc có lý do. Lý do hiển thị riêng trong Thông báo và trang chủ của đúng nhóm trưởng, không đưa vào thông báo chung.
+- GVHD duyệt đăng ký nhóm tại **Duyệt đăng ký nhóm**; chỉ xem và quyết định đăng ký của đề tài mình hướng dẫn. Trưởng khoa không có quyền duyệt nếu không đồng thời là GVHD. Từ chối đăng ký nhóm bắt buộc có lý do. Lý do hiển thị riêng trong Thông báo và trang chủ của đúng nhóm trưởng, không đưa vào thông báo chung.
 - Lập hội đồng chọn đề tài trước; danh sách chủ tịch, thư ký và thành viên loại GVHD/GVPB của đề tài đó. Tạo, chốt và gán hội đồng trong cùng một transaction.
 - Báo cáo PDF/DOCX/ZIP có lịch sử phiên bản và kiểm tra quyền tải. Chỉ cho chấm điểm sau khi phân công đủ GVPB và hội đồng đã chốt; từ phiếu điểm đầu tiên, phân công và phiên bản báo cáo bị khóa. Chủ tịch tổng hợp, Trưởng khoa công bố. Sinh viên chỉ tra cứu kết quả nhóm mình theo đợt đã tham gia sau công bố.
 - Công bố kết quả tạo email riêng cho từng SV; có hàng đợi, theo dõi và thử lại thư lỗi. Thông báo chung và riêng được tìm kiếm, phân trang và sắp xếp mới nhất trước.
@@ -27,10 +27,10 @@ Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn
 
 | Bước | Người thực hiện | Trạng thái và điều kiện |
 |---|---|---|
-| Đề xuất | Giảng viên | Tạo trong thời gian GV đăng ký, đề tài ở `Nhap` |
-| Duyệt bộ môn | Trưởng bộ môn | Chọn 1–2 GVHD hợp lệ; ghi xác nhận bộ môn, đề tài vẫn `Nhap` |
+| Đề xuất | Giảng viên | Tạo trong thời gian GV đăng ký, đề tài ở `Nhap`, người đề xuất được gán GVHD trong cùng transaction |
+| Duyệt bộ môn | Trưởng bộ môn | Duyệt chuyên môn, giữ người đề xuất là GVHD duy nhất; đề tài vẫn `Nhap` |
 | Công bố đề tài | Trưởng khoa | Bộ môn đã duyệt, hoàn tất trước giai đoạn SV; chuyển `DaCongBo` |
-| Đăng ký nhóm | Nhóm trưởng, sau đó Trưởng khoa duyệt | Nhóm đủ 3–5 SV; khi chấp thuận, đề tài chuyển `DangThucHien` |
+| Đăng ký nhóm | Nhóm trưởng, sau đó GVHD của đề tài duyệt | Nhóm đủ 3–5 SV; khi chấp thuận, đề tài chuyển `DangThucHien` |
 | Chuẩn bị chấm | Trưởng khoa và nhóm trưởng | Phân công một GVPB, gán hội đồng đã chốt và nộp báo cáo; các việc này có thể làm trước/sau nhau |
 | Chấm và tổng hợp | GVPB, hội đồng, chủ tịch | Chỉ lưu điểm khi đủ phân công và báo cáo. Chủ tịch tổng hợp khi đủ mọi phiếu; đề tài thành `HoanThanh`, kết quả `ChuaCongBo` |
 | Công bố kết quả | Trưởng khoa | Kết quả chuyển `DaCongBo`; SV của đúng nhóm được tra cứu và nhận email riêng |
@@ -130,7 +130,7 @@ Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio),
 
 ## Luồng đề tài và GVHD (SQL 09)
 
-GV chỉ đề xuất nội dung → Trưởng bộ môn duyệt và chọn 1–2 GVHD → Trưởng khoa xác nhận và công bố.
+GV đề xuất và tự động nhận vai trò GVHD → Trưởng bộ môn duyệt chuyên môn và chuyển Trưởng khoa → Trưởng khoa công bố → Nhóm trưởng đăng ký → GVHD duyệt nhận nhóm.
 Database mới cần chạy SQL 01–10. Database đã có 01–08: dừng web, sao lưu, chạy
 `projects/Database/09_department_supervisor_assignment.sql`, sau đó chạy
 `projects/Database/10_read_query_indexes.sql` trong Workbench rồi khởi động lại. Database đã có 01–09 cần SQL 10.
@@ -140,3 +140,25 @@ hủy xác nhận và danh sách cũ, sau đó bộ môn duyệt và chọn lạ
 Hướng dẫn chi tiết: `docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md`.
 
 Danh sách chính có phân trang 25 dòng/trang (tối đa 100) và lọc tại DB. Xem [kiến trúc truy vấn](docs/ARCHITECTURE.md#truy-vấn-danh-sách-và-phân-trang) và [nghiệm thu SQL 10](docs/LOCAL_TEST.md#nghiệm-thu-truy-vấn-danh-sách-sql-10) trước khi kiểm tra bản mới. SQL 10 chỉ thêm index, giữ nguyên dữ liệu đã nhập.
+
+## Luồng GVHD duyệt nhóm
+
+Giảng viên đề xuất tại `/lecturer/topics` chỉ nhập đợt, tên, nội dung và bộ môn của mình; không gửi danh sách GVHD từ form/API. Backend lấy mã GV từ phiên đăng nhập và lưu đề tài cùng phân công GVHD trong một transaction. Sửa nháp hủy duyệt bộ môn nhưng giữ người đề xuất là GVHD duy nhất.
+
+GVHD xem `/lecturer/registrations` hoặc GET `/api/v1/registrations/pending` và chấp thuận/từ chối đúng đề tài mình hướng dẫn. POST HTML chuyển sang `/lecturer/registrations/{id}/review`; PATCH API giữ `/api/v1/registrations/{id}/review`. Backend kiểm tra quan hệ GVHD, không chỉ quyền GV. GVHD là người đề xuất quyết định; đăng ký đã xử lý không được quyết định lần hai.
+
+Bản cập nhật dùng schema SQL 01–10 hiện có, không cần migration mới. Database đang dùng giữ nguyên đề tài, phân công và quyết định cũ; không tự gán lại GVHD cho lịch sử đã công bố. Chỉ đồng bộ source chưa cập nhật ứng dụng Docker hoặc Render: cần build/deploy bản mới để sử dụng luồng này.
+
+## Quản lý đề tài và bộ lọc
+
+
+
+Mục **Quản lý đề tài** tách khỏi form đề xuất, hiển thị danh sách dạng bảng và phân trang. Nút **Xem chi tiết** mở cửa sổ nhỏ có nội dung, thông tin và thao tác theo quyền; đóng bằng nút Đóng, Esc hoặc bấm nền ngoài. Trưởng khoa xem toàn khoa tại `/dean/topics`; Trưởng bộ môn xem bộ môn phụ trách tại `/department/topic-management`; giảng viên xem đề tài đề xuất/hướng dẫn tại `/lecturer/topic-management`. Quyền được kiểm tra ở cả URL và service; các bộ lọc chỉ thu hẹp phạm vi.
+
+Lọc theo đợt đăng ký, bộ môn, loại, trạng thái và từ khóa. Nhãn luôn hiển thị trên ô chọn; nút Tìm kiếm tải kết quả từ database, Đặt lại xóa các điều kiện. Chuyển trang giữ bộ lọc. Không thêm trường năm học/học kỳ giả vì database hiện chỉ quản lý đợt.
+
+Góc tài khoản và chân sidebar hiển thị họ tên hồ sơ SV/GV. Admin không có hồ sơ cá nhân nên hiển thị Quản trị viên. Tên được làm mới theo phiên xác thực ở request tiếp theo, không đổi username dùng đăng nhập; tên được escape khi hiển thị. Menu dùng mũi tên SVG và có trạng thái focus/mở rõ ràng. CSS/JS có phiên bản mới để trình duyệt tải lại giao diện.
+
+Trang Đề xuất đề tài chỉ có form tạo mới. Danh sách và thao tác sửa/xóa nằm trong Quản lý đề tài; chỉnh sửa dùng trang riêng, vẫn kiểm tra người đề xuất, trạng thái và thời hạn ở backend.
+
+Trang **Duyệt & công bố** (`/dean/approvals`) chỉ hiển thị đề tài đã được Trưởng bộ môn duyệt đang chờ Trưởng khoa xác nhận và kết quả đã tổng hợp chưa công bố. Sau khi xử lý, mục đó rời danh sách chờ; dữ liệu vẫn còn trong hệ thống. Phân công GVPB/hội đồng chuyển vào chi tiết đề tài Đang thực hiện tại **Quản lý đề tài**.

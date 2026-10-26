@@ -4,6 +4,7 @@ import com.example.quanlydetai.dto.DeTaiRequest;
 import com.example.quanlydetai.dto.DeTaiResponse;
 import com.example.quanlydetai.dto.LuaChonResponse;
 import com.example.quanlydetai.dto.TopicSearch;
+import com.example.quanlydetai.dto.ThanhVienResponse;
 import com.example.quanlydetai.entity.BoMon;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
@@ -80,13 +81,15 @@ public class DeTaiService {
         return referenceData.teachersInDepartment(currentUser.departmentHead());
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     @PreAuthorize("hasRole('GV')")
     public void create(@jakarta.validation.Valid DeTaiRequest f) {
         String gv = currentUser.teacher();
         DotDangKy dot = entities.lock(DotDangKy.class, f.period());
         rules.teacherWindow(dot);
         entities.require(BoMon.class, f.department());
+        teachers.requireDepartmentSupervisors(List.of(gv), f.department());
+        requireSupervisionCapacity(gv, f.period(), null);
         DeTai t = new DeTai();
         t.setMaDeTai(rules.id("DT"));
         t.setTenDeTai(f.title().strip());
@@ -97,6 +100,7 @@ public class DeTaiService {
         t.setTrangThai("Nhap");
         t.setNgayDangKy(rules.now());
         entities.insert(t);
+        assignSupervisor(t.getMaDeTai(), gv);
     }
 
     @Transactional
@@ -173,6 +177,14 @@ public class DeTaiService {
         return available(TopicSearch.empty(), Paging.defaults()).getContent();
     }
 
+    @PreAuthorize("hasRole('TRUONGKHOA')")
+    public Page<DeTaiResponse> pendingApproval(TopicSearch filter, Pageable page) {
+        Paging.check(page);
+        currentUser.dean();
+        var rows = queries.pendingApproval(filter == null ? TopicSearch.empty() : filter, page);
+        return new PageImpl<>(views(rows.getContent()), page, rows.getTotalElements());
+    }
+
     @PreAuthorize("hasRole('SV')")
     public Page<DeTaiResponse> available(TopicSearch filter, Pageable page) {
         Paging.check(page);
@@ -212,12 +224,29 @@ public class DeTaiService {
                                         + " ?1",
                                 Object[].class,
                                 ids));
-        var groups =
-                labels(
-                        entities.query(
-                                "select n.maDeTai, n.maNhom from Nhom n where n.maDeTai in ?1",
-                                Object[].class,
-                                ids));
+        var groupRows = entities.query(
+                "select t.maDeTai,n.maNhom,n.tenNhom,g.hoTen from DeTai t join t.gvDangKy g"
+                        + " left join Nhom n on n.maDeTai=t.maDeTai where t.maDeTai in ?1",
+                Object[].class, ids);
+        var groups = labels(groupRows.stream().filter(row -> row[1] != null).toList());
+        var groupNames = new HashMap<String, String>();
+        var proposers = new HashMap<String, String>();
+        for (var row : groupRows) {
+            if (row[1] != null) groupNames.put((String) row[0], (String) row[2]);
+            proposers.put((String) row[0], (String) row[3]);
+        }
+        // Batch membership lookups for this page, never traverse lazy collections per topic.
+        Map<String, List<ThanhVienResponse>> groupMembers = groupNames.isEmpty() ? Map.of() : participants(entities.query(
+                "select n.maDeTai,s.maSV,s.hoTen,m.vaiTro from ThanhVienNhom m"
+                        + " join m.nhom n join m.sinhVien s where n.maDeTai in ?1"
+                        + " order by n.maDeTai,case when m.vaiTro='Truong_Nhom' then 0 else 1 end,s.maSV",
+                Object[].class, ids));
+        Map<String, List<ThanhVienResponse>> councilMembers = councils.isEmpty() ? Map.of() : participants(entities.query(
+                "select h.maDeTai,g.maGV,g.hoTen,m.vaiTro from HoiDongDeTai h,"
+                        + " ThanhVienHoiDong m join m.giangVien g where h.maHd=m.maHd"
+                        + " and h.maDeTai in ?1 order by h.maDeTai,case m.vaiTro"
+                        + " when 'ChuTich' then 0 when 'ThuKy' then 1 else 2 end,g.maGV",
+                Object[].class, ids));
         var held =
                 new HashSet<>(
                         entities.query(
@@ -260,9 +289,21 @@ public class DeTaiService {
                                     rules.now().isBefore(d.getBeginSV()),
                                     t.getMaGvDangKy(),
                                     t.getMaGvXacNhan(),
-                                    t.getNgayXacNhan());
+                                    t.getNgayXacNhan(),
+                                    proposers.get(id),
+                                    groupNames.get(id),
+                                    groupMembers.getOrDefault(id, List.of()),
+                                    councilMembers.getOrDefault(id, List.of()));
                         })
                 .toList();
+    }
+
+    private static Map<String, List<ThanhVienResponse>> participants(List<Object[]> rows) {
+        var result = new HashMap<String, List<ThanhVienResponse>>();
+        for (var row : rows)
+            result.computeIfAbsent((String) row[0], ignored -> new ArrayList<>())
+                    .add(new ThanhVienResponse((String) row[1], (String) row[2], (String) row[3]));
+        return result;
     }
 
     private static Map<String, List<String>> labels(List<Object[]> rows) {
@@ -287,6 +328,9 @@ public class DeTaiService {
         if (f.department() != null) {
             entities.require(BoMon.class, f.department());
         }
+        teachers.requireDepartmentSupervisors(
+                List.of(t.getMaGvDangKy()), f.department() == null ? t.getMaBoMon() : f.department());
+        requireSupervisionCapacity(t.getMaGvDangKy(), t.getMaDot(), id);
         // Invalidate approval before changing assignments; MySQL locks an approved list.
         var approval = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approval != null) entities.remove(approval);
@@ -298,6 +342,7 @@ public class DeTaiService {
         t.setTenDeTai(f.title().strip());
         t.setNoiDung(f.content().strip());
         entities.flush();
+        assignSupervisor(id, t.getMaGvDangKy());
     }
 
     @Transactional
@@ -317,8 +362,14 @@ public class DeTaiService {
         entities.flush();
     }
 
+    @PreAuthorize("hasRole('GV')")
+    public DeTaiResponse editableProposal(String id) {
+        DeTai t = entities.require(DeTai.class, id);
+        checkEditableTopic(t, entities.require(DotDangKy.class, t.getMaDot()));
+        return views(List.of(t)).getFirst();
+    }
+
     private DeTai editableTopic(String id) {
-        String gv = currentUser.teacher();
         String period =
                 entities
                         .query("select t.maDot from DeTai t where t.maDeTai=?1", String.class, id)
@@ -330,12 +381,16 @@ public class DeTaiService {
                                                 "Không tìm thấy đề tài."));
         DotDangKy d = entities.lock(DotDangKy.class, period);
         DeTai t = entities.lock(DeTai.class, id);
-        if (!gv.equals(t.getMaGvDangKy()))
+        checkEditableTopic(t, d);
+        return t;
+    }
+
+    private void checkEditableTopic(DeTai t, DotDangKy d) {
+        if (!currentUser.teacher().equals(t.getMaGvDangKy()))
             throw new org.springframework.security.access.AccessDeniedException(
                     "Chỉ người đề xuất được sửa/xóa đề tài.");
         rules.check("Nhap".equals(t.getTrangThai()), "Chỉ sửa/xóa đề tài chưa được duyệt.");
         rules.teacherWindow(d);
-        return t;
     }
 
     @PreAuthorize("hasRole('TRUONGBOMON')")
@@ -360,6 +415,7 @@ public class DeTaiService {
     @PreAuthorize("hasRole('TRUONGBOMON')")
     public void reviewDepartment(String id, boolean approve, List<String> supervisors) {
         String department = currentUser.departmentHead();
+        rules.check(supervisors == null, "GVHD duy nhất là người đề xuất; không được chọn thêm hoặc đổi GVHD.");
         String period =
                 entities
                         .query("select t.maDot from DeTai t where t.maDeTai=?1", String.class, id)
@@ -379,42 +435,17 @@ public class DeTaiService {
         var review = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approve) {
             rules.check(review == null, "Đề tài đã được bộ môn duyệt.");
-            rules.check(
-                    supervisors != null && supervisors.size() >= 1 && supervisors.size() <= 2,
-                    "Chọn từ 1 đến 2 giảng viên hướng dẫn.");
-            var distinct = new LinkedHashSet<>(supervisors);
-            rules.check(
-                    distinct.size() == supervisors.size(),
-                    "Giảng viên hướng dẫn không được trùng nhau.");
-            for (String gv : distinct) {
-                rules.check(
-                        gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
+            // The proposer is the only supervisor; department review never selects one.
+            String proposer = t.getMaGvDangKy();
+            teachers.requireDepartmentSupervisors(List.of(proposer), department);
+            requireSupervisionCapacity(proposer, period, id);
+            // Normalize old, unapproved drafts too. Published histories are not changed.
+            var assigned = entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id);
+            if (assigned.size() != 1 || !proposer.equals(assigned.getFirst().getMaGV())) {
+                assigned.forEach(entities::remove);
+                entities.flush();
+                assignSupervisor(id, proposer);
             }
-            teachers.requireDepartmentSupervisors(distinct, department);
-            // The period lock serializes approvals. READ_COMMITTED ensures the count
-            // sees the previous approval after waiting for that lock on MySQL.
-            for (String gv : distinct) {
-                long assigned = entities.query(
-                        "select count(h) from GvhdDeTai h, DeTai t"
-                                + " where h.maDeTai=t.maDeTai and h.maGV=?1 and t.maDot=?2"
-                                + " and t.maDeTai<>?3 and t.trangThai<>'Huy'"
-                                + " and (t.trangThai<>'Nhap' or exists"
-                                + " (select r.maDeTai from DuyetBoMon r where r.maDeTai=t.maDeTai))",
-                        Long.class, gv, period, id).getFirst();
-                rules.check(assigned < AcademicRules.MAX_SUPERVISED_TOPICS_PER_PERIOD,
-                        "Giảng viên " + gv + " đã hướng dẫn đủ 3 đề tài trong đợt này."
-                                + " Vui lòng chọn giảng viên khác.");
-            }
-            entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
-                    .forEach(entities::remove);
-            entities.flush();
-            for (String gv : distinct) {
-                var assignment = new GvhdDeTai();
-                assignment.setMaDeTai(id);
-                assignment.setMaGV(gv);
-                entities.insert(assignment);
-            }
-            entities.flush();
             review = new com.example.quanlydetai.entity.DuyetBoMon();
             review.setMaDeTai(id);
             review.setMaGV(currentUser.teacher());
@@ -426,5 +457,22 @@ public class DeTaiService {
             t.setTrangThai("Huy");
             entities.flush();
         }
+    }
+
+    private void assignSupervisor(String topic, String teacher) {
+        var assignment = new GvhdDeTai();
+        assignment.setMaDeTai(topic);
+        assignment.setMaGV(teacher);
+        entities.insert(assignment);
+    }
+
+    private void requireSupervisionCapacity(String teacher, String period, String excludedTopic) {
+        long assigned = entities.query(
+                "select count(h) from GvhdDeTai h, DeTai t"
+                        + " where h.maDeTai=t.maDeTai and h.maGV=?1 and t.maDot=?2"
+                        + " and (?3 is null or t.maDeTai<>?3) and t.trangThai<>'Huy'",
+                Long.class, teacher, period, excludedTopic).getFirst();
+        rules.check(assigned < AcademicRules.MAX_SUPERVISED_TOPICS_PER_PERIOD,
+                "Giảng viên " + teacher + " đã hướng dẫn đủ 3 đề tài trong đợt này.");
     }
 }
