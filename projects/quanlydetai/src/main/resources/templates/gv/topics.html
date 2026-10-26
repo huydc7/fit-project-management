@@ -77,6 +77,7 @@
     <button class="button button-danger button-small" type="submit">Xóa đề tài nháp</button>
   </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/lecturer/topics', 'page')}"></div>
 </main>
 </body>
 </html>

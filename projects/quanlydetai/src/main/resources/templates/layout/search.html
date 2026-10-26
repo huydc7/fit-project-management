@@ -2,13 +2,6 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <form method="get" class="panel panel-body space-bottom inline-fields gap-sm topic-filters" th:fragment="topicFilters(action)" th:action="${action}">
-  <style>
-    .topic-filters > .field,
-    .topic-filters > .select-field {
-      flex-basis: 80px !important;
-      min-height: 80px;
-    }
-  </style>
   <input class="field" name="q" th:value="${q}" placeholder="Tìm theo mã, tên hoặc nội dung đề tài" aria-label="Tìm đề tài" maxlength="200">
   <select class="select-field" name="department" aria-label="Lọc bộ môn">
     <option value="">Tất cả bộ môn</option>

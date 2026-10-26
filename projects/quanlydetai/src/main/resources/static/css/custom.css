@@ -1954,3 +1954,20 @@ details[open]>summary {
   background: #e8f2fa;
   color: #155a88;
 }
+
+/* Compact multiple select boxes and pagination layout */
+select.select-field[multiple] {
+  min-height: 82px;
+  max-height: 92px;
+  padding: 4px 8px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 18px;
+}

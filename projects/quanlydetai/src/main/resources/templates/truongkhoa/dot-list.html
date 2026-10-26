@@ -65,8 +65,9 @@
         </table>
       </div>
     </div>
+    <div th:replace="~{layout/pagination :: pager(${dsDotPage}, '/dean/periods', 'page')}"></div>
 
-    <div class="panel">
+    <div class="panel space-top">
       <div class="panel-heading strong" th:text="${editingId != null ? 'Sửa đợt đăng ký' : 'Tạo đợt mới'}"></div>
       <div class="panel-body">
         <p class="muted" th:if="${editingId != null}">Đợt đã có dữ liệu chỉ sửa tên và gia hạn kết thúc SV/hạn phản biện; không rút ngắn hoặc đổi mốc bắt đầu. Đợt đã có kết quả tổng hợp chỉ sửa tên.</p>
@@ -127,10 +128,22 @@
     </div>
     <script th:inline="javascript">
       const select = document.getElementById("loai");
+      const deadlineInput = document.getElementById("deadlineGvpbNopDiem");
+      const councilInput = document.getElementById("timeBcHd");
       function capNhatHienThi() {
         const loai = select.value;
-        document.querySelectorAll(".truong-tlcn-kltn").forEach(el => el.style.display = (loai === "TLCN" || loai === "KLTN") ? "" : "none");
-        document.querySelectorAll(".truong-kltn").forEach(el => el.style.display = (loai === "KLTN") ? "" : "none");
+        const hasDeadline = loai === "TLCN" || loai === "KLTN";
+        const hasCouncil = loai === "KLTN";
+        document.querySelectorAll(".truong-tlcn-kltn").forEach(el => el.style.display = hasDeadline ? "" : "none");
+        document.querySelectorAll(".truong-kltn").forEach(el => el.style.display = hasCouncil ? "" : "none");
+        if (deadlineInput) {
+          deadlineInput.disabled = !hasDeadline;
+          if (!hasDeadline) deadlineInput.value = "";
+        }
+        if (councilInput) {
+          councilInput.disabled = !hasCouncil;
+          if (!hasCouncil) councilInput.value = "";
+        }
       }
       select.addEventListener("change", capNhatHienThi);
       capNhatHienThi();

@@ -42,6 +42,7 @@
       <button class="button button-danger" name="accept" value="false" type="submit">Từ chối đề tài</button>
     </form>
   </article>
+  <div th:replace="~{layout/pagination :: pager(${topicsPage}, '/department/topics', 'page')}"></div>
 </main>
 </body>
 </html>

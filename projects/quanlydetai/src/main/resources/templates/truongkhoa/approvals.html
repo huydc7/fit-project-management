@@ -58,7 +58,7 @@
 <div th:replace="~{layout/search :: topicFilters(@{/dean/approvals})}"></div>
 <p><a class="button button-outline button-small" th:href="@{/dean/result-emails}">Theo dõi email kết quả ↗</a></p>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
-<div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
+<div th:if="${loi != null and registrationErrorId == null}" class="notice notice-error" role="alert" th:text="${loi}"></div>
 <h2 class="section-title">Đề tài</h2>
 <p class="muted" th:if="${#lists.isEmpty(topics)}">Chưa có đề tài.</p>
 <article class="panel panel-body space-bottom" th:each="t : ${topics}">
@@ -94,27 +94,37 @@
     <form method="post" th:action="@{/dean/topics/{id}/councils(id=${t.id})}" class="inline-fields gap-sm">
       <select name="council" class="select-field" required aria-label="Hội đồng">
         <option value="">Chọn hội đồng đã chốt…</option>
-        <option th:each="h : ${councils}" th:if="${h.state == 'DaChot'}" th:value="${h.id}" th:text="${h.id + ' — ' + h.period}"></option>
+        <option th:each="h : ${councilsByTopic[t.id]}" th:value="${h.id}" th:text="${h.id + ' — ' + h.period}"></option>
       </select>
       <button class="button button-outline no-wrap" type="submit">Gán hội đồng</button>
     </form>
   </div>
 </article>
+<div th:replace="~{layout/pagination :: pager(${topicsPage}, '/dean/approvals', 'page')}"></div>
+
 <h2 class="section-title space-top-lg">Đăng ký nhóm chờ duyệt</h2>
 <p class="muted" th:if="${#lists.isEmpty(registrations)}">Không có đăng ký chờ duyệt.</p>
-<article class="panel panel-body space-bottom" th:each="r : ${registrations}">
+<article class="panel panel-body space-bottom" th:each="r : ${registrations}" th:id="${'registration-' + r.id}">
   <div class="inline-fields spread">
     <h3 class="item-title" th:text="${r.groupName + ' → ' + r.topicTitle}"></h3>
     <span class="tag tag-warning">Chờ duyệt</span>
   </div>
   <p class="muted" th:text="${'Mã nhóm: ' + r.group + ' · Mã đề tài: ' + r.topic + ' · Ngày đăng ký: ' + #temporals.format(r.submitted,'dd/MM/yyyy HH:mm')}"></p>
-  <form method="post" th:action="@{/dean/registrations/{id}/review(id=${r.id})}">
+  <form method="post" th:action="@{/dean/registrations/{id}/review(id=${r.id})}" data-registration-review>
+    <input type="hidden" name="registrationsPage" th:value="${registrationPageIndex}">
+    <input type="hidden" name="size" th:value="${pageSize}">
     <label class="field-label" th:for="${'reason-' + r.id}">Lý do / ghi chú (bắt buộc khi từ chối)</label>
-    <input class="field space-bottom" name="reason" maxlength="1000" th:id="${'reason-' + r.id}" placeholder="Nhập lý do nếu từ chối đăng ký của nhóm">
+    <input class="field space-bottom-sm" name="reason" maxlength="1000" th:id="${'reason-' + r.id}"
+           th:value="${registrationErrorId == r.id ? registrationReason : ''}"
+           th:attr="aria-invalid=${registrationErrorId == r.id ? 'true' : null},aria-describedby=${registrationErrorId == r.id ? 'reason-error-' + r.id : null}"
+           placeholder="Nhập lý do nếu từ chối đăng ký của nhóm">
+    <p th:id="${'reason-error-' + r.id}" class="error-text caption space-bottom-sm" data-reason-error role="alert" th:text="${registrationErrorId == r.id ? loi : ''}"></p>
     <button class="button button-success space-right-sm" name="accept" value="true" type="submit">Chấp thuận nhóm</button>
     <button class="button button-danger" name="accept" value="false" type="submit">Từ chối, mở lại đề tài</button>
   </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${registrationsPage}, '/dean/approvals', 'registrationsPage')}"></div>
+
 <h2 class="section-title space-top-lg">Kết quả đã tổng hợp</h2>
 <p class="muted" th:if="${#lists.isEmpty(results)}">Chưa có kết quả tổng hợp.</p>
 <article class="panel panel-body space-bottom" th:each="r : ${results}">
@@ -133,6 +143,7 @@
     <button class="button button-primary" type="submit">Công bố kết quả cho sinh viên</button>
   </form>
 </article>
+<div th:replace="~{layout/pagination :: pager(${resultsPage}, '/dean/approvals', 'resultsPage')}"></div>
 
 <button type="button" class="scroll-fab" id="scrollFab" data-direction="down" aria-label="Cuộn xuống cuối trang" title="Cuộn xuống cuối trang">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
