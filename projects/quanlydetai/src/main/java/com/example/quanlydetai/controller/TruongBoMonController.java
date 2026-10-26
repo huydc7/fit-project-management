@@ -38,6 +38,7 @@ public class TruongBoMonController {
         m.addAttribute("q", q);
         m.addAttribute("departments", topics.departments());
         m.addAttribute("periods", topics.periods());
+        m.addAttribute("teachers", topics.departmentTeachers());
         m.addAttribute("departmentFilter", department);
         m.addAttribute("periodFilter", period);
         m.addAttribute("typeFilter", type);

@@ -36,163 +36,51 @@ class CatalogIntegrationTest {
     private final Map<String, MockHttpSession> sessions = new HashMap<>();
     private LocalDateTime now;
 
-
-
     @Test
-    void supervisionLimitCountsProposedDraftsAndKeepsPeriodsIndependent() throws Exception {
-        for (int i = 1; i <= 2; i++) {
-            String body = "{\"period\":\"CT_PERIOD\",\"title\":\"Auto " + i + "\",\"content\":\"Quota\",\"department\":\"CT_B1\"}";
-            api("ct.g1", "POST", "/api/v1/topics", body).andExpect(status().isCreated());
-            String id = jdbc.queryForObject("SELECT Ma_De_Tai FROM DE_TAI WHERE Ten_De_Tai=?", String.class, "Auto " + i);
-            api("ct.g2", "PATCH", "/api/v1/topics/" + id + "/department-review", "{\"accept\":true}")
+    void supervisionLimitCountsBothSupervisorsAndKeepsPeriodsIndependent() throws Exception {
+        for (int i = 1; i <= 3; i++) {
+            quotaTopic("CT_Q" + i, "CT_PERIOD");
+            api("ct.g2", "PATCH", "/api/v1/topics/CT_Q" + i + "/department-review",
+                    "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G2\"]}")
                     .andExpect(status().isNoContent());
-            assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai=?", String.class, id)).containsExactly("CT_G1");
         }
-        api("ct.g1", "POST", "/api/v1/topics",
-                "{\"period\":\"CT_PERIOD\",\"title\":\"Fourth\",\"content\":\"Quota\",\"department\":\"CT_B1\"}")
-                .andExpect(status().isBadRequest());
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DE_TAI WHERE Ten_De_Tai='Fourth'", Integer.class)).isZero();
-        api("ct.g1", "POST", "/api/v1/topics",
-                "{\"period\":\"CT_EMPTY\",\"title\":\"Other period\",\"content\":\"Quota\",\"department\":\"CT_B1\"}")
-                .andExpect(status().isCreated());
+        quotaTopic("CT_Q4", "CT_PERIOD");
+        for (String teacher : List.of("CT_G1", "CT_G2")) {
+            api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
+                    "{\"accept\":true,\"supervisors\":[\"CT_G0\",\"" + teacher + "\"]}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("đủ 3 đề tài")));
+        }
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai='CT_Q4'", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_Q4'", Integer.class)).isZero();
+        quotaTopic("CT_Q_OTHER", "CT_EMPTY");
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_Q_OTHER/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
+                "{\"accept\":true,\"supervisors\":[\"CT_G0\"]}")
+                .andExpect(status().isNoContent());
     }
 
     @Test
     void cancelledTopicReleasesSupervisionSlotButPublishedTopicStillCounts() throws Exception {
-        for (int i = 1; i <= 2; i++) {
+        for (int i = 1; i <= 3; i++) {
             quotaTopic("CT_Q" + i, "CT_PERIOD");
             api("ct.g2", "PATCH", "/api/v1/topics/CT_Q" + i + "/department-review",
-                    "{\"accept\":true}")
+                    "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                     .andExpect(status().isNoContent());
         }
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q1/review", "{\"accept\":true}").andExpect(status().isNoContent());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q1/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
         quotaTopic("CT_Q4", "CT_PERIOD");
         mvc.perform(post("/department/topics/CT_Q4/review").session(session("ct.g2")).with(csrf())
-                        .param("accept", "true"))
+                        .param("accept", "true").param("supervisors", "CT_G1"))
                 .andExpect(flash().attribute("loi", org.hamcrest.Matchers.containsString("đủ 3 đề tài")));
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q2/review", "{\"accept\":false}").andExpect(status().isNoContent());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_Q2/review", "{\"accept\":false}")
+                .andExpect(status().isNoContent());
         api("ct.g2", "PATCH", "/api/v1/topics/CT_Q4/department-review",
-                "{\"accept\":true}").andExpect(status().isNoContent());
-    }
-
-    @Test
-    void topicManagementScopesFacultyDepartmentAndPersonalLists() throws Exception {
-        jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
-                        + " VALUES ('CT_MANAGE_OTHER','Other department topic','Other content','CT_B2','CT_EMPTY','CT_G3','Nhap',?)", now);
-        mvc.perform(get("/dean/topics").session(session("ct.g0")))
-                .andExpect(status().isOk()).andExpect(view().name("topics/management"))
-                .andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(2)))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT_MANAGE_OTHER")));
-        mvc.perform(get("/department/topic-management").session(session("ct.g2")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("CT_MANAGE_OTHER"))));
-        mvc.perform(get("/department/topic-management").param("department", "CT_B2").session(session("ct.g2")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
-        mvc.perform(get("/lecturer/topic-management").session(session("ct.g1")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)));
-        mvc.perform(get("/lecturer/topic-management").param("period", "CT_EMPTY").session(session("ct.g1")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
-        for (String path : List.of("/dean/topics", "/department/topic-management"))
-            mvc.perform(get(path).session(session("ct.g1"))).andExpect(status().isForbidden());
-        for (String user : List.of("ct.student", "ct.admin"))
-            mvc.perform(get("/lecturer/topic-management").session(session(user))).andExpect(status().isForbidden());
-    }
-
-    @Test
-    void managementFiltersAndPaginationRetainSelectedPeriodAndOtherFilters() throws Exception {
-        quotaTopic("CT_NEXT", "CT_PERIOD");
-        var result = mvc.perform(get("/dean/topics").session(session("ct.g0"))
-                        .param("q", "CT_").param("period", "CT_PERIOD").param("department", "CT_B1")
-                        .param("type", "MonHoc").param("state", "Nhap").param("size", "1"))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
-                .andReturn();
-        String html = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-        var nextLink = java.util.regex.Pattern.compile("href=\"([^\"]+)\">Trang sau</a>").matcher(html);
-        assertThat(nextLink.find()).isTrue();
-        String next = nextLink.group(1).replace("&amp;", "&");
-        assertThat(next).contains("/dean/topics?", "page=1", "period=CT_PERIOD", "department=CT_B1", "type=MonHoc", "state=Nhap");
-        mvc.perform(get(java.net.URI.create(next)).session(session("ct.g0"))).andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT_TOPIC")));
-    }
-
-    @Test
-    void sharedAccountMenuShowsFreshEscapedProfileNameAndRoleSpecificManagementLink() throws Exception {
-        var teacherSession = session("ct.g1");
-        mvc.perform(get("/announcements").session(teacherSession))
-                .andExpect(model().attribute("accountDisplayName", "Giảng viên 1"))
-                .andExpect(model().attribute("topicManagementPath", "/lecturer/topic-management"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("account-chevron")));
-        jdbc.update("UPDATE GV SET Ho_Ten=? WHERE Ma_GV='CT_G1'", "Nguyễn <script>alert(1)</script>");
-        em.clear();
-        mvc.perform(get("/announcements").session(teacherSession))
-                .andExpect(model().attribute("accountDisplayName", "Nguyễn <script>alert(1)</script>"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Nguyễn &lt;script&gt;")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Nguyễn <script>"))));
-        mvc.perform(get("/announcements").session(session("ct.student")))
-                .andExpect(model().attribute("accountDisplayName", "Nguyễn Ánh"));
-        mvc.perform(get("/announcements").session(session("ct.g0")))
-                .andExpect(model().attribute("topicManagementPath", "/dean/topics"));
-        mvc.perform(get("/announcements").session(session("ct.g2")))
-                .andExpect(model().attribute("topicManagementPath", "/department/topic-management"));
-        mvc.perform(get("/announcements").session(session("ct.admin")))
-                .andExpect(model().attribute("accountDisplayName", "Quản trị viên"));
-    }
-
-    @Test
-    void proposalPageOnlyCreatesWhileManagementProvidesProtectedEditAndDelete() throws Exception {
-        mvc.perform(get("/lecturer/topics").session(session("ct.g1")))
-                .andExpect(status().isOk()).andExpect(model().attributeDoesNotExist("topics", "topicsPage"))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("CT_TOPIC"))));
-        mvc.perform(get("/lecturer/topic-management").session(session("ct.g1")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"topic-detail-CT_TOPIC\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-controls=\"topic-detail-CT_TOPIC\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đóng chi tiết đề tài")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/lecturer/topics/CT_TOPIC/edit\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/lecturer/topics/CT_TOPIC/delete\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString(">Tìm kiếm</button>")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Áp dụng bộ lọc"))));
-        mvc.perform(get("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g1")))
-                .andExpect(status().isOk()).andExpect(view().name("gv/topic-edit"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Lưu thay đổi")));
-        mvc.perform(get("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g3")))
-                .andExpect(status().isForbidden());
-        mvc.perform(post("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g1")).with(csrf())
-                        .param("title", "Updated from management").param("content", "Updated content"))
-                .andExpect(redirectedUrl("/lecturer/topic-management"))
-                .andExpect(flash().attributeExists("thanhCong"));
-        mvc.perform(post("/lecturer/topics/CT_TOPIC/delete").session(session("ct.g1")).with(csrf()))
-                .andExpect(redirectedUrl("/lecturer/topic-management"))
-                .andExpect(flash().attributeExists("thanhCong"));
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
-    }
-
-    @Test
-    void approvalQueueExcludesUnreviewedAndProcessedTopicsEvenWithForgedStateFilter() throws Exception {
-        // A proposal remains in the department queue until its professional review is complete.
-        mvc.perform(get("/dean/approvals").session(session("ct.g0")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+                "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
-        mvc.perform(get("/dean/approvals").param("state", "Huy").session(session("ct.g0")))
-                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("/dean/topics/CT_TOPIC/review")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("name=\"state\""))));
-        mvc.perform(get("/dean/approvals").param("period", "CT_EMPTY").session(session("ct.g0")))
-                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
-        mvc.perform(get("/dean/approvals").session(session("ct.g1"))).andExpect(status().isForbidden());
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
-                .andExpect(status().isNoContent());
-        mvc.perform(get("/dean/approvals").param("state", "DaCongBo").session(session("ct.g0")))
-                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
-        mvc.perform(get("/dean/topics").session(session("ct.g0")))
-                .andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)));
-        quotaTopic("CT_REJECTED", "CT_PERIOD");
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_REJECTED/department-review", "{\"accept\":true}")
-                .andExpect(status().isNoContent());
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_REJECTED/review", "{\"accept\":false}")
-                .andExpect(status().isNoContent());
-        mvc.perform(get("/dean/approvals").param("state", "Huy").session(session("ct.g0")))
-                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
     }
 
     private void quotaTopic(String id, String period) {
@@ -223,42 +111,63 @@ class CatalogIntegrationTest {
                         content().string(org.hamcrest.Matchers.containsString("value=\"CT_G3\"")));
     }
 
-
     @Test
-    void departmentReviewFormOnlyApprovesContentWithoutSupervisorSelection() throws Exception {
-        mvc.perform(get("/department/topics").session(session("ct.g2")))
-                .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("name=\"supervisors\""))))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Duyệt chuyên môn và chuyển Trưởng khoa")));
-        // The faculty-wide catalogue remains available for the Dean's reviewer/council assignments.
+    void departmentOptionsOnlyIncludeActiveLecturersFromManagedDepartment() throws Exception {
+        var page =
+                mvc.perform(get("/department/topics").session(session("ct.g2")))
+                        .andExpect(status().isOk())
+                        .andReturn();
+        @SuppressWarnings("unchecked")
+        var options =
+                (List<com.example.quanlydetai.dto.LuaChonResponse>)
+                        page.getModelAndView().getModel().get("teachers");
+        assertThat(options)
+                .extracting(com.example.quanlydetai.dto.LuaChonResponse::id)
+                .containsExactlyInAnyOrder("CT_G0", "CT_G1", "CT_G2");
+        // The common catalogue remains faculty-wide for the Dean's assignments.
         mvc.perform(get("/api/v1/catalog/lecturers").session(session("ct.g0")))
-                .andExpect(status().isOk()).andExpect(jsonPath("$[?(@.id == 'CT_G3')]").isNotEmpty());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == 'CT_G3')]").isNotEmpty());
     }
 
-
     @Test
-    void departmentRejectsAnyForgedSupervisorSelectionAndPreservesTheProposer() throws Exception {
-        for (String selection : List.of("[]", "[\"CT_G1\"]", "[\"CT_G2\"]", "[\"CT_G1\",\"CT_G2\"]", "[\"CT_G3\"]")) {
-            api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
-                    "{\"accept\":true,\"supervisors\":" + selection + "}")
-                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.supervisors").exists());
-            assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class)).containsExactly("CT_G1");
-            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
+    void departmentRejectsCrossDepartmentSupervisorsBeforeChangingAssignments() throws Exception {
+        for (String supervisors : List.of("[\"CT_G3\"]", "[\"CT_G2\",\"CT_G3\"]")) {
+            api(
+                            "ct.g2",
+                            "PATCH",
+                            "/api/v1/topics/CT_TOPIC/department-review",
+                            "{\"accept\":true,\"supervisors\":" + supervisors + "}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(
+                            jsonPath("$.detail")
+                                    .value(
+                                            org.hamcrest.Matchers.containsString(
+                                                    "phải thuộc bộ môn")));
+            assertThat(
+                            jdbc.queryForList(
+                                    "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                    String.class))
+                    .containsExactly("CT_G1");
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
+                                    Integer.class))
+                    .isZero();
         }
-        mvc.perform(post("/department/topics/CT_TOPIC/review").session(session("ct.g2")).with(csrf())
-                        .param("accept", "true").param("supervisors", "CT_G1", "CT_G2"))
-                .andExpect(redirectedUrl("/department/topics")).andExpect(flash().attributeExists("loi"));
-        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class)).containsExactly("CT_G1");
-        // Old unapproved drafts may still contain a co-supervisor. Review normalizes
-        // this draft to the proposer without offering a selection to the department head.
-        jdbc.update("INSERT INTO GVHD_DETAI(Ma_GV,Ma_De_Tai) VALUES ('CT_G2','CT_TOPIC')");
-        mvc.perform(get("/lecturer/topic-management").session(session("ct.g1")))
-                .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Giảng viên 1, Giảng viên 2")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("quy trình cũ")));
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
-                .andExpect(status().isNoContent());
-        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class)).containsExactly("CT_G1");
+        mvc.perform(
+                        post("/department/topics/CT_TOPIC/review")
+                                .session(session("ct.g2"))
+                                .with(csrf())
+                                .param("accept", "true")
+                                .param("supervisors", "CT_G3"))
+                .andExpect(redirectedUrl("/department/topics"))
+                .andExpect(flash().attributeExists("loi"));
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .containsExactly("CT_G1");
     }
 
     @Test
@@ -267,7 +176,7 @@ class CatalogIntegrationTest {
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());
@@ -320,7 +229,7 @@ class CatalogIntegrationTest {
         String registration =
                 jdbc.queryForObject(
                         "SELECT Ma_DK FROM DANG_KY_DE_TAI WHERE Ma_Nhom=?", String.class, group);
-        api("ct.g1", "PATCH", "/api/v1/registrations/" + registration + "/review", "{\"accept\":true}")
+        api("ct.g0", "PATCH", "/api/v1/registrations/" + registration + "/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());
         assertThat(
                         jdbc.queryForObject(
@@ -336,15 +245,27 @@ class CatalogIntegrationTest {
                 .containsExactly("CT_G3");
     }
 
-
     @Test
-    void departmentApprovalRechecksProposerAccountWithoutChangingSupervisor() throws Exception {
-        jdbc.update("UPDATE TAI_KHOAN SET Trang_Thai='Khoa' WHERE Ma_TK='ct.g1'");
-        em.clear();
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
-                .andExpect(status().isBadRequest());
-        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class)).containsExactly("CT_G1");
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
+    void departmentCannotAssignLockedOrAccountlessSupervisorAndWritesNothing() throws Exception {
+        unavailableLecturers();
+        for (String teacher : List.of("CT_G3", "CT_ORPHAN")) {
+            api(
+                            "ct.g2",
+                            "PATCH",
+                            "/api/v1/topics/CT_TOPIC/department-review",
+                            "{\"accept\":true,\"supervisors\":[\"CT_G2\",\"" + teacher + "\"]}")
+                    .andExpect(status().isBadRequest());
+            assertThat(
+                            jdbc.queryForList(
+                                    "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                    String.class))
+                    .containsExactly("CT_G1");
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
+                                    Integer.class))
+                    .isZero();
+        }
     }
 
     @Test
@@ -353,7 +274,7 @@ class CatalogIntegrationTest {
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api(
                         "ct.admin",
@@ -480,34 +401,72 @@ class CatalogIntegrationTest {
         em.clear();
     }
 
-
     @Test
-    void draftEditingKeepsProposerAsSupervisorAndRequiresNewDepartmentApproval() throws Exception {
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
-                "{\"accept\":true}")
+    void fullDraftEditingClearsAssignmentsAndRequiresNewDepartmentSelection() throws Exception {
+        api(
+                        "ct.g2",
+                        "PATCH",
+                        "/api/v1/topics/CT_TOPIC/department-review",
+                        "{\"accept\":true,\"supervisors\":[\"CT_G2\"]}")
                 .andExpect(status().isNoContent());
-        String body = "{\"title\":\"Đề tài mới\",\"content\":\"Yêu cầu mới\",\"department\":\"CT_B1\"}";
-        api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body.replace("}", ",\"supervisors\":[\"CT_G2\"]}"))
+        String body =
+                "{\"title\":\"Đề tài AI\",\"content\":\"Yêu cầu mới\",\"department\":\"CT_B2\"}";
+        api(
+                        "ct.g1",
+                        "PUT",
+                        "/api/v1/topics/CT_TOPIC",
+                        body.replace("}", ",\"supervisors\":[\"CT_G1\"]}"))
                 .andExpect(status().isBadRequest());
-        api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body.replace("CT_B1", "CT_B2"))
-                .andExpect(status().isBadRequest());
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .containsExactly("CT_G2");
         api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body).andExpect(status().isNoContent());
-        assertThat(jdbc.queryForList("SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
-                .containsExactly("CT_G1");
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}").andExpect(status().isBadRequest());
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
-                "{\"accept\":true,\"supervisors\":[\"CT_G2\"]}").andExpect(status().isBadRequest());
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review",
-                "{\"accept\":true}").andExpect(status().isNoContent());
-        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}").andExpect(status().isNoContent());
-        assertThat(jdbc.queryForObject("SELECT Ma_GV_Xac_Nhan FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", String.class))
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT Ma_Bo_Mon FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .isEqualTo("CT_B2");
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
+                .isEmpty();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT COUNT(*) FROM DUYET_BO_MON WHERE Ma_De_Tai='CT_TOPIC'",
+                                Integer.class))
+                .isZero();
+        api(
+                        "ct.g2",
+                        "PATCH",
+                        "/api/v1/topics/CT_TOPIC/department-review",
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isForbidden());
+        api(
+                        "ct.g3",
+                        "PATCH",
+                        "/api/v1/topics/CT_TOPIC/department-review",
+                        "{\"accept\":true,\"supervisors\":[\"CT_G3\"]}")
+                .andExpect(status().isNoContent());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT Ma_GV_Xac_Nhan FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                String.class))
                 .isEqualTo("CT_G0");
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT Ngay_Xac_Nhan FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'",
+                                LocalDateTime.class))
+                .isNotNull();
         api("ct.g1", "PUT", "/api/v1/topics/CT_TOPIC", body).andExpect(status().isBadRequest());
     }
 
     @Test
-    void proposalAutomaticallyAssignsCurrentTeacherAndRejectsForgedSupervisors() throws Exception {
+    void proposalCannotAssignSupervisorsAndDepartmentValidatesBeforeWriting() throws Exception {
         String proposal =
                 "{\"period\":\"CT_PERIOD\",\"title\":\"Đề xuất mới\",\"content\":\"Nội"
                         + " dung\",\"department\":\"CT_B1\"}";
@@ -521,7 +480,7 @@ class CatalogIntegrationTest {
                                 "SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai=?",
                                 Integer.class,
                                 id))
-                .isEqualTo(1);
+                .isZero();
         api(
                         "ct.g1",
                         "POST",
@@ -530,6 +489,7 @@ class CatalogIntegrationTest {
                 .andExpect(status().isBadRequest());
         for (String payload :
                 List.of(
+                        "{\"accept\":true}",
                         "{\"accept\":true,\"supervisors\":[]}",
                         "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G1\"]}",
                         "{\"accept\":true,\"supervisors\":[\"CT_G1\",\"CT_G2\",\"CT_G3\"]}",
@@ -547,53 +507,35 @@ class CatalogIntegrationTest {
                                     "SELECT COUNT(*) FROM GVHD_DETAI WHERE Ma_De_Tai=?",
                                     Integer.class,
                                     id))
-                    .isEqualTo(1);
+                    .isZero();
         }
         api(
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/" + id + "/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G2\"]}")
                 .andExpect(status().isNoContent());
         assertThat(
                         jdbc.queryForList(
                                 "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai=?", String.class, id))
-                .containsExactly("CT_G1");
+                .containsExactly("CT_G2"); // The proposer CT_G1 is not automatically a supervisor.
     }
 
     @Test
-    void htmlProposalAssignsLoggedInTeacherWithoutSupervisorInput() throws Exception {
-        mvc.perform(get("/lecturer/topics").session(session("ct.g1")))
-                .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("name=\"supervisors\""))));
-        mvc.perform(post("/lecturer/topics").session(session("ct.g1")).with(csrf())
-                        .param("period", "CT_PERIOD").param("title", "HTML automatic supervisor")
-                        .param("content", "New proposal").param("department", "CT_B1"))
-                .andExpect(redirectedUrl("/lecturer/topics"))
-                .andExpect(flash().attributeExists("thanhCong"));
-        assertThat(jdbc.queryForList("SELECT h.Ma_GV FROM GVHD_DETAI h JOIN DE_TAI t ON t.Ma_De_Tai=h.Ma_De_Tai WHERE t.Ten_De_Tai='HTML automatic supervisor'", String.class))
-                .containsExactly("CT_G1");
-        mvc.perform(post("/lecturer/topics").session(session("ct.g1")).with(csrf())
-                        .param("period", "CT_PERIOD").param("title", "Forged supervisor")
-                        .param("content", "New proposal").param("department", "CT_B1").param("supervisors", "CT_G2"))
-                .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "supervisors"));
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DE_TAI WHERE Ten_De_Tai='Forged supervisor'", Integer.class)).isZero();
-    }
-
-    @Test
-    void htmlDepartmentApprovalNeedsOnlyDecisionAndKeepsProposer() throws Exception {
+    void htmlDepartmentSelectsSupervisorsAndRejectionDoesNotRequireThem() throws Exception {
         mvc.perform(get("/department/topics").session(session("ct.g2")))
                 .andExpect(status().isOk())
                 .andExpect(
                         content()
                                 .string(
-                                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(
-                                                "name=\"supervisors\""))));
+                                        org.hamcrest.Matchers.containsString(
+                                                "name=\"supervisors\"")));
         mvc.perform(
                         post("/department/topics/CT_TOPIC/review")
                                 .session(session("ct.g2"))
                                 .with(csrf())
-                                .param("accept", "true"))
+                                .param("accept", "true")
+                                .param("supervisors", "CT_G2", "CT_G1"))
                 .andExpect(status().is3xxRedirection());
         em.flush();
         em.clear();
@@ -601,7 +543,7 @@ class CatalogIntegrationTest {
                         jdbc.queryForList(
                                 "SELECT Ma_GV FROM GVHD_DETAI WHERE Ma_De_Tai='CT_TOPIC'",
                                 String.class))
-                .containsExactly("CT_G1");
+                .containsExactlyInAnyOrder("CT_G2", "CT_G1");
     }
 
     @Test
@@ -622,7 +564,7 @@ class CatalogIntegrationTest {
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         jdbc.update(
                 "UPDATE DOT_DANG_KY SET End_GV=?, Begin_SV=? WHERE Ma_Dot='CT_PERIOD'",
@@ -635,7 +577,7 @@ class CatalogIntegrationTest {
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isBadRequest());
         assertThat(
                         jdbc.queryForObject(
@@ -912,7 +854,7 @@ class CatalogIntegrationTest {
 
     @Test
     void pagingLinksPreserveTopicFiltersAndIndependentApprovalSections() throws Exception {
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         var response =
                 mvc.perform(
@@ -936,7 +878,7 @@ class CatalogIntegrationTest {
                     + " dung','CT_B1','CT_PERIOD','CT_G1','Nhap',?)",
                 now);
         jdbc.update("INSERT INTO GVHD_DETAI(Ma_GV,Ma_De_Tai) VALUES ('CT_G1','CT_QNEXT')");
-        api("ct.g2", "PATCH", "/api/v1/topics/CT_QNEXT/department-review", "{\"accept\":true}")
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_QNEXT/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         response =
                 mvc.perform(
@@ -1128,19 +1070,19 @@ class CatalogIntegrationTest {
                         "ct.g3",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isForbidden());
         api(
                         "ct.g1",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isForbidden());
         api(
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api(
                         "ct.g1",
@@ -1159,7 +1101,7 @@ class CatalogIntegrationTest {
                         "ct.g2",
                         "PATCH",
                         "/api/v1/topics/CT_TOPIC/department-review",
-                        "{\"accept\":true}")
+                        "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
                 .andExpect(status().isNoContent());
         api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
                 .andExpect(status().isNoContent());
@@ -1662,5 +1604,125 @@ class CatalogIntegrationTest {
             logger.detachAppender(appender);
             appender.stop();
         }
+    }
+
+    @Test
+    void topicManagementScopesFacultyDepartmentAndPersonalLists() throws Exception {
+        jdbc.update("INSERT INTO DE_TAI(Ma_De_Tai,Ten_De_Tai,Noi_Dung,Ma_Bo_Mon,Ma_Dot,Ma_GV_Dang_Ky,Trang_Thai,Ngay_Dang_Ky)"
+                        + " VALUES ('CT_MANAGE_OTHER','Other department topic','Other content','CT_B2','CT_EMPTY','CT_G3','Nhap',?)", now);
+        mvc.perform(get("/dean/topics").session(session("ct.g0")))
+                .andExpect(status().isOk()).andExpect(view().name("topics/management"))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(2)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT_MANAGE_OTHER")));
+        mvc.perform(get("/department/topic-management").session(session("ct.g2")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("CT_MANAGE_OTHER"))));
+        mvc.perform(get("/department/topic-management").param("department", "CT_B2").session(session("ct.g2")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
+        mvc.perform(get("/lecturer/topic-management").session(session("ct.g1")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)));
+        mvc.perform(get("/lecturer/topic-management").param("period", "CT_EMPTY").session(session("ct.g1")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
+        for (String path : List.of("/dean/topics", "/department/topic-management"))
+            mvc.perform(get(path).session(session("ct.g1"))).andExpect(status().isForbidden());
+        for (String user : List.of("ct.student", "ct.admin"))
+            mvc.perform(get("/lecturer/topic-management").session(session(user))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void managementFiltersAndPaginationRetainSelectedPeriodAndOtherFilters() throws Exception {
+        quotaTopic("CT_NEXT", "CT_PERIOD");
+        var result = mvc.perform(get("/dean/topics").session(session("ct.g0"))
+                        .param("q", "CT_").param("period", "CT_PERIOD").param("department", "CT_B1")
+                        .param("type", "MonHoc").param("state", "Nhap").param("size", "1"))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
+                .andReturn();
+        String html = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        var nextLink = java.util.regex.Pattern.compile("href=\"([^\"]+)\">Trang sau</a>").matcher(html);
+        assertThat(nextLink.find()).isTrue();
+        String next = nextLink.group(1).replace("&amp;", "&");
+        assertThat(next).contains("/dean/topics?", "page=1", "period=CT_PERIOD", "department=CT_B1", "type=MonHoc", "state=Nhap");
+        mvc.perform(get(java.net.URI.create(next)).session(session("ct.g0"))).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("CT_TOPIC")));
+    }
+
+    @Test
+    void sharedAccountMenuShowsFreshEscapedProfileNameAndRoleSpecificManagementLink() throws Exception {
+        var teacherSession = session("ct.g1");
+        mvc.perform(get("/announcements").session(teacherSession))
+                .andExpect(model().attribute("accountDisplayName", "Giảng viên 1"))
+                .andExpect(model().attribute("topicManagementPath", "/lecturer/topic-management"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("account-chevron")));
+        jdbc.update("UPDATE GV SET Ho_Ten=? WHERE Ma_GV='CT_G1'", "Nguyễn <script>alert(1)</script>");
+        em.clear();
+        mvc.perform(get("/announcements").session(teacherSession))
+                .andExpect(model().attribute("accountDisplayName", "Nguyễn <script>alert(1)</script>"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Nguyễn &lt;script&gt;")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Nguyễn <script>"))));
+        mvc.perform(get("/announcements").session(session("ct.student")))
+                .andExpect(model().attribute("accountDisplayName", "Nguyễn Ánh"));
+        mvc.perform(get("/announcements").session(session("ct.g0")))
+                .andExpect(model().attribute("topicManagementPath", "/dean/topics"));
+        mvc.perform(get("/announcements").session(session("ct.g2")))
+                .andExpect(model().attribute("topicManagementPath", "/department/topic-management"));
+        mvc.perform(get("/announcements").session(session("ct.admin")))
+                .andExpect(model().attribute("accountDisplayName", "Quản trị viên"));
+    }
+
+    @Test
+    void proposalPageOnlyCreatesWhileManagementProvidesProtectedEditAndDelete() throws Exception {
+        mvc.perform(get("/lecturer/topics").session(session("ct.g1")))
+                .andExpect(status().isOk()).andExpect(model().attributeDoesNotExist("topics", "topicsPage"))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("CT_TOPIC"))));
+        mvc.perform(get("/lecturer/topic-management").session(session("ct.g1")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"topic-detail-CT_TOPIC\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("aria-controls=\"topic-detail-CT_TOPIC\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Đóng chi tiết đề tài")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"/lecturer/topics/CT_TOPIC/edit\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("action=\"/lecturer/topics/CT_TOPIC/delete\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">Tìm kiếm</button>")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Áp dụng bộ lọc"))));
+        mvc.perform(get("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g1")))
+                .andExpect(status().isOk()).andExpect(view().name("gv/topic-edit"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Lưu thay đổi")));
+        mvc.perform(get("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g3")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/lecturer/topics/CT_TOPIC/edit").session(session("ct.g1")).with(csrf())
+                        .param("title", "Updated from management").param("content", "Updated content"))
+                .andExpect(redirectedUrl("/lecturer/topic-management"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        mvc.perform(post("/lecturer/topics/CT_TOPIC/delete").session(session("ct.g1")).with(csrf()))
+                .andExpect(redirectedUrl("/lecturer/topic-management"))
+                .andExpect(flash().attributeExists("thanhCong"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DE_TAI WHERE Ma_De_Tai='CT_TOPIC'", Integer.class)).isZero();
+    }
+
+    @Test
+    void approvalQueueExcludesUnreviewedAndProcessedTopicsEvenWithForgedStateFilter() throws Exception {
+        // A proposal remains in the department queue until its professional review is complete.
+        mvc.perform(get("/dean/approvals").session(session("ct.g0")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_TOPIC/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/dean/approvals").param("state", "Huy").session(session("ct.g0")))
+                .andExpect(status().isOk()).andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/dean/topics/CT_TOPIC/review")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("name=\"state\""))));
+        mvc.perform(get("/dean/approvals").param("period", "CT_EMPTY").session(session("ct.g0")))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
+        mvc.perform(get("/dean/approvals").session(session("ct.g1"))).andExpect(status().isForbidden());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_TOPIC/review", "{\"accept\":true}")
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/dean/approvals").param("state", "DaCongBo").session(session("ct.g0")))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
+        mvc.perform(get("/dean/topics").session(session("ct.g0")))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.hasSize(1)));
+        quotaTopic("CT_REJECTED", "CT_PERIOD");
+        api("ct.g2", "PATCH", "/api/v1/topics/CT_REJECTED/department-review", "{\"accept\":true,\"supervisors\":[\"CT_G1\"]}")
+                .andExpect(status().isNoContent());
+        api("ct.g0", "PATCH", "/api/v1/topics/CT_REJECTED/review", "{\"accept\":false}")
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/dean/approvals").param("state", "Huy").session(session("ct.g0")))
+                .andExpect(model().attribute("topics", org.hamcrest.Matchers.empty()));
     }
 }

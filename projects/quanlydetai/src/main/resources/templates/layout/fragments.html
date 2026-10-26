@@ -81,8 +81,8 @@
           <span>Đề xuất đề tài</span>
         </a>
       </li>
-      <li sec:authorize="hasRole('GV')">
-        <a class="nav-link" th:href="@{/lecturer/registrations}" th:classappend="${currentPath == '/lecturer/registrations'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/lecturer/registrations' ? 'page' : null}">
+      <li sec:authorize="hasRole('TRUONGKHOA')">
+        <a class="nav-link" th:href="@{/dean/registrations}" th:classappend="${currentPath == '/dean/registrations'} ? 'active' : ''" th:attr="aria-current=${currentPath == '/dean/registrations' ? 'page' : null}">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 11l3 3L22 4M21 12v7H3V3h12"/></svg>
           <span>Duyệt đăng ký nhóm</span>
         </a>

@@ -11,7 +11,7 @@ Sơ đồ chỉnh sửa được: [USE_CASE_FIT.drawio](../projects/Database/USE
 | FR05 | Trưởng bộ môn duyệt | Đúng bộ môn, đề tài Nhap; chọn 1–2 GVHD và lưu người/ngày duyệt trong cùng transaction |
 | FR06 | Trưởng khoa công bố đề tài | Xác nhận 1–2 GVHD do bộ môn chọn; lưu người/ngày xác nhận; cả hai bước duyệt phải trước Begin_SV |
 | FR07 | SV lập nhóm, mời/xác nhận | Chỉ trưởng nhóm gửi đăng ký/nộp báo cáo; đủ 3–5 người lúc đăng ký |
-| FR08 | Đăng ký/rút/duyệt nhóm | Trong hạn tương ứng, giữ chỗ và ràng buộc một nhóm mỗi đợt |
+| FR08 | Nhóm trưởng đăng ký/rút; Trưởng khoa duyệt nhóm | Đăng ký/rút trong hạn SV; Trưởng khoa đương nhiệm chấp thuận/từ chối, từ chối cần lý do. Giữ chỗ một nhóm/một đề tài; GVHD không tự có quyền duyệt |
 | FR09 | Nhóm trưởng nộp báo cáo; GV được phân công xem | Kiểm tra quyền sở hữu, loại/kích thước tệp |
 | FR10 | Trưởng khoa lập/sửa/xóa/chốt hội đồng và phân công; GVPB/hội đồng chấm | Chỉ sửa/xóa hội đồng nháp chưa dùng; GVHD không tự chấm; phản biện phải đúng hạn |
 | FR11 | Chủ tịch tổng hợp; Trưởng khoa công bố kết quả | Khóa điểm sau tổng hợp; gửi email riêng từng SV trong nhóm và cho tra cứu theo đợt |
@@ -25,7 +25,7 @@ Sơ đồ chỉnh sửa được: [USE_CASE_FIT.drawio](../projects/Database/USE
 | NFR03 | Không lộ bí mật trong log/API | DTO không có hash; AOP không ghi tham số, nội dung hoặc lỗi thô |
 | NFR04 | Giao diện tiếng Việt, URL tiếng Anh | Form dùng nhãn, validation và tìm kiếm không phân biệt dấu |
 | NFR05 | Theo dõi lỗi/vận hành | AOP ghi kết quả/thời gian; email có hàng đợi, giới hạn thử lại và trang theo dõi cho Trưởng khoa |
-| NFR06 | Chạy lại được trên local | Maven Wrapper, Docker, SQL 01–09, dữ liệu mẫu nhập có chủ đích |
-| NFR07 | Hiệu năng | Đề tài tải liên kết theo tập mã; email lọc/phân trang tại DB. Chưa nghiệm thu tải lớn/phân trang các danh sách khác |
+| NFR06 | Chạy lại được trên local | Maven Wrapper, Docker, SQL 01–10, dữ liệu mẫu nhập có chủ đích |
+| NFR07 | Hiệu năng | Danh sách chính lọc/phân trang tại DB; đề tài tải liên kết theo tập mã; email có phân trang riêng. Chưa nghiệm thu tải lớn |
 
-Các chức năng chung đăng nhập/đổi mật khẩu/thông báo được mô tả trong bảng để sơ đồ chính tập trung vào nghiệp vụ học thuật. Báo cáo Word và deploy chưa thuộc lượt hoàn thiện local này.
+Các chức năng chung đăng nhập/đổi mật khẩu/thông báo được mô tả trong bảng để sơ đồ chính tập trung vào nghiệp vụ học thuật. Báo cáo Word được nhóm chuẩn bị riêng; source không thay thế báo cáo. Kết quả kiểm tra local không xác nhận phiên bản hoặc tình trạng hoạt động trên hosting.

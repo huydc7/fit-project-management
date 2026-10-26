@@ -30,7 +30,7 @@
   </div>
   <div class="space-bottom">
     <label class="field-label" for="department">Bộ môn</label>
-    <p class="muted">Chọn bộ môn trong hồ sơ giảng viên của bạn.</p>
+    <p class="muted">Chọn bộ môn phụ trách chuyên môn của đề tài.</p>
     <select class="select-field" id="department" th:field="*{department}" required>
       <option value="">Chọn…</option>
       <option th:each="o : ${departments}" th:value="${o.id}" th:text="${o.label}"></option>

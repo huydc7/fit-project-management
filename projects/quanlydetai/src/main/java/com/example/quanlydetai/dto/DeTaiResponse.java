@@ -28,9 +28,4 @@ public record DeTaiResponse(
         String proposerName,
         String groupName,
         List<ThanhVienResponse> groupMembers,
-        List<ThanhVienResponse> councilMembers) {
-    public boolean legacySupervision() {
-        return !supervisorIds.isEmpty()
-                && (supervisorIds.size() != 1 || !supervisorIds.contains(proposerId));
-    }
-}
+        List<ThanhVienResponse> councilMembers) {}

@@ -120,21 +120,9 @@ class MySqlConcurrencyIntegrationTest {
                             connection.setAutoCommit(false);
                             try (var statement = connection.createStatement()) {
                                 statement.executeUpdate("DELETE FROM THONG_BAO WHERE Ma_TK='QC_GV'");
-                                var quotaTopics = new ArrayList<String>();
-                                try (var rows = statement.executeQuery("SELECT Ma_De_Tai FROM DE_TAI WHERE Ma_Dot='QC_QUOTA'")) {
-                                    while (rows.next()) quotaTopics.add(rows.getString(1));
-                                }
-                                // Separate ID lookup from DELETE: GVHD triggers lock DE_TAI,
-                                // which MySQL forbids while it is also a subquery of DELETE.
-                                for (String table : List.of("DUYET_BO_MON", "GVHD_DETAI")) {
-                                    try (var delete = connection.prepareStatement("DELETE FROM " + table + " WHERE Ma_De_Tai=?")) {
-                                        for (String topic : quotaTopics) {
-                                            delete.setString(1, topic);
-                                            delete.executeUpdate();
-                                        }
-                                    }
-                                }
-                                statement.executeUpdate("DELETE FROM DE_TAI WHERE Ma_Dot='QC_QUOTA'");
+                                statement.executeUpdate("DELETE FROM DUYET_BO_MON WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
+                                statement.executeUpdate("DELETE FROM GVHD_DETAI WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
+                                statement.executeUpdate("DELETE FROM DE_TAI WHERE Ma_De_Tai IN ('QC_Q1','QC_Q2','QC_Q3','QC_Q4')");
                                 statement.executeUpdate("DELETE FROM DOT_DANG_KY WHERE Ma_Dot='QC_QUOTA'");
                                 statement.executeUpdate("DELETE FROM TRUONG_BO_MON WHERE Ma_Bo_Mon='QC_BM'");
                                 statement.executeUpdate(
@@ -283,52 +271,6 @@ class MySqlConcurrencyIntegrationTest {
         }
     }
 
-    @Test
-    void concurrentProposalsCannotLeaveOrphansOrExceedSupervisorCapacity() throws Exception {
-        var now = LocalDateTime.now();
-        jdbc.update("INSERT INTO DOT_DANG_KY(Ma_Dot,Ma_Truong_Khoa,Ten_Dot_Dang_Ky,Loai,Begin_GV,End_GV,Begin_SV,End_SV)"
-                        + " VALUES ('QC_QUOTA','QC_GV','Proposal concurrency','MonHoc',?,?,?,?)",
-                now.minusDays(1), now.plusDays(1), now.plusDays(2), now.plusDays(5));
-        assertThat(proposeQuotaTopic("First", new CountDownLatch(0), new CountDownLatch(0))).isTrue();
-        assertThat(proposeQuotaTopic("Second", new CountDownLatch(0), new CountDownLatch(0))).isTrue();
-        var ready = new CountDownLatch(2);
-        var start = new CountDownLatch(1);
-        var pool = Executors.newFixedThreadPool(2);
-        try {
-            var first = pool.submit(() -> proposeQuotaTopic("Third", ready, start));
-            var second = pool.submit(() -> proposeQuotaTopic("Fourth", ready, start));
-            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
-            start.countDown();
-            assertThat(List.of(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS)))
-                    .containsExactlyInAnyOrder(true, false);
-            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM DE_TAI WHERE Ma_Dot='QC_QUOTA'", Integer.class)).isEqualTo(3);
-            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM GVHD_DETAI h JOIN DE_TAI t ON t.Ma_De_Tai=h.Ma_De_Tai WHERE t.Ma_Dot='QC_QUOTA'", Integer.class)).isEqualTo(3);
-        } finally {
-            start.countDown();
-            pool.shutdownNow();
-            assertThat(pool.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
-        }
-    }
-
-    private boolean proposeQuotaTopic(String title, CountDownLatch ready, CountDownLatch start) throws Exception {
-        var principal = new AccountPrincipal("QC_GV", "qc.gv", hash, true, "QC_GV", null,
-                List.of(new SimpleGrantedAuthority("ROLE_GV")));
-        var context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
-        SecurityContextHolder.setContext(context);
-        try {
-            ready.countDown();
-            if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start barrier timed out");
-            topics.create(new com.example.quanlydetai.dto.DeTaiRequest("QC_QUOTA", title, "Proposal", "QC_BM", null));
-            return true;
-        } catch (BusinessException rejected) {
-            assertThat(rejected).hasMessageContaining("đủ 3 đề tài");
-            return false;
-        } finally {
-            SecurityContextHolder.clearContext();
-        }
-    }
-
     private boolean approveQuotaTopic(String topic, CountDownLatch ready, CountDownLatch start) throws Exception {
         var principal = new AccountPrincipal("QC_GV", "qc.gv", hash, true, "QC_GV", null,
                 List.of(new SimpleGrantedAuthority("ROLE_GV"), new SimpleGrantedAuthority("ROLE_TRUONGBOMON")));
@@ -338,7 +280,7 @@ class MySqlConcurrencyIntegrationTest {
         try {
             ready.countDown();
             if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start barrier timed out");
-            topics.reviewDepartment(topic, true, null);
+            topics.reviewDepartment(topic, true, List.of("QC_GV"));
             return true;
         } catch (BusinessException rejected) {
             assertThat(rejected).hasMessageContaining("đủ 3 đề tài");

@@ -105,15 +105,14 @@ public class NhomQueryRepository extends QuerySupport {
                 page);
     }
 
-    public Page<DangKyDeTaiResponse> pending(String teacher, Pageable page) {
+    public Page<DangKyDeTaiResponse> pending(Pageable page) {
         return page(
                 REGISTRATION,
-                REGISTRATION_FROM + " where r.trangThai='ChoDuyet' and exists"
-                        + " (select h.maGV from GvhdDeTai h where h.maDeTai=r.maDeTai and h.maGV=:teacher)",
+                REGISTRATION_FROM + " where r.trangThai='ChoDuyet'",
                 "r.ngayDangKy, r.id",
                 "count(r)",
                 DangKyDeTaiResponse.class,
-                Map.of("teacher", teacher),
+                Map.of(),
                 page);
     }
 }

@@ -36,7 +36,7 @@ Controller HTML nhận form, gọi service rồi render/redirect. REST nhận JS
 
 ## Tầng truy cập dữ liệu
 
-Dự án **đang dùng Spring Data JPA** với chín interface repository, gồm chức vụ Trưởng bộ môn. Các giao dịch nhiều bảng dùng thêm EntityManager qua JpaEntityRepository để giữ khóa ghi, persist, flush và refresh giá trị do trigger thiết lập. Đây là repository tùy chỉnh, không phải thay thế JPA. Một phần JPQL còn nằm trong service; nếu phát triển lớn hơn, có thể chuyển từng nhóm truy vấn sang repository chuyên biệt khi cần tối ưu hoặc tái sử dụng.
+Dự án **đang dùng Spring Data JPA** với 10 interface repository, gồm chức vụ Trưởng bộ môn và hàng đợi email kết quả. Các giao dịch nhiều bảng dùng thêm EntityManager qua JpaEntityRepository để giữ khóa ghi, persist, flush và refresh giá trị do trigger thiết lập. Đây là repository tùy chỉnh, không phải thay thế JPA. Một phần JPQL còn nằm trong service; nếu phát triển lớn hơn, có thể chuyển từng nhóm truy vấn sang repository chuyên biệt khi cần tối ưu hoặc tái sử dụng.
 
 Package `entity` chứa 24 lớp ánh xạ các bảng sau SQL 01–10, gồm EMAIL_KET_QUA cho hàng đợi email kết quả. DTO tách dữ liệu giao tiếp HTTP khỏi entity lưu trữ.
 
@@ -49,7 +49,7 @@ Danh sách đề tài fetch đợt/bộ môn trong truy vấn chính và tải G
 
 Controller chỉ nhận bộ lọc/trang và gọi một phương thức service. Service xác định phạm vi dữ liệu từ phiên đăng nhập (SV, GV phụ trách, bộ môn, Trưởng khoa); tham số từ URL chỉ thu hẹp phạm vi đó. Các `*QueryRepository` thực hiện JOIN/EXISTS, tìm kiếm, COUNT và LIMIT/OFFSET tại database. `QuerySupport` dùng chung việc gắn tham số và phân trang; không chứa chính sách học thuật.
 
-Danh sách đề tài, tài khoản, báo cáo, đợt, thông báo, nhóm, lời mời, hội đồng, nhiệm vụ chấm và kết quả mặc định 25 dòng/trang, tối đa 100. DTO và các danh sách liên quan được dựng sau khi đã lấy trang. Tài khoản fetch hồ sơ SV/GV một lần; đề tài, nhóm và hội đồng nạp các liên kết theo tập mã trên trang. Trang Trưởng khoa có tham số trang độc lập cho đề tài và kết quả. Trang duyệt đăng ký nhóm của GVHD có phân trang riêng; truy vấn và tổng số được giới hạn theo quan hệ hướng dẫn lấy từ phiên đăng nhập.
+Danh sách đề tài, tài khoản, báo cáo, đợt, thông báo, nhóm, lời mời, hội đồng, nhiệm vụ chấm và kết quả mặc định 25 dòng/trang, tối đa 100. DTO và các danh sách liên quan được dựng sau khi đã lấy trang. Tài khoản fetch hồ sơ SV/GV một lần; đề tài, nhóm và hội đồng nạp các liên kết theo tập mã trên trang. Trang Trưởng khoa có tham số trang độc lập cho đề tài và kết quả. Trang duyệt đăng ký nhóm của Trưởng khoa tại `/dean/registrations` có phân trang riêng; chỉ người có chức vụ Trưởng khoa đương nhiệm được xem danh sách và quyết định.
 
 Tìm kiếm giữ cách so khớp chuỗi con tiếng Việt không phân biệt hoa/thường và dấu. Repository chuẩn hóa bằng REGEXP_REPLACE trong DB; `%`, `_`, `!` trong từ khóa được escape và từ khóa luôn được bind. Cách này dùng được trên MySQL 8 và H2 kiểm thử, không cần thêm cột dữ liệu hoặc nhập lại dữ liệu mẫu. LIKE chuỗi con và hàm chuẩn hóa không tận dụng B-tree cho chính từ khóa; không khẳng định mọi tìm kiếm đều dùng index. SQL 10 bổ sung index cho một số điều kiện bằng và thứ tự danh sách, cần dùng EXPLAIN với dữ liệu thực tế để đánh giá kế hoạch.
 

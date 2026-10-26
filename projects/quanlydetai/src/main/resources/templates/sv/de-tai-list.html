@@ -11,7 +11,7 @@
 </div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}">
 </div>
-<p class="muted">Chỉ nhóm trưởng được đăng ký. Đăng ký được gửi đến GVHD của đề tài để duyệt và giữ chỗ trong khi chờ xử lý.</p>
+<p class="muted">Chỉ nhóm trưởng được đăng ký. Đăng ký được gửi đến Trưởng khoa để duyệt và giữ chỗ trong khi chờ xử lý.</p>
 <p class="muted" th:if="${#lists.isEmpty(topics)}">Chưa có đề tài được công bố.</p>
 <article class="panel panel-body space-bottom" th:each="t : ${topics}">
 <h2 class="item-title" th:text="${t.title}">

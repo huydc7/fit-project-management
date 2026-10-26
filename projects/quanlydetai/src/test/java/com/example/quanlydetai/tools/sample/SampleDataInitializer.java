@@ -176,11 +176,8 @@ public class SampleDataInitializer implements ApplicationRunner {
             entity.setNgayDangKy(period.getBeginGV().plusHours(1));
             entity.setTrangThai("Nhap");
             persist(entity);
-            var supervisor = new com.example.quanlydetai.entity.GvhdDeTai();
-            supervisor.setMaDeTai(id);
-            supervisor.setMaGV(entity.getMaGvDangKy());
-            persist(supervisor);
-            // The proposer is the supervisor; department approval is still a separate action.
+            // The first fixture teacher is the proposer only. Department heads select
+            // supervisors through the real approval flow; imports never fabricate decisions.
             entityManager.flush();
         }
         var notice = data.notice();

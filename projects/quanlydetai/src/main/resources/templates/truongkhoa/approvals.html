@@ -57,7 +57,7 @@
 <h1 class="page-title space-bottom">Duyệt &amp; công bố</h1>
 <p class="muted">Chỉ hiển thị đề tài đã được Trưởng bộ môn duyệt và kết quả đã tổng hợp đang chờ công bố. Xem toàn bộ đề tài và phân công GVPB/hội đồng tại <a th:href="@{/dean/topics}">Quản lý đề tài</a>.</p>
 <div th:replace="~{layout/search :: topicFilters(@{/dean/approvals})}"></div>
-<p><a class="button button-outline button-small" th:href="@{/dean/result-emails}">Theo dõi email kết quả ↗</a></p>
+<p><a class="button button-outline button-small space-right-sm" th:href="@{/dean/registrations}">Duyệt đăng ký nhóm</a><a class="button button-outline button-small" th:href="@{/dean/result-emails}">Theo dõi email kết quả ↗</a></p>
 <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
 <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
 <h2 class="section-title">Đề tài chờ duyệt và công bố</h2>

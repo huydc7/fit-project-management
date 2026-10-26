@@ -11,8 +11,6 @@ import com.example.quanlydetai.dto.ThanhVienResponse;
 import com.example.quanlydetai.entity.DangKyDeTai;
 import com.example.quanlydetai.entity.DeTai;
 import com.example.quanlydetai.entity.DotDangKy;
-import com.example.quanlydetai.entity.GvhdDeTai;
-import com.example.quanlydetai.entity.GvhdDeTaiId;
 import com.example.quanlydetai.entity.LoiMoiNhom;
 import com.example.quanlydetai.entity.Nhom;
 import com.example.quanlydetai.entity.SinhVien;
@@ -211,9 +209,9 @@ public class NhomService {
     }
 
     @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
-    @PreAuthorize("hasRole('GV')")
+    @PreAuthorize("hasRole('TRUONGKHOA')")
     public void review(String registration, boolean accept, String reason) {
-        String teacher = currentUser.teacher();
+        String dean = currentUser.dean();
         // Read only IDs before waiting: do not cache a stale pending decision or group.
         var initial = entities.query(
                 "select r.maNhom,r.maDeTai,n.maDot from DangKyDeTai r, Nhom n"
@@ -222,8 +220,6 @@ public class NhomService {
         Object[] ids = initial.getFirst();
         entities.lock(DotDangKy.class, (String) ids[2]);
         DeTai t = entities.lock(DeTai.class, (String) ids[1]);
-        if (entities.find(GvhdDeTai.class, new GvhdDeTaiId(teacher, t.getMaDeTai())) == null)
-            throw new AccessDeniedException("Chỉ GVHD của đề tài được duyệt đăng ký nhóm.");
         Nhom n = entities.lock(Nhom.class, (String) ids[0]);
         DangKyDeTai r = entities.lock(DangKyDeTai.class, registration);
         rules.check("ChoDuyet".equals(r.getTrangThai()), "Đăng ký đã được xử lý.");
@@ -246,7 +242,7 @@ public class NhomService {
             r.setActiveGroup(null);
             r.setActiveTopic(null);
         }
-        r.setMaGvDuyet(teacher);
+        r.setMaGvDuyet(dean);
         r.setLyDo(reason.strip());
         r.setNgayDuyet(rules.now());
         entities.flush();
@@ -321,15 +317,16 @@ public class NhomService {
         return queries.invitations(currentUser.student(), page);
     }
 
-    @PreAuthorize("hasRole('GV')")
+    @PreAuthorize("hasRole('TRUONGKHOA')")
     public List<DangKyDeTaiResponse> pending() {
         return pending(Paging.defaults()).getContent();
     }
 
-    @PreAuthorize("hasRole('GV')")
+    @PreAuthorize("hasRole('TRUONGKHOA')")
     public Page<DangKyDeTaiResponse> pending(Pageable page) {
         Paging.check(page);
-        return queries.pending(currentUser.teacher(), page);
+        currentUser.dean();
+        return queries.pending(page);
     }
 
     private Nhom lockPeriodGroup(String id) {

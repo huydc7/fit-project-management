@@ -6,7 +6,7 @@
   <div class="space-bottom"><label class="field-label" for="title">Tên đề tài</label><input class="field" id="title" th:field="*{title}" maxlength="300" required></div>
   <div class="space-bottom"><label class="field-label" for="content">Nội dung / yêu cầu</label><textarea class="field" id="content" th:field="*{content}" rows="6" maxlength="20000" required></textarea></div>
   <div class="space-bottom"><label class="field-label" for="department">Bộ môn</label><select class="select-field" id="department" th:field="*{department}" required><option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.label}"></option></select></div>
-  <p class="muted">Sau khi sửa, đề tài cần được bộ môn duyệt lại. Người đề xuất vẫn là GVHD duy nhất.</p>
+  <p class="muted">Sau khi sửa, danh sách GVHD và xác nhận chuyên môn được xóa; Trưởng bộ môn cần chọn GVHD và duyệt lại.</p>
   <div class="inline-fields"><button class="button button-primary" type="submit">Lưu thay đổi</button><a class="button button-outline" th:href="${topicManagementPath}">Hủy</a></div>
 </form>
 </main></body></html>

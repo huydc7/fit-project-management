@@ -95,13 +95,13 @@ public class NhomController {
         return perform("/student/groups", flash, () -> groups.withdraw(id));
     }
 
-    @GetMapping("/lecturer/registrations")
+    @GetMapping("/dean/registrations")
     public String pendingRegistrations(Model m) {
         add(m, "registrations", groups.pending((Pageable) m.getAttribute("registrationPageRequest")));
-        return "gv/registrations";
+        return "truongkhoa/registrations";
     }
 
-    @PostMapping("/lecturer/registrations/{id}/review")
+    @PostMapping("/dean/registrations/{id}/review")
     public String reviewRegistration(
             @PathVariable String id,
             @RequestParam boolean accept,
@@ -109,7 +109,7 @@ public class NhomController {
             @RequestParam(defaultValue = "0") int registrationsPage,
             @RequestParam(defaultValue = "25") int size,
             RedirectAttributes flash) {
-        String result = perform("/lecturer/registrations", flash, () -> groups.review(id, accept, reason));
+        String result = perform("/dean/registrations", flash, () -> groups.review(id, accept, reason));
         if (flash.getFlashAttributes().containsKey("loi")) {
             flash.addFlashAttribute("registrationErrorId", id);
             flash.addFlashAttribute("registrationReason", reason);

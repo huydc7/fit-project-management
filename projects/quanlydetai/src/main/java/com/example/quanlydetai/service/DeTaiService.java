@@ -88,8 +88,6 @@ public class DeTaiService {
         DotDangKy dot = entities.lock(DotDangKy.class, f.period());
         rules.teacherWindow(dot);
         entities.require(BoMon.class, f.department());
-        teachers.requireDepartmentSupervisors(List.of(gv), f.department());
-        requireSupervisionCapacity(gv, f.period(), null);
         DeTai t = new DeTai();
         t.setMaDeTai(rules.id("DT"));
         t.setTenDeTai(f.title().strip());
@@ -100,7 +98,6 @@ public class DeTaiService {
         t.setTrangThai("Nhap");
         t.setNgayDangKy(rules.now());
         entities.insert(t);
-        assignSupervisor(t.getMaDeTai(), gv);
     }
 
     @Transactional
@@ -328,9 +325,6 @@ public class DeTaiService {
         if (f.department() != null) {
             entities.require(BoMon.class, f.department());
         }
-        teachers.requireDepartmentSupervisors(
-                List.of(t.getMaGvDangKy()), f.department() == null ? t.getMaBoMon() : f.department());
-        requireSupervisionCapacity(t.getMaGvDangKy(), t.getMaDot(), id);
         // Invalidate approval before changing assignments; MySQL locks an approved list.
         var approval = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approval != null) entities.remove(approval);
@@ -342,7 +336,6 @@ public class DeTaiService {
         t.setTenDeTai(f.title().strip());
         t.setNoiDung(f.content().strip());
         entities.flush();
-        assignSupervisor(id, t.getMaGvDangKy());
     }
 
     @Transactional
@@ -415,7 +408,6 @@ public class DeTaiService {
     @PreAuthorize("hasRole('TRUONGBOMON')")
     public void reviewDepartment(String id, boolean approve, List<String> supervisors) {
         String department = currentUser.departmentHead();
-        rules.check(supervisors == null, "GVHD duy nhất là người đề xuất; không được chọn thêm hoặc đổi GVHD.");
         String period =
                 entities
                         .query("select t.maDot from DeTai t where t.maDeTai=?1", String.class, id)
@@ -435,17 +427,42 @@ public class DeTaiService {
         var review = entities.find(com.example.quanlydetai.entity.DuyetBoMon.class, id);
         if (approve) {
             rules.check(review == null, "Đề tài đã được bộ môn duyệt.");
-            // The proposer is the only supervisor; department review never selects one.
-            String proposer = t.getMaGvDangKy();
-            teachers.requireDepartmentSupervisors(List.of(proposer), department);
-            requireSupervisionCapacity(proposer, period, id);
-            // Normalize old, unapproved drafts too. Published histories are not changed.
-            var assigned = entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id);
-            if (assigned.size() != 1 || !proposer.equals(assigned.getFirst().getMaGV())) {
-                assigned.forEach(entities::remove);
-                entities.flush();
-                assignSupervisor(id, proposer);
+            rules.check(
+                    supervisors != null && supervisors.size() >= 1 && supervisors.size() <= 2,
+                    "Chọn từ 1 đến 2 giảng viên hướng dẫn.");
+            var distinct = new LinkedHashSet<>(supervisors);
+            rules.check(
+                    distinct.size() == supervisors.size(),
+                    "Giảng viên hướng dẫn không được trùng nhau.");
+            for (String gv : distinct) {
+                rules.check(
+                        gv != null && !gv.isBlank() && gv.length() <= 20, "Mã GVHD không hợp lệ.");
             }
+            teachers.requireDepartmentSupervisors(distinct, department);
+            // The period lock serializes approvals. READ_COMMITTED ensures the count
+            // sees the previous approval after waiting for that lock on MySQL.
+            for (String gv : distinct) {
+                long assigned = entities.query(
+                        "select count(h) from GvhdDeTai h, DeTai t"
+                                + " where h.maDeTai=t.maDeTai and h.maGV=?1 and t.maDot=?2"
+                                + " and t.maDeTai<>?3 and t.trangThai<>'Huy'"
+                                + " and (t.trangThai<>'Nhap' or exists"
+                                + " (select r.maDeTai from DuyetBoMon r where r.maDeTai=t.maDeTai))",
+                        Long.class, gv, period, id).getFirst();
+                rules.check(assigned < AcademicRules.MAX_SUPERVISED_TOPICS_PER_PERIOD,
+                        "Giảng viên " + gv + " đã hướng dẫn đủ 3 đề tài trong đợt này."
+                                + " Vui lòng chọn giảng viên khác.");
+            }
+            entities.query("select h from GvhdDeTai h where h.maDeTai=?1", GvhdDeTai.class, id)
+                    .forEach(entities::remove);
+            entities.flush();
+            for (String gv : distinct) {
+                var assignment = new GvhdDeTai();
+                assignment.setMaDeTai(id);
+                assignment.setMaGV(gv);
+                entities.insert(assignment);
+            }
+            entities.flush();
             review = new com.example.quanlydetai.entity.DuyetBoMon();
             review.setMaDeTai(id);
             review.setMaGV(currentUser.teacher());
@@ -457,22 +474,5 @@ public class DeTaiService {
             t.setTrangThai("Huy");
             entities.flush();
         }
-    }
-
-    private void assignSupervisor(String topic, String teacher) {
-        var assignment = new GvhdDeTai();
-        assignment.setMaDeTai(topic);
-        assignment.setMaGV(teacher);
-        entities.insert(assignment);
-    }
-
-    private void requireSupervisionCapacity(String teacher, String period, String excludedTopic) {
-        long assigned = entities.query(
-                "select count(h) from GvhdDeTai h, DeTai t"
-                        + " where h.maDeTai=t.maDeTai and h.maGV=?1 and t.maDot=?2"
-                        + " and (?3 is null or t.maDeTai<>?3) and t.trangThai<>'Huy'",
-                Long.class, teacher, period, excludedTopic).getFirst();
-        rules.check(assigned < AcademicRules.MAX_SUPERVISED_TOPICS_PER_PERIOD,
-                "Giảng viên " + teacher + " đã hướng dẫn đủ 3 đề tài trong đợt này.");
     }
 }

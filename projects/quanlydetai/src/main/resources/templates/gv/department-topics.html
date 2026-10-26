@@ -6,7 +6,7 @@
 <body>
 <main>
   <h1 class="page-title space-bottom">Duyệt đề tài bộ môn</h1>
-  <div class="notice notice-info">Người đề xuất là GVHD duy nhất của đề tài. Trưởng bộ môn duyệt chuyên môn và chuyển Trưởng khoa xác nhận, công bố. Cả hai bước phải hoàn tất trước thời điểm mở đăng ký cho sinh viên. Nội dung sửa sau khi duyệt phải được bộ môn duyệt lại.</div>
+  <div class="notice notice-info">Trưởng bộ môn duyệt chuyên môn, chọn 1–2 giảng viên hướng dẫn thuộc bộ môn và chuyển Trưởng khoa xác nhận, công bố. Cả hai bước phải hoàn tất trước thời điểm mở đăng ký cho sinh viên. Đề tài sửa sau khi duyệt cần được chọn GVHD và duyệt lại.</div>
   <div th:if="${thanhCong}" class="notice notice-success" role="status" th:text="${thanhCong}"></div>
   <div th:if="${loi}" class="notice notice-error" role="alert" th:text="${loi}"></div>
   <div th:replace="~{layout/search :: topicFilters(@{/department/topics})}"></div>
@@ -22,7 +22,7 @@
     <p class="muted" th:text="${t.id + ' · ' + t.period + ' · ' + t.department}"></p>
     <p class="pre-wrap" th:text="${t.content}"></p>
     <p>Người đề xuất: <strong th:text="${t.proposerName}"></strong></p>
-    <p>GVHD: <strong th:text="${#strings.listJoin(t.supervisors, ', ')}"></strong></p>
+    <p>GVHD: <strong th:text="${#lists.isEmpty(t.supervisors) ? 'Chưa phân công' : #strings.listJoin(t.supervisors, ', ')}"></strong></p>
     <p>
       <span class="tag"
             th:classappend="${t.departmentApproved} ? 'tag-success' : 'tag-warning'"
@@ -32,8 +32,27 @@
     <p th:unless="${t.reviewOpen}" class="warning-text">Đã đóng phê duyệt trước giai đoạn sinh viên đăng ký.</p>
 <form th:if="${t.state == 'Nhap' &amp;&amp; !t.departmentApproved &amp;&amp; t.reviewOpen}" method="post" th:action="@{/department/topics/{id}/review(id=${t.id})}">
 <input type="hidden" name="accept" value="true">
-<p class="muted">GVHD là người đề xuất đề tài. Trưởng bộ môn chỉ duyệt nội dung chuyên môn.</p>
-<button class="button button-primary" type="submit">Duyệt chuyên môn và chuyển Trưởng khoa</button>
+<fieldset class="teacher-picker space-bottom" data-teacher-picker data-max="2" th:attr="aria-describedby=${'supervisor-help-' + t.id}">
+  <legend class="field-label">Chọn giảng viên hướng dẫn</legend>
+  <div class="teacher-picker-heading">
+    <span>Chọn 1–2 giảng viên thuộc bộ môn</span>
+    <span class="teacher-count" data-teacher-count role="status" aria-live="polite"></span>
+  </div>
+  <label class="teacher-search" data-teacher-search-control hidden>
+    <span class="field-label">Tìm giảng viên</span>
+    <input class="field" type="search" placeholder="Nhập họ tên hoặc mã giảng viên" data-teacher-search autocomplete="off">
+  </label>
+  <div class="teacher-options">
+    <label class="teacher-option" th:each="g : ${teachers}">
+      <input type="checkbox" name="supervisors" th:value="${g.id}" th:checked="${#lists.contains(t.supervisorIds, g.id)}">
+      <span th:text="${g.label}"></span>
+    </label>
+  </div>
+  <p class="teacher-help" th:if="${#lists.isEmpty(teachers)}">Chưa có giảng viên có tài khoản đang hoạt động trong bộ môn.</p>
+  <p class="teacher-help" data-teacher-no-results hidden>Không tìm thấy giảng viên phù hợp.</p>
+  <p class="teacher-help" th:id="${'supervisor-help-' + t.id}" data-teacher-feedback>Đánh dấu 1–2 giảng viên hướng dẫn. Người đề xuất không tự động được chọn.</p>
+</fieldset>
+<button class="button button-primary" type="submit" data-teacher-submit>Duyệt, chọn GVHD và chuyển Trưởng khoa</button>
 </form>
 <form th:if="${t.state == 'Nhap' &amp;&amp; t.reviewOpen}" method="post" class="space-top" th:action="@{/department/topics/{id}/review(id=${t.id})}">
 <button class="button button-danger" name="accept" value="false">Từ chối đề tài</button>

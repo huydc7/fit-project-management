@@ -12,7 +12,7 @@ Tên người, mã sinh viên và email trong bộ thực hành đều giả l�
 
 ## Nhập dữ liệu thực hành bằng công cụ riêng
 
-Web không có bộ nạp dữ liệu mẫu trong JAR. `SAMPLE_DATA_ENABLED` cũ không còn tác dụng khi chạy web. Để nhập có chủ đích vào **database local** đã có schema 01–09, đặt `SAMPLE_DATA_PASSWORD` trong file `.env` (12–64 ký tự, tối đa 72 byte UTF-8), rồi chạy từ root repository với JDK 21:
+Web không có bộ nạp dữ liệu mẫu trong JAR. `SAMPLE_DATA_ENABLED` cũ không còn tác dụng khi chạy web. Để nhập có chủ đích vào **database local mới** đã có schema 01–10, đặt `SAMPLE_DATA_PASSWORD` trong file `.env` (12–64 ký tự, tối đa 72 byte UTF-8), rồi chạy từ root repository với JDK 21:
 
 ```powershell
 # MySQL Docker đang chạy, cổng MYSQL_PORT trong .env:
@@ -69,6 +69,7 @@ Các fixture kiểm thử bảo vệ phân quyền, thời gian, giới hạn nh
 
 Đề tài mới nhập từ bộ mẫu luôn ở Nhap, chưa có GVHD và chưa có quyết định duyệt giả lập.
 Trường supervisors trong JSON chỉ giúp xác định GV đề xuất từ mục đầu tiên; không tạo phân công.
-Người đề xuất của mỗi nháp được gán làm GVHD khi nhập dữ liệu mới. Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để duyệt chuyên môn, sau đó Trưởng khoa công bố. GVHD duyệt đăng ký nhóm tại `/lecturer/registrations`.
+Dùng tài khoản Trưởng bộ môn đã được Admin bổ nhiệm để chọn GVHD, sau đó Trưởng khoa xác nhận.
+Nhóm trưởng đăng ký đề tài đã công bố trong thời gian SV; Trưởng khoa duyệt đăng ký tại `/dean/registrations`. Tài khoản GVHD không được duyệt chỉ dựa vào phân công hướng dẫn.
 Refresh không thay quyết định, GVHD hoặc trạng thái của đề tài đã tồn tại.
 Trường `published` trong JSON không tự công bố đề tài mới. Chỉ công bố trước Begin_SV; nếu đợt mẫu đã qua hạn, tạo đợt kiểm thử mới để chạy trọn hai giai đoạn, không nới lịch cũ để vượt kiểm tra.

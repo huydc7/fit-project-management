@@ -69,7 +69,7 @@ Tài khoản mẫu và chính sách dữ liệu được ghi trong SAMPLE_DATA.m
 
 1. gv.hoangnam chỉ đề xuất nội dung vào đợt còn hạn GV; Trưởng bộ môn đã được bổ nhiệm duyệt đúng bộ môn và chọn 1–2 GVHD, rồi truongkhoa xác nhận và công bố. Thử đề xuất vào đợt đã qua giai đoạn GV để kiểm tra chặn.
 2. sv.22110001 tạo nhóm ở đợt Đồ án môn học học kỳ I, mời hai SV và từng người xác nhận lời mời. Nhóm cần 3–5 người khi đăng ký; mỗi SV chỉ có một nhóm mỗi đợt.
-3. Nhóm trưởng đăng ký đề tài Cổng đăng ký và quản lý đề tài sinh viên. truongkhoa chấp thuận. Thử rút/từ chối với yêu cầu khác để xác nhận giải phóng giữ chỗ.
+3. Nhóm trưởng đăng ký đề tài Cổng đăng ký và quản lý đề tài sinh viên. truongkhoa mở `/dean/registrations` để chấp thuận. Thử rút/từ chối với yêu cầu khác để xác nhận giải phóng giữ chỗ. GVHD không đồng thời là Trưởng khoa không thấy mục Duyệt đăng ký nhóm; mở trực tiếp URL hoặc gọi API pending/review trả 403.
 4. truongkhoa phân công gv.minhanh phản biện; hội đồng gồm gv.thanhbinh chủ tịch, gv.thuha thư ký, gv.quochuy thành viên. Chốt rồi gán đề tài. GVHD gv.hoangnam không được chấm.
 5. Nhóm trưởng nộp PDF/DOCX/ZIP dưới 20 MiB; thử nhiều phiên bản, tải đúng file và kiểm tra người ngoài nhóm không tải được.
 6. Phản biện chấm 9, mỗi thành viên hội đồng chấm 6, có nhận xét. Điểm -1, 10.01 hoặc 6.123 bị chặn. Sau phiếu đầu tiên, không nộp báo cáo mới.

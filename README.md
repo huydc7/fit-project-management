@@ -6,9 +6,9 @@
 
 - Admin quản lý tài khoản, hồ sơ, bộ môn, bổ nhiệm chức vụ và thông báo chung.
 - Trưởng khoa tạo đợt đăng ký, xác nhận đề tài, phân công đánh giá và công bố kết quả. Lịch GVPB phải sau hạn đăng ký SV; với KLTN, hạn GVPB phải trước ngày báo cáo hội đồng.
-- Giảng viên đề xuất được tự động gán làm GVHD. Người đề xuất là GVHD duy nhất; Trưởng bộ môn chỉ duyệt chuyên môn và chuyển Trưởng khoa. Mỗi GV hướng dẫn tối đa 3 đề tài trong một đợt, kể cả nháp chưa hủy.
+- Giảng viên đề xuất nội dung; Trưởng bộ môn duyệt chuyên môn và chọn 1–2 GVHD cùng bộ môn, sau đó chuyển Trưởng khoa xác nhận/công bố. Người đề xuất không tự động là GVHD. Mỗi GVHD tối đa 3 đề tài đã được duyệt trong một đợt, không tính nháp chưa duyệt và đề tài đã hủy.
 - Sinh viên tạo nhóm, mời và xác nhận thành viên; mỗi SV chỉ thuộc một nhóm trong mỗi đợt. Nhóm trưởng được sửa tên nhóm trong thời gian đăng ký, trước khi đăng ký chờ duyệt hoặc được chấp thuận. Nhóm cần 3–5 SV khi đăng ký, có đúng một nhóm trưởng đăng ký và nộp báo cáo.
-- GVHD duyệt đăng ký nhóm tại **Duyệt đăng ký nhóm**; chỉ xem và quyết định đăng ký của đề tài mình hướng dẫn. Trưởng khoa không có quyền duyệt nếu không đồng thời là GVHD. Từ chối đăng ký nhóm bắt buộc có lý do. Lý do hiển thị riêng trong Thông báo và trang chủ của đúng nhóm trưởng, không đưa vào thông báo chung.
+- Trưởng khoa duyệt đăng ký nhóm tại **Duyệt đăng ký nhóm** (`/dean/registrations`); giảng viên và GVHD không có quyền duyệt chỉ dựa vào phân công hướng dẫn. Từ chối đăng ký nhóm bắt buộc có lý do. Lý do hiển thị riêng trong Thông báo và trang chủ của đúng nhóm trưởng, không đưa vào thông báo chung.
 - Lập hội đồng chọn đề tài trước; danh sách chủ tịch, thư ký và thành viên loại GVHD/GVPB của đề tài đó. Tạo, chốt và gán hội đồng trong cùng một transaction.
 - Báo cáo PDF/DOCX/ZIP có lịch sử phiên bản và kiểm tra quyền tải. Chỉ cho chấm điểm sau khi phân công đủ GVPB và hội đồng đã chốt; từ phiếu điểm đầu tiên, phân công và phiên bản báo cáo bị khóa. Chủ tịch tổng hợp, Trưởng khoa công bố. Sinh viên chỉ tra cứu kết quả nhóm mình theo đợt đã tham gia sau công bố.
 - Công bố kết quả tạo email riêng cho từng SV; có hàng đợi, theo dõi và thử lại thư lỗi. Thông báo chung và riêng được tìm kiếm, phân trang và sắp xếp mới nhất trước.
@@ -27,10 +27,10 @@ Thời hạn duyệt trước giai đoạn SV, sửa hội đồng và gia hạn
 
 | Bước | Người thực hiện | Trạng thái và điều kiện |
 |---|---|---|
-| Đề xuất | Giảng viên | Tạo trong thời gian GV đăng ký, đề tài ở `Nhap`, người đề xuất được gán GVHD trong cùng transaction |
-| Duyệt bộ môn | Trưởng bộ môn | Duyệt chuyên môn, giữ người đề xuất là GVHD duy nhất; đề tài vẫn `Nhap` |
+| Đề xuất | Giảng viên | Tạo trong thời gian GV đăng ký, đề tài ở `Nhap`, chưa tự phân công GVHD |
+| Duyệt bộ môn | Trưởng bộ môn | Duyệt chuyên môn và chọn 1–2 GVHD cùng bộ môn; đề tài vẫn `Nhap` |
 | Công bố đề tài | Trưởng khoa | Bộ môn đã duyệt, hoàn tất trước giai đoạn SV; chuyển `DaCongBo` |
-| Đăng ký nhóm | Nhóm trưởng, sau đó GVHD của đề tài duyệt | Nhóm đủ 3–5 SV; khi chấp thuận, đề tài chuyển `DangThucHien` |
+| Đăng ký nhóm | Nhóm trưởng, sau đó Trưởng khoa duyệt | Nhóm đủ 3–5 SV; khi chấp thuận, đề tài chuyển `DangThucHien` |
 | Chuẩn bị chấm | Trưởng khoa và nhóm trưởng | Phân công một GVPB, gán hội đồng đã chốt và nộp báo cáo; các việc này có thể làm trước/sau nhau |
 | Chấm và tổng hợp | GVPB, hội đồng, chủ tịch | Chỉ lưu điểm khi đủ phân công và báo cáo. Chủ tịch tổng hợp khi đủ mọi phiếu; đề tài thành `HoanThanh`, kết quả `ChuaCongBo` |
 | Công bố kết quả | Trưởng khoa | Kết quả chuyển `DaCongBo`; SV của đúng nhóm được tra cứu và nhận email riêng |
@@ -81,6 +81,8 @@ H2 và HTTP giả lập không cần cloud. Test MySQL dùng DB riêng đã nạ
 
 Test hồi quy bao gồm hai trường hợp chấm khi chỉ có GVPB hoặc chỉ có hội đồng, bổ sung phân công rồi hoàn tất công bố, và đổi tên nhóm theo quyền/trạng thái/thời gian. Kiểm thử MockMvc hoặc gửi HTTP trực tiếp không thay thế kiểm thử thao tác và hiển thị trong trình duyệt.
 
+Luồng phân công và duyệt nhóm được kiểm tra qua cả HTML/API: tạo nháp chưa có GVHD; bộ môn chọn 1–2 GV cùng bộ môn và đủ hạn mức; sửa nháp xóa phân công/xác nhận để duyệt lại; chỉ Trưởng khoa đương nhiệm được xem và quyết định đăng ký nhóm. Lượt kiểm tra local ngày 26/10/2026: MySQL riêng đạt 157/157 test; H2 có 157 test được phát hiện, không lỗi và bỏ qua 9 test chỉ dành cho MySQL; Docker build thành công. Kết quả này không thay cho GitHub Actions hoặc kiểm tra hosting sau khi deploy.
+
 ## Admin đầu tiên khi không dùng bộ thực hành
 
 Từ thư mục backend, tạo BCrypt trong terminal tương tác:
@@ -130,7 +132,7 @@ Sơ đồ chuẩn: [ERD 24 bảng](projects/Database/ERD_QuanLyDeTai_V2.drawio),
 
 ## Luồng đề tài và GVHD (SQL 09)
 
-GV đề xuất và tự động nhận vai trò GVHD → Trưởng bộ môn duyệt chuyên môn và chuyển Trưởng khoa → Trưởng khoa công bố → Nhóm trưởng đăng ký → GVHD duyệt nhận nhóm.
+GV đề xuất → Trưởng bộ môn duyệt chuyên môn, chọn 1–2 GVHD → Trưởng khoa công bố → Nhóm trưởng đăng ký → Trưởng khoa duyệt nhận nhóm.
 Database mới cần chạy SQL 01–10. Database đã có 01–08: dừng web, sao lưu, chạy
 `projects/Database/09_department_supervisor_assignment.sql`, sau đó chạy
 `projects/Database/10_read_query_indexes.sql` trong Workbench rồi khởi động lại. Database đã có 01–09 cần SQL 10.
@@ -141,17 +143,15 @@ Hướng dẫn chi tiết: `docs/DEPARTMENT_SUPERVISOR_WORKFLOW.md`.
 
 Danh sách chính có phân trang 25 dòng/trang (tối đa 100) và lọc tại DB. Xem [kiến trúc truy vấn](docs/ARCHITECTURE.md#truy-vấn-danh-sách-và-phân-trang) và [nghiệm thu SQL 10](docs/LOCAL_TEST.md#nghiệm-thu-truy-vấn-danh-sách-sql-10) trước khi kiểm tra bản mới. SQL 10 chỉ thêm index, giữ nguyên dữ liệu đã nhập.
 
-## Luồng GVHD duyệt nhóm
+## Luồng Trưởng khoa duyệt nhóm
 
-Giảng viên đề xuất tại `/lecturer/topics` chỉ nhập đợt, tên, nội dung và bộ môn của mình; không gửi danh sách GVHD từ form/API. Backend lấy mã GV từ phiên đăng nhập và lưu đề tài cùng phân công GVHD trong một transaction. Sửa nháp hủy duyệt bộ môn nhưng giữ người đề xuất là GVHD duy nhất.
+Giảng viên đề xuất tại `/lecturer/topics` chỉ nhập đợt, tên, nội dung và bộ môn; không gửi danh sách GVHD từ form/API. Backend lưu mã người đề xuất từ phiên đăng nhập. Trưởng bộ môn chọn 1–2 GVHD có tài khoản hoạt động, thuộc bộ môn phụ trách khi duyệt tại `/department/topics`. Người đề xuất có thể được chọn làm GVHD nhưng không tự động được gán. Sửa nháp hủy xác nhận bộ môn và xóa danh sách GVHD để bộ môn duyệt/chọn lại.
 
-GVHD xem `/lecturer/registrations` hoặc GET `/api/v1/registrations/pending` và chấp thuận/từ chối đúng đề tài mình hướng dẫn. POST HTML chuyển sang `/lecturer/registrations/{id}/review`; PATCH API giữ `/api/v1/registrations/{id}/review`. Backend kiểm tra quan hệ GVHD, không chỉ quyền GV. GVHD là người đề xuất quyết định; đăng ký đã xử lý không được quyết định lần hai.
+Trưởng khoa xem `/dean/registrations` hoặc GET `/api/v1/registrations/pending` và chấp thuận/từ chối đăng ký nhóm. POST HTML dùng `/dean/registrations/{id}/review`; PATCH API giữ `/api/v1/registrations/{id}/review`. Backend kiểm tra chức vụ Trưởng khoa đương nhiệm; GVHD/GV thường không được duyệt. Đăng ký đã xử lý không được quyết định lần hai.
 
-Bản cập nhật dùng schema SQL 01–10 hiện có, không cần migration mới. Database đang dùng giữ nguyên đề tài, phân công và quyết định cũ; không tự gán lại GVHD cho lịch sử đã công bố. Chỉ đồng bộ source chưa cập nhật ứng dụng Docker hoặc Render: cần build/deploy bản mới để sử dụng luồng này.
+Khôi phục nghiệp vụ dùng schema SQL 01–10 hiện có, không cần migration mới. Database đang dùng giữ nguyên đề tài, phân công và quyết định cũ; không nhập lại dữ liệu mẫu. Giao diện mới tiếp tục được giữ. Cần build/deploy ứng dụng để môi trường đang chạy nhận thay đổi source.
 
 ## Quản lý đề tài và bộ lọc
-
-
 
 Mục **Quản lý đề tài** tách khỏi form đề xuất, hiển thị danh sách dạng bảng và phân trang. Nút **Xem chi tiết** mở cửa sổ nhỏ có nội dung, thông tin và thao tác theo quyền; đóng bằng nút Đóng, Esc hoặc bấm nền ngoài. Trưởng khoa xem toàn khoa tại `/dean/topics`; Trưởng bộ môn xem bộ môn phụ trách tại `/department/topic-management`; giảng viên xem đề tài đề xuất/hướng dẫn tại `/lecturer/topic-management`. Quyền được kiểm tra ở cả URL và service; các bộ lọc chỉ thu hẹp phạm vi.
 

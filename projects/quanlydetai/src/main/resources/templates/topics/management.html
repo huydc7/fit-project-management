@@ -55,7 +55,6 @@
           <div><dt>Hội đồng đánh giá</dt><dd th:text="${t.council != null ? 'Đã phân công · ' + #lists.size(t.councilMembers) + ' thành viên' : 'Chưa phân công'}"></dd></div>
           <div th:if="${t.confirmedAt != null}"><dt>Thời điểm Trưởng khoa xác nhận</dt><dd th:text="${#temporals.format(t.confirmedAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
         </dl>
-        <p class="notice notice-info topic-legacy-note" th:if="${t.legacySupervision()}">Phân công GVHD bên trên là dữ liệu đã lưu theo quy trình cũ. Quy tắc hiện tại: người đề xuất là GVHD duy nhất khi tạo đề tài mới.</p>
         <div class="topic-people-grid" th:if="${t.group != null or t.council != null}">
           <section class="topic-people-card" th:if="${t.group != null}" th:attr="aria-label=${'Thành viên nhóm ' + t.groupName}">
             <h3>Thành viên nhóm <span class="topic-member-count" th:text="${#lists.size(t.groupMembers)}"></span></h3>

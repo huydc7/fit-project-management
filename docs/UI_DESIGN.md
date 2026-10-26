@@ -12,7 +12,7 @@ Bản giao diện ngày 02/10/2026 sử dụng Thymeleaf, HTML/CSS và JavaScrip
 - Chân trang đăng nhập dùng dấu hiệu chữ FIT do dự án thiết kế, kèm tên khoa và HCMUTE. Nút mật khẩu dùng icon mắt/mắt gạch chéo và nhãn hỗ trợ trình đọc màn hình.
 - `templates/home.html`: lối tắt theo quyền, ba thông báo gần nhất từ database, trạng thái trống và hướng dẫn quy trình. Không dùng số liệu hoặc hạn nộp giả.
 - `static/css/custom.css`: màu, cỡ chữ, bố cục, thành phần form/bảng/thông báo và quy tắc responsive. Muốn đổi màu chủ đạo, sửa biến `--brand` và `--brand-dark` tại `:root`.
-- `static/js/app.js`: menu di động và nút hiện mật khẩu. Form vẫn gửi qua MVC/CSRF; menu và chức năng chính dùng được khi tắt JavaScript.
+- `static/js/app.js`: menu di động, hiện mật khẩu, giao diện sáng/tối, cửa sổ chi tiết, bộ chọn giảng viên và phản hồi lý do từ chối. Form vẫn gửi qua MVC/CSRF; backend kiểm tra lại quyền và dữ liệu khi lưu.
 
 Các trang nhóm, đề tài, tài khoản, báo cáo, hội đồng, chấm điểm và quản lý đợt dùng bộ thành phần chung. Tên trường, URL tiếng Anh, điều kiện phân quyền và ràng buộc nghiệp vụ vẫn theo backend.
 
@@ -40,8 +40,14 @@ Trang Đề xuất đề tài chỉ có form tạo mới. Danh sách và thao t�
 
 Trang Duyệt & công bố là danh sách chờ xử lý: chỉ lấy đề tài Nháp đã có duyệt chuyên môn của Trưởng bộ môn và kết quả Chưa công bố. Không tải đề tài đã công bố, đang thực hiện, hoàn thành hoặc hủy vào phần duyệt đề tài; kết quả đã công bố cũng rời danh sách chờ. Lọc và phân trang thực hiện trên truy vấn database cho cả hai phần. Không có bộ lọc trạng thái để mở rộng phạm vi này. Đề tài quá hạn duyệt vẫn hiện cảnh báo thời hạn, không được bỏ qua kiểm tra khi duyệt. Phân công GVPB và hội đồng nằm trong chi tiết đề tài Đang thực hiện tại Quản lý đề tài.
 
-Chi tiết đề tài hiển thị tên nhóm cùng danh sách SV (mã, họ tên, nhóm trưởng/thành viên); hội đồng hiển thị các GV cùng vai trò chủ tịch, thư ký, ủy viên, mã hội đồng ở dòng phụ. Hiển thị người đề xuất riêng với danh sách GVHD thực tế. Nếu phân công cũ khác quy tắc một GVHD là người đề xuất, giao diện ghi rõ dữ liệu theo quy trình cũ; không che bớt GVHD hoặc tự sửa lịch sử đã chấm điểm. Các danh sách thành viên được truy vấn theo lô cho các đề tài thuộc trang và phạm vi được phép xem.
+Chi tiết đề tài hiển thị tên nhóm cùng danh sách SV (mã, họ tên, nhóm trưởng/thành viên); hội đồng hiển thị các GV cùng vai trò chủ tịch, thư ký, ủy viên, mã hội đồng ở dòng phụ. Hiển thị người đề xuất riêng với danh sách 1–2 GVHD do bộ môn lựa chọn. Cửa sổ phản ánh phân công thực tế đã lưu, không tự thay đổi lịch sử hoặc coi đồng hướng dẫn là dữ liệu sai. Các danh sách thành viên được truy vấn theo lô cho các đề tài thuộc trang và phạm vi được phép xem.
 
 Trang Thông báo đặt form đăng trước, thanh tìm kiếm gọn ngay trước danh sách. Form đề xuất không còn câu nhắc tự gán GVHD hoặc giới hạn 3 đề tài mỗi đợt.
 
-Đối chiếu giao diện với hai commit 3e661ff và de9a5eb trên team/main ngày 26/10/2026: bổ sung liên kết xem ảnh hưởng trước khi khóa GV đang hoạt động, nhãn bộ môn gọn, phân trang ngay sau danh sách đợt và tránh lặp lỗi từ chối đăng ký ở đầu trang. Hiển thị tên người đề xuất ở các hàng chờ duyệt. Giữ nghiệp vụ hiện tại: người đề xuất là GVHD duy nhất, GVHD duyệt nhóm, bộ môn chỉ duyệt chuyên môn; giữ form đề xuất riêng, cửa sổ chi tiết, bộ lọc gọn và các thông báo đã bỏ theo yêu cầu. Các phần phân trang, chọn đề tài trước khi lập hội đồng và kiểm tra inline vốn đã có trong bản local.
+## Duyệt chuyên môn và đăng ký nhóm
+
+Tại `/department/topics`, Trưởng bộ môn chọn 1–2 GVHD bằng checkbox có tìm kiếm theo họ tên/mã, bộ đếm và giới hạn hai người. Danh sách chỉ gồm GV thuộc bộ môn phụ trách, có tài khoản hoạt động. Khi chấp thuận, backend kiểm tra lại số lượng, trùng lặp, tài khoản, bộ môn và hạn mức hướng dẫn trước khi ghi. Từ chối dùng form riêng và không yêu cầu chọn GVHD.
+
+Mục Duyệt đăng ký nhóm chỉ hiện với Trưởng khoa, dẫn tới `/dean/registrations`. Trang này giữ bố cục danh sách, phân trang và lỗi cạnh ô lý do; bắt buộc nhập lý do khi từ chối. Menu của GV/GVHD không hiển thị chức năng này nếu tài khoản không đồng thời là Trưởng khoa. Truy cập URL hoặc API trực tiếp vẫn chịu kiểm tra quyền. Trang Duyệt & công bố có liên kết tới trang duyệt nhóm, không trộn đăng ký vào danh sách chờ công bố đề tài/kết quả.
+
+Giao diện tiếp tục giữ lựa chọn đề tài trước khi lập hội đồng, liên kết xem ảnh hưởng trước khi khóa GV, phân trang ngay sau danh sách đợt, tên người đề xuất ở hàng chờ duyệt và tránh lặp lỗi từ chối ở đầu trang.
